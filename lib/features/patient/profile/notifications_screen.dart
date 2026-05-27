@@ -1,0 +1,302 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+
+import '../../../core/models/shared_models.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../services/patient_notifications_service.dart';
+
+class NotificationsScreen extends StatefulWidget {
+  const NotificationsScreen({super.key});
+
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  final _service = PatientNotificationsService();
+  bool _loading = true;
+  List<NotificationItem> _notifications = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    setState(() => _loading = true);
+    try {
+      final notifications = await _service.getNotifications();
+      if (!mounted) return;
+      setState(() {
+        _notifications = notifications;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load notifications')),
+      );
+      setState(() {
+        _notifications = [];
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _markAllAsRead() async {
+    setState(() {
+      for (var i = 0; i < _notifications.length; i++) {
+        _notifications[i] = NotificationItem(
+          id: _notifications[i].id,
+          title: _notifications[i].title,
+          message: _notifications[i].message,
+          isRead: true,
+          createdAt: _notifications[i].createdAt,
+          type: _notifications[i].type,
+          relatedId: _notifications[i].relatedId,
+        );
+      }
+    });
+  }
+
+  Future<void> _markAsRead(NotificationItem notification) async {
+    if (notification.isRead) return;
+
+    try {
+      await _service.markAsRead(notification.id);
+    } catch (e) {
+      // Ignore API errors
+    }
+
+    setState(() {
+      final index = _notifications.indexWhere((n) => n.id == notification.id);
+      if (index != -1) {
+        _notifications[index] = NotificationItem(
+          id: notification.id,
+          title: notification.title,
+          message: notification.message,
+          isRead: true,
+          createdAt: notification.createdAt,
+          type: notification.type,
+          relatedId: notification.relatedId,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Notifications'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => context.pop(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _markAllAsRead,
+            child: Text(
+              'Mark all read',
+              style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
+            ),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadNotifications,
+                child: _notifications.isEmpty
+                    ? _EmptyState()
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                        itemCount: _notifications.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final notification = _notifications[index];
+                          return _NotificationCard(
+                            notification: notification,
+                            onTap: () => _markAsRead(notification),
+                          );
+                        },
+                      ),
+              ),
+      ),
+    );
+  }
+}
+
+class _NotificationCard extends StatelessWidget {
+  final NotificationItem notification;
+  final VoidCallback onTap;
+
+  const _NotificationCard({
+    required this.notification,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        decoration: BoxDecoration(
+          color: notification.isRead ? AppColors.surface : AppColors.primary50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: notification.isRead ? AppColors.borderLight : AppColors.primary200,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 40,
+              width: 40,
+              decoration: BoxDecoration(
+                color: _iconBgColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(_icon, color: _iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          notification.title,
+                          style: AppTextStyles.labelLarge.copyWith(
+                            fontWeight: notification.isRead ? FontWeight.w500 : FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      if (!notification.isRead)
+                        Container(
+                          height: 8,
+                          width: 8,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    notification.message,
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _timeAgo(notification.createdAt),
+                    style: AppTextStyles.caption,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData get _icon {
+    switch (notification.type) {
+      case 'appointment':
+        return Icons.calendar_today;
+      case 'queue':
+        return Icons.confirmation_number;
+      case 'community':
+        return Icons.chat_bubble;
+      default:
+        return Icons.notifications;
+    }
+  }
+
+  Color get _iconColor {
+    switch (notification.type) {
+      case 'appointment':
+        return AppColors.info;
+      case 'queue':
+        return AppColors.warning;
+      case 'community':
+        return AppColors.success;
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  Color get _iconBgColor {
+    switch (notification.type) {
+      case 'appointment':
+        return AppColors.infoBg;
+      case 'queue':
+        return AppColors.warningBg;
+      case 'community':
+        return AppColors.successBg;
+      default:
+        return AppColors.primary100;
+    }
+  }
+
+  String _timeAgo(DateTime date) {
+    final diff = DateTime.now().difference(date);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return DateFormat('MMM d').format(date);
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(32, 0, 32, 0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              height: 120,
+              width: 120,
+              decoration: BoxDecoration(
+                color: AppColors.primary50,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Icon(
+                Icons.notifications_none,
+                size: 56,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'No notifications',
+              style: AppTextStyles.heading3,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'You\'re all caught up! Check back later for updates.',
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

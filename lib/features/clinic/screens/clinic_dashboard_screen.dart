@@ -1,0 +1,597 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/app_bottom_nav.dart';
+import '../../clinic/clinic_service.dart';
+
+class ClinicDashboardScreen extends StatefulWidget {
+  const ClinicDashboardScreen({super.key});
+
+  @override
+  State<ClinicDashboardScreen> createState() => _ClinicDashboardScreenState();
+}
+
+class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
+  final _service = ClinicService();
+  Map<String, dynamic>? _dashboardData;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboard();
+  }
+
+  Future<void> _loadDashboard() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+      final data = await _service.getClinicDashboard();
+      setState(() {
+        _dashboardData = data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _onNavTap(int index) {
+    switch (index) {
+      case 0:
+        context.go(AppRoutes.clinicDashboard);
+        break;
+      case 1:
+        context.go(AppRoutes.clinicDoctors);
+        break;
+      case 2:
+        context.go(AppRoutes.clinicPayments);
+        break;
+      case 3:
+        context.go(AppRoutes.clinicProfile);
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final todayStats = _dashboardData?['todayStats'] as Map<String, dynamic>? ?? {};
+    final queueSummary = _dashboardData?['queueSummary'] as Map<String, dynamic>? ?? {};
+    final recentAppointments = (_dashboardData?['recentAppointments'] as List<dynamic>?) ?? [];
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _loadDashboard,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 20),
+                _buildDateSelector(),
+                const SizedBox(height: 20),
+                _buildStatsCards(todayStats),
+                const SizedBox(height: 24),
+                _buildQuickActions(),
+                const SizedBox(height: 24),
+                _buildQueueSummary(queueSummary),
+                const SizedBox(height: 24),
+                _buildRecentAppointments(recentAppointments),
+              ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: 0,
+        items: ClinicNavItems.items,
+        onTap: _onNavTap,
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Image.asset(
+            AssetPaths.clinicImage1,
+            width: 48,
+            height: 48,
+            fit: BoxFit.cover,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Clinic', style: AppTextStyles.heading3.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                'Dashboard',
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        GestureDetector(
+          onTap: () => context.push(AppRoutes.clinicNotifications),
+          child: Container(
+            height: 44,
+            width: 44,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.borderLight),
+            ),
+            child: const Icon(Icons.notifications_none, color: AppColors.primary, size: 22),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDateSelector() {
+    final now = DateTime.now();
+    final dateStr = '${_monthName(now.month)} ${now.day}, ${now.year}';
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.calendar_today, color: AppColors.textOnPrimary, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  dateStr,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: AppColors.textOnPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Today\'s Overview',
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary100),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+            decoration: BoxDecoration(
+              color: AppColors.primaryDark,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Live',
+              style: AppTextStyles.labelMedium.copyWith(color: AppColors.textOnPrimary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsCards(Map<String, dynamic> stats) {
+    final paidCount = stats['paidCount'] ?? 0;
+    final walkIns = stats['walkIns'] ?? 0;
+    final revenue = stats['revenue'] ?? 0.0;
+
+    return Row(
+      children: [
+        Expanded(
+          child: _StatCard(
+            icon: Icons.people_alt_outlined,
+            iconColor: AppColors.primary,
+            iconBg: AppColors.primary100,
+            value: paidCount.toString(),
+            label: 'Paid Patients',
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _StatCard(
+            icon: Icons.person_add_alt_outlined,
+            iconColor: AppColors.success,
+            iconBg: AppColors.successBg,
+            value: walkIns.toString(),
+            label: 'Walk-ins',
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _StatCard(
+            icon: Icons.attach_money,
+            iconColor: AppColors.warning,
+            iconBg: AppColors.warningBg,
+            value: '\$${(revenue as num).toStringAsFixed(0)}',
+            label: 'Revenue',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Quick Actions', style: AppTextStyles.heading2),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _ActionButton(
+                icon: Icons.person_add,
+                label: 'Add Walk-in',
+                color: AppColors.primary,
+                onTap: () => context.push(AppRoutes.clinicWalkInBooking),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _ActionButton(
+                icon: Icons.queue_play_next,
+                label: 'View Queue',
+                color: AppColors.success,
+                onTap: () => context.push(AppRoutes.clinicQueue),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQueueSummary(Map<String, dynamic> summary) {
+    final totalWaiting = summary['totalWaiting'] ?? 0;
+    final totalInProgress = summary['totalInProgress'] ?? 0;
+    final totalCompleted = summary['totalCompleted'] ?? 0;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Queue Summary', style: AppTextStyles.heading2),
+              TextButton(
+                onPressed: () => context.push(AppRoutes.clinicQueue),
+                child: const Text('See All'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _QueueStatusItem(
+                  count: totalWaiting.toString(),
+                  label: 'Waiting',
+                  color: AppColors.warning,
+                ),
+              ),
+              Expanded(
+                child: _QueueStatusItem(
+                  count: totalInProgress.toString(),
+                  label: 'In Progress',
+                  color: AppColors.primary,
+                ),
+              ),
+              Expanded(
+                child: _QueueStatusItem(
+                  count: totalCompleted.toString(),
+                  label: 'Completed',
+                  color: AppColors.success,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentAppointments(List<dynamic> appointments) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Recent Appointments', style: AppTextStyles.heading2),
+        const SizedBox(height: 12),
+        if (_isLoading)
+          const SizedBox(
+            height: 120,
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (_error != null)
+          Center(
+            child: Column(
+              children: [
+                Text('Error: $_error', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error)),
+                const SizedBox(height: 8),
+                TextButton(onPressed: _loadDashboard, child: const Text('Retry')),
+              ],
+            ),
+          )
+        else if (appointments.isEmpty)
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Text(
+                'No appointments today',
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
+              ),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: appointments.length.clamp(0, 5),
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final appt = appointments[index] as Map<String, dynamic>;
+              return _AppointmentListItem(
+                patientName: appt['patientName'] ?? '',
+                doctorName: appt['doctorName'] ?? '',
+                time: appt['startTime'] ?? '--:--',
+                status: appt['statusText'] ?? '',
+                isPaid: appt['isPaid'] ?? false,
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  String _monthName(int month) {
+    const names = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return names[month - 1];
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBg;
+  final String value;
+  final String label;
+
+  const _StatCard({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBg,
+    required this.value,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 36,
+            width: 36,
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 18),
+          ),
+          const SizedBox(height: 10),
+          Text(value, style: AppTextStyles.heading1.copyWith(fontSize: 22)),
+          const SizedBox(height: 4),
+          Text(label, style: AppTextStyles.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: Row(
+          children: [
+            Container(
+              height: 40,
+              width: 40,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, color: AppColors.textTertiary, size: 14),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QueueStatusItem extends StatelessWidget {
+  final String count;
+  final String label;
+  final Color color;
+
+  const _QueueStatusItem({
+    required this.count,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(count, style: AppTextStyles.heading1.copyWith(color: color, fontSize: 24)),
+        const SizedBox(height: 4),
+        Text(label, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+      ],
+    );
+  }
+}
+
+class _AppointmentListItem extends StatelessWidget {
+  final String patientName;
+  final String doctorName;
+  final String time;
+  final String status;
+  final bool isPaid;
+
+  const _AppointmentListItem({
+    required this.patientName,
+    required this.doctorName,
+    required this.time,
+    required this.status,
+    required this.isPaid,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color statusColor;
+    switch (status.toLowerCase()) {
+      case 'completed':
+        statusColor = AppColors.success;
+        break;
+      case 'in progress':
+        statusColor = AppColors.primary;
+        break;
+      case 'cancelled':
+        statusColor = AppColors.error;
+        break;
+      default:
+        statusColor = AppColors.warning;
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            radius: 22,
+            backgroundImage: AssetImage(AssetPaths.patientProfile1),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(patientName, style: AppTextStyles.labelLarge),
+                const SizedBox(height: 2),
+                Text(
+                  'Dr. $doctorName · $time',
+                  style: AppTextStyles.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  status,
+                  style: AppTextStyles.labelSmall.copyWith(color: statusColor),
+                ),
+              ),
+              const SizedBox(height: 4),
+              if (isPaid)
+                Text(
+                  'Paid',
+                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.success),
+                )
+              else
+                Text(
+                  'Unpaid',
+                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.error),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
