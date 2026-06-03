@@ -81,13 +81,17 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     );
 
     try {
-      await _appointmentsService.bookAppointment(request);
+      final appointment = await _appointmentsService.bookAppointment(request);
       if (!mounted) return;
-      context.go(AppRoutes.patientAppointmentConfirmation);
+      context.go(
+        AppRoutes.patientAppointmentConfirmation,
+        extra: appointment,
+      );
     } catch (e) {
       if (!mounted) return;
-      // Fallback: navigate anyway for demo
-      context.go(AppRoutes.patientAppointmentConfirmation);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Booking failed: ${e.toString()}')),
+      );
     } finally {
       if (mounted) setState(() => _booking = false);
     }

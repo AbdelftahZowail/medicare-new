@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/community_models.dart';
@@ -306,11 +307,42 @@ class _PostCard extends StatelessWidget {
                   '${post.commentsCount} comments',
                   style: AppTextStyles.bodySmall,
                 ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.ios_share, size: 18, color: AppColors.textTertiary),
+                  tooltip: 'Share post',
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  onPressed: () {
+                    final box = context.findRenderObject() as RenderBox?;
+                    _sharePost(post, box);
+                  },
+                ),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _sharePost(CommunityPost post, RenderBox? box) async {
+    final lines = <String>[
+      '${post.authorName} shared in Medicare Community:',
+      '',
+      post.content,
+    ];
+    if (post.specialization != null && post.specialization!.isNotEmpty) {
+      lines.add('');
+      lines.add('#${post.specialization}');
+    }
+    final text = lines.join('\n');
+    await Share.share(
+      text,
+      subject: 'Medicare Community post',
+      sharePositionOrigin:
+          box != null ? box.localToGlobal(Offset.zero) & box.size : null,
     );
   }
 

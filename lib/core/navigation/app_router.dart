@@ -6,6 +6,10 @@ import 'package:go_router/go_router.dart';
 
 import '../bloc/auth_bloc.dart';
 import '../constants/app_constants.dart';
+import '../models/appointment_models.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
+import '../widgets/app_button.dart';
 
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/onboarding_screen.dart';
@@ -192,7 +196,13 @@ class AppRouter {
         ),
         GoRoute(
           path: AppRoutes.patientAppointmentConfirmation,
-          builder: (context, state) => const AppointmentConfirmationScreen(),
+          builder: (context, state) {
+            final appointment = state.extra;
+            if (appointment is! Appointment) {
+              return const _MissingAppointmentScreen();
+            }
+            return AppointmentConfirmationScreen(appointment: appointment);
+          },
         ),
         GoRoute(
           path: AppRoutes.patientAppointments,
@@ -393,6 +403,51 @@ class GoRouterRefreshStream extends ChangeNotifier {
   void dispose() {
     _subscription.cancel();
     super.dispose();
+  }
+}
+
+class _MissingAppointmentScreen extends StatelessWidget {
+  const _MissingAppointmentScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.event_busy, color: AppColors.textTertiary, size: 64),
+              const SizedBox(height: 16),
+              Text(
+                'No appointment details found',
+                style: AppTextStyles.heading3,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Please book a new appointment to continue.',
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              AppButton(
+                text: 'Browse Doctors',
+                onPressed: () => context.go(AppRoutes.patientBrowseDoctors),
+              ),
+              const SizedBox(height: 12),
+              AppButton(
+                text: 'Back to Home',
+                isOutlined: true,
+                onPressed: () => context.go(AppRoutes.patientHome),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -1,117 +1,103 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTextStyles {
   static const String fontFamily = 'Inter';
 
   // Display
-  static const TextStyle displayLarge = TextStyle(
+  static final TextStyle displayLarge = GoogleFonts.inter(
     fontSize: 32,
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
-    fontFamily: fontFamily,
   );
 
-  static const TextStyle displayMedium = TextStyle(
+  static final TextStyle displayMedium = GoogleFonts.inter(
     fontSize: 28,
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
-    fontFamily: fontFamily,
   );
 
   // Headings
-  static const TextStyle heading1 = TextStyle(
+  static final TextStyle heading1 = GoogleFonts.inter(
     fontSize: 24,
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
-    fontFamily: fontFamily,
   );
 
-  static const TextStyle heading2 = TextStyle(
+  static final TextStyle heading2 = GoogleFonts.inter(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
-    fontFamily: fontFamily,
   );
 
-  static const TextStyle heading3 = TextStyle(
+  static final TextStyle heading3 = GoogleFonts.inter(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
-    fontFamily: fontFamily,
   );
 
-  static const TextStyle heading4 = TextStyle(
+  static final TextStyle heading4 = GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
-    fontFamily: fontFamily,
   );
 
   // Body
-  static const TextStyle bodyLarge = TextStyle(
+  static final TextStyle bodyLarge = GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.normal,
     color: AppColors.textPrimary,
-    fontFamily: fontFamily,
   );
 
-  static const TextStyle bodyMedium = TextStyle(
+  static final TextStyle bodyMedium = GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.normal,
     color: AppColors.textPrimary,
-    fontFamily: fontFamily,
   );
 
-  static const TextStyle bodySmall = TextStyle(
+  static final TextStyle bodySmall = GoogleFonts.inter(
     fontSize: 12,
     fontWeight: FontWeight.normal,
     color: AppColors.textSecondary,
-    fontFamily: fontFamily,
   );
 
   // Labels
-  static const TextStyle labelLarge = TextStyle(
+  static final TextStyle labelLarge = GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w500,
     color: AppColors.textPrimary,
-    fontFamily: fontFamily,
   );
 
-  static const TextStyle labelMedium = TextStyle(
+  static final TextStyle labelMedium = GoogleFonts.inter(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     color: AppColors.textSecondary,
-    fontFamily: fontFamily,
   );
 
-  static const TextStyle labelSmall = TextStyle(
+  static final TextStyle labelSmall = GoogleFonts.inter(
     fontSize: 11,
     fontWeight: FontWeight.w500,
     color: AppColors.textTertiary,
-    fontFamily: fontFamily,
   );
 
   // Button
-  static const TextStyle button = TextStyle(
+  static final TextStyle button = GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     color: AppColors.textOnPrimary,
-    fontFamily: fontFamily,
   );
 
-  static const TextStyle buttonSmall = TextStyle(
+  static final TextStyle buttonSmall = GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w600,
     color: AppColors.textOnPrimary,
-    fontFamily: fontFamily,
   );
 
   // Caption
-  static const TextStyle caption = TextStyle(
+  static final TextStyle caption = GoogleFonts.inter(
     fontSize: 12,
     fontWeight: FontWeight.normal,
     color: AppColors.textTertiary,
-    fontFamily: fontFamily,
   );
 }
