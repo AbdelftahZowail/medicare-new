@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\MedicalApp.API.csproj": {}
+    "c:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\MedicalApp.API.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\MedicalApp.API.csproj": {
+    "c:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\MedicalApp.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\MedicalApp.API.csproj",
+        "projectUniqueName": "c:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\MedicalApp.API.csproj",
         "projectName": "MedicalApp.API",
-        "projectPath": "C:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\MedicalApp.API.csproj",
+        "projectPath": "c:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\MedicalApp.API.csproj",
         "packagesPath": "C:\\Users\\Zowail\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\obj\\",
+        "outputPath": "c:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Zowail\\AppData\\Roaming\\NuGet\\NuGet.Config"

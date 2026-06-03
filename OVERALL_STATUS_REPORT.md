@@ -2,24 +2,29 @@
 
 > Generated from Figma design audit + Flutter frontend audit + .NET backend audit  
 > Date: 2026-05-27  
-> Last updated: 2026-06-01 (reconciled with `medicare-backend/CHANGELOG.md` 2026-06-01)  
+> Last updated: 2026-06-03 (reconciled with `medicare-backend/CHANGELOG.md` 2026-06-03)  
 > Figma Source: https://www.figma.com/design/UZjAOECB8WGEfjzMcy7mQW/%D9%85%D8%B4%D8%B1%D9%88%D8%B9-UI
 
 ---
 
-## 0. Current Status Snapshot (2026-06-01)
+## 0. Current Status Snapshot (2026-06-03)
+
+> **New:** Code scan (§9.9) surfaced 11 additional forgotten fields beyond the original audit.
 
 **Closed**
 
 | # | Item | Closed by |
 |---|---|---|
-| 1 | Geospatial search endpoints (`/api/clinic/nearby`, `/api/doctor/nearby`) | Backend 2026-06-01 changelog |
-| 2 | `distanceKm`, `clinicLatitude/Longitude`, `totalPatients` fields on doctor DTOs | Backend 2026-06-01 changelog |
-| 3 | `GET /api/doctor` HTTP 500 (missing AutoMapper mapping) | Backend 2026-06-01 changelog |
+| 1 | Geospatial search endpoints (`/api/clinic/nearby`, `/api/doctor/nearby`) | Backend 2026-06-01 |
+| 2 | `distanceKm`, `clinicLatitude/Longitude`, `totalPatients` fields on doctor DTOs | Backend 2026-06-01 |
+| 3 | `GET /api/doctor` HTTP 500 (missing AutoMapper mapping) | Backend 2026-06-01 |
 | 4 | Appointment Confirmation shows real booking data | Flutter 2026-06-01 |
 | 5 | Community post share button | Flutter 2026-06-01 |
 | 6 | Font 'Inter' via `google_fonts` | Flutter 2026-06-01 |
 | 7 | Onboarding assets (all 3 PNGs verified) | Flutter 2026-06-01 |
+| 8 | `GET /api/patient/favorites` endpoint — returns patient's favorited doctors | Backend 2026-06-03 |
+| 9 | `DELETE /api/notification/{id}` endpoint — notification owner can delete | Backend 2026-06-03 |
+| 10 | `openingTime` / `closingTime` on `ClinicDto`, `CreateClinicDto`, `UpdateClinicDto` — wired to entity | Backend 2026-06-03 |
 
 **Out of scope** (explicitly deferred — no work planned)
 
@@ -363,7 +368,7 @@ From Dashboard:
 
 **Net result:** No backend changes needed for §6.1 #6. The Flutter `EditClinicProfileScreen` (and `RegisterClinicScreen`) are the only remaining work — see §9 P0-1.
 
-**Bonus finding during verification:** The `Clinic` entity has `OpeningTime` and `ClosingTime` (`TimeSpan?`, lines 50-52) but these are **NOT** in `UpdateClinicDto` or `CreateClinicDto`. Operating hours is therefore a real backend gap, not a Flutter-only gap. Tracked in §9 P2-5 (split-scope update). To close it: add `OpeningTime`/`ClosingTime` to both DTOs, then add fields to the Flutter edit/register forms.
+**Bonus finding during verification:** The `Clinic` entity has `OpeningTime` and `ClosingTime` (`TimeSpan?`, lines 50-52) but these were **NOT** in `UpdateClinicDto` or `CreateClinicDto`. ✅ **Closed 2026-06-03** — `OpeningTime`/`ClosingTime` added to both DTOs, `ClinicDto`, and wired in `ClinicService` (create + update). Remaining work: add form fields to Flutter edit/register screens.
 
 **Bonus finding 2:** `GET /api/clinic/doctors/{doctorId}` (controller line 85-90) and `PUT /api/clinic/doctors/{doctorId}` (controller line 92-98) both exist. These are the endpoints that §9 P1-3 and P1-4 say are never called from Flutter. Confirmed; the gap is Flutter-only.
 
@@ -385,19 +390,25 @@ From Dashboard:
 | 12 | **Submit Review is a stub** — `submit_review_screen.dart:44-45` says `// In a real app, this would call the reviews API`. Fake `Future.delayed(800ms)`, success snackbar, but data is discarded. `ReviewService.submitReview()` is implemented but never called. | High — User feedback is silently lost. (§9 B-1) | **Open — Flutter only** |
 | 13 | **Add Family Member is a stub** — `add_family_member_screen.dart:54` says `// In a real app, this would call an API`. Same pattern: fake delay, success snackbar, data discarded. | High — User data is silently lost. (§9 B-2) | **Open — Flutter only** |
 | 14 | **Voice mic icon has no handler** — `patient_home_screen.dart:238` shows `Icons.mic` in the search bar with no `onTap` and no `speech_to_text` package. Figma shows voice search; implementation never started. | Medium — User taps it expecting voice input, nothing happens. (§9 A-2) | **Out of scope** — will be removed from UI or deferred. |
-| 15 | **Favorite toggle on doctor cards is a stub** — `browse_doctors_screen.dart:134` and `favorites_screen.dart:94` both pass `onFavoriteToggle: () {}` (or local-only `removeAt`). Backend has `POST /api/patient/favorite/{doctorId}` in `app_constants.dart:25` but is never called. | High — Heart icon is decoration only. (§9 A-3, A-4) | **Open — Flutter only** |
+| 15 | **Favorite toggle on doctor cards is a stub** — `browse_doctors_screen.dart:134` and `favorites_screen.dart:94` both pass `onFavoriteToggle: () {}` (or local-only `removeAt`). Backend has `POST /api/patient/favorite/{doctorId}` and `GET /api/patient/favorites` (2026-06-03) but neither is called from Flutter. | High — Heart icon is decoration only. (§9 A-3, A-4) | **Open — Flutter only** |
 | 16 | **Community post delete UI missing** — `DELETE /api/community/posts/{id}` exists in `app_constants.dart:88` and `deleteCommunityComment` in line 89, but no service method or UI button calls them. Posts/comments are permanent. | Medium — User can create but not delete own content. (§9 C-4, C-5) | **Open — Flutter only** |
 | 17 | **Manage Schedule screen is a stub** — `manage_schedule_screen.dart:33-60` initializes from hardcoded `_schedules` Map. Save sends `slotDurationMinutes: 30, maxPatients: 10` regardless of UI input. `GET /api/doctor/{id}/schedules` exists but is never called. | Critical — Schedule editing is non-functional. (§9 D-Clinic-1) | **Open — Flutter only** |
 | 18 | **Clinic Doctor Detail schedule section is fabricated** — `clinic_doctor_detail_screen.dart:300` comment: `// Mock schedule data - in real app would come from API`. Displays hardcoded "09:00 AM - 05:00 PM" every weekday, "Friday Closed". | Critical — Clinic sees fake schedule. (§9 D-Clinic-3) | **Open — Flutter only** |
 | 19 | **Clinic Doctor Detail uses list endpoint, not detail endpoint** — Loads from `getClinicDoctors()` (list) and manually maps 8 fields. Misses degree, university, bio, languages, board certification, years of experience, graduation year. `GET /api/clinic/doctors/{id}` exists in `app_constants.dart:53` but is not called. | High — Clinic admin can't see doctor's full profile. (§9 D-Clinic-4) | **Open — Flutter only** |
 | 20 | **No per-doctor fee / status edit at clinic** — `PUT /api/clinic/doctors/{id}` exists in `app_constants.dart:54` but is never called from any screen. Clinic can register a doctor but cannot update fee or active/inactive status afterward. | High — Once registered, doctor is "frozen" at the clinic. (§9 D-Clinic-5) | **Open — Flutter only** |
 | 21 | **Clinic edit has no lat/lng fields** — `edit_clinic_profile_screen.dart:67-82` save payload lacks `latitude`/`longitude`. New clinics created or updated via this screen are silently excluded from `/api/clinic/nearby`. **Coupling with §6.1 #6 resolved 2026-06-01** (backend DTO verified). | Critical — Newly-shipped nearby feature is broken for the app's primary entry path. (§9 P0-1) | **Open — Flutter only** |
-| 22 | **EditClinicProfileScreen missing fields** — No operating hours, no photo gallery (only logo), no specialty tags. | Medium — Clinic can't populate fields the design shows. (§9 D-Clinic-7) | **Open — Flutter only** |
+| 22 | **EditClinicProfileScreen missing fields** — No operating hours, no photo gallery (only logo), no specialty tags. Operating hours backend ready (2026-06-03 — `OpeningTime`/`ClosingTime` in DTOs). | Medium — Clinic can't populate fields the design shows. (§9 D-Clinic-7) | **Open — Flutter only (operating hours backend ready)** |
 | 23 | **Doctor email never captured at registration** — `register_doctor_screen.dart:60-83` doesn't ask for or send email, but `EditDoctorProfileScreen` has an email field. Profile can never have a real email. | High — Onboarding gap. (§9 D-Doctor-1) | **Open — Flutter only** |
 | 24 | **Doctor specializations list mismatch** — `register_doctor_screen.dart:36-45` lists 8 values including "Ophthalmologist" and "Dentist". `edit_doctor_profile_screen.dart:43-54` lists 10 values including "Ophthalmology" and "General Practice". A doctor registered as "Dentist" cannot find that value in the edit dropdown. | Medium — Data inconsistency between registration and profile edit. (§9 D-Doctor-2) | **Open — Flutter only** |
 | 25 | **No doctor-facing "My Schedule" screen** — Only clinics can edit doctor schedules via `ManageScheduleScreen` (which is itself a stub). Doctors have no UI to set their own availability. | Medium — Doctors can't manage their own calendars. (§9 D-Doctor-3) | **Open — Flutter only** |
 | 26 | **Doctor's `associatedClinics` is always empty** — `doctor_profile_screen.dart:120-128` displays the list, but there's no UI to populate it from the doctor's side. Clinic side links via QR/registration, but the doctor's profile never reflects the link. | Medium — Display-only data, never populated. (§9 D-Doctor-4) | **Open — Flutter only** |
 | 27 | **Clinic registration: dummy areas + missing address/email** — `register_clinic_screen.dart:49-53` areas are `['Area 1', 'Area 2', 'Area 3']`. Form doesn't capture full street address or email. | Medium — Onboarding gap. (§9 D-Clinic-8, D-Clinic-9) | **Open — Flutter only** |
+| 28 | **Patient `chronicDiseases` not captured** — `PatientProfile` model has `chronicDiseases`, backend accepts it. `edit_patient_profile_screen.dart` captures bloodType and allergies but has no controller for chronic diseases. | Medium — Health data gap. (§9 P2-10) | **Open — Flutter only** |
+| 29 | **Patient `dateOfBirth` not captured** — `PatientProfile` model has `dateOfBirth` (`DateTime?`), backend accepts it. Edit screen only has an age text field, no date picker. | Medium — Age vs DOB mismatch. (§9 P2-11) | **Open — Flutter only** |
+| 30 | **Family member `medicalHistory`/`allergies`/`chronicDiseases` not captured** — `FamilyMember` model has all three. `add_family_member_screen.dart` only captures name, relation, age, gender, bloodType. | Medium — Health data gap. (§9 P2-12) | **Open — Flutter only** |
+| 31 | **Clinic `linkMap` never used** — `ClinicProfile` model has `linkMap` (Google Maps URL string). Never displayed in profile view, never captured in edit form. | Low — Dead field. (§9 P3-10) | **Open — Flutter only** |
+| 32 | **Notification `type`/`relatedId` ignored** — `NotificationItem` model has `type` and `relatedId` for deep-linking. Never used in `notifications_screen.dart` onTap handler. | Medium — Deep-linking impossible without these. (§9 P2-13) | **Open — Flutter only** |
+| 33 | **Edit patient profile mock fallback** — `edit_patient_profile_screen.dart:71-79` falls back to `_mockProfile()` on API failure. Same fake-success anti-pattern as P0 stubs, but less severe since save path calls real API. | Low — Silent mock data on load failure. (§9 P3-11) | **Open — Flutter only** |
 
 ---
 
@@ -515,6 +526,34 @@ Both return items with `distanceKm`, sorted ascending. Items without coordinates
 
 ---
 
+### 8.6 Backend Changelog — 2026-06-03
+
+Shipped as part of the `medicare-backend` repository. See `medicare-backend/CHANGELOG.md` for full details.
+
+#### New endpoints
+
+| Endpoint | What it does | Auth |
+|----------|-------------|------|
+| `GET /api/patient/favorites` | Returns the current patient's favorited doctors as `DoctorListItemDto[]` | Patient |
+| `DELETE /api/notification/{id}` | Deletes a notification. Only the owner can delete it. | All authenticated roles |
+
+#### New fields on existing DTOs
+
+| DTO | New fields | Notes |
+|-----|-----------|-------|
+| `ClinicDto` | `openingTime`, `closingTime` | `TimeSpan?`, serialized as `"HH:mm:ss"` or `null` |
+| `CreateClinicDto` | `openingTime`, `closingTime` | Settable at clinic creation |
+| `UpdateClinicDto` | `openingTime`, `closingTime` | Settable at clinic update |
+
+All three DTOs expose `OpeningTime`/`ClosingTime` that map directly to the `Clinic` entity columns. Wired in `ClinicService` on both create (`ClinicService.cs:145-146`) and update (`ClinicService.cs:191-192`).
+
+#### Not changed
+
+- No database schema changes. No migration needed — the entity already had these columns.
+- All previously-existing endpoints and response fields are unchanged.
+
+---
+
 ## 9. UX & Flow Audit (Flutter)
 
 > Added: 2026-06-01
@@ -560,9 +599,9 @@ This section is the single source of truth for "is the Flutter app actually usin
 |----------|-------|---------|
 | **P0** | 4 | Silently breaks a core clinical or booking flow. Must fix before any release to real users. |
 | **P1** | 7 | A primary screen or feature is non-functional even though the backend is ready. |
-| **P2** | 9 | Onboarding gap, data inconsistency, or a screen users will hit in normal use but which doesn't block the booking loop. |
-| **P3** | 9 | Polish: search/filter UX, deep-linking, edit flows, export, visual gaps. |
-| **Total** | **29** | |
+| **P2** | 13 | Onboarding gap, data inconsistency, or a screen users will hit in normal use but which doesn't block the booking loop. |
+| **P3** | 11 | Polish: search/filter UX, deep-linking, edit flows, export, visual gaps. |
+| **Total** | **35** | |
 
 ### 9.2 P0 — Silently breaks core flow
 
@@ -581,7 +620,7 @@ This section is the single source of truth for "is the Flutter app actually usin
 | **P1-2** | `ClinicDoctorDetailScreen` schedule section is **fabricated**. Line 300 comment: `// Mock schedule data - in real app would come from API`. Displays hardcoded "09:00 AM - 05:00 PM Mon-Thu, Friday Closed". | `lib/features/clinic/screens/clinic_doctor_detail_screen.dart:299-309` | Clinic admin sees fake schedule — they will route patients to a doctor who isn't actually available. |
 | **P1-3** | `ClinicDoctorDetailScreen` loads from the list endpoint, not the detail endpoint. Manually maps 8 fields. Misses: `degree`, `university`, `bio`, `languages`, `boardCertification`, `yearsOfExperience`, `graduationYear`. | `lib/features/clinic/screens/clinic_doctor_detail_screen.dart` (calls `getClinicDoctors()` not `getClinicDoctor(id)`); `app_constants.dart:53` defines `GET /api/clinic/doctors/{id}` but no method calls it | Clinic admin can't see the doctor's full profile. |
 | **P1-4** | `PUT /api/clinic/doctors/{id}` exists in `app_constants.dart:54` but is never called from any screen. Clinic can register a doctor but cannot update their fee or active/inactive status afterward. | `lib/features/clinic/clinic_service.dart` (method defined, no call site); no edit screen | Once registered, a doctor is "frozen" at the clinic. |
-| **P1-5** | Favorite toggle is non-functional. `browse_doctors_screen.dart:134` passes `onFavoriteToggle: () {}`. `favorites_screen.dart:94` does local `removeAt(i)` only. Backend has `POST /api/patient/favorite/{doctorId}` (toggle). | `lib/features/patient/browse_doctors/browse_doctors_screen.dart:134`; `lib/features/patient/profile/favorites_screen.dart:94`; `app_constants.dart:25` defines the endpoint; `PatientService.getFavorites()` throws `UnsupportedError` (line 112-125) | Heart icon is decoration only. `getFavorites()` will throw on first use, masking any other issues. |
+| **P1-5** | Favorite toggle is non-functional. `browse_doctors_screen.dart:134` passes `onFavoriteToggle: () {}`. `favorites_screen.dart:94` does local `removeAt(i)` only. Backend has `POST /api/patient/favorite/{doctorId}` (toggle) **and** `GET /api/patient/favorites` (added 2026-06-03), but neither is wired in Flutter. `PatientService.getFavorites()` still throws `UnsupportedError`. | `lib/features/patient/browse_doctors/browse_doctors_screen.dart:134`; `lib/features/patient/profile/favorites_screen.dart:94`; `app_constants.dart:25` | Heart icon is decoration only. Backend is fully ready — Flutter wiring is the only gap. |
 | **P1-6** | Community post delete UI missing. `DELETE /api/community/posts/{id}` defined in `app_constants.dart:88` but no service method or UI button calls it. Posts are permanent. | `lib/core/services/community_service.dart` (no `deletePost` method); `app_constants.dart:88` | Users can create but not delete own posts. |
 | **P1-7** | Community comment delete UI missing. Same as P1-6 but for comments. `DELETE /api/community/comments/{id}` defined in `app_constants.dart:89` but unused. | `lib/core/services/community_service.dart`; `app_constants.dart:89` | Same impact as P1-6. |
 
@@ -593,11 +632,15 @@ This section is the single source of truth for "is the Flutter app actually usin
 | **P2-2** | Doctor specializations list mismatch between registration and profile edit. Registration: 8 values incl. "Ophthalmologist", "Dentist". Edit: 10 values incl. "Ophthalmology", "General Practice". A doctor registered as "Dentist" cannot find that value in the edit dropdown. | `register_doctor_screen.dart:36-45` vs `edit_doctor_profile_screen.dart:43-54` | Data inconsistency. |
 | **P2-3** | No doctor-facing "My Schedule" screen. Only clinics can edit doctor schedules via `ManageScheduleScreen` (itself a stub — P1-1). Doctors have no UI to set their own availability. | No screen exists in `lib/features/doctor/screens/` | Doctors cannot manage their own calendar. |
 | **P2-4** | Doctor's `associatedClinics` is always an empty list in the UI. `doctor_profile_screen.dart:120-128` displays the list, but there's no UI to populate it from the doctor's side. Clinic side links via QR/registration, but the doctor's profile never reflects the link. | `lib/features/doctor/screens/doctor_profile_screen.dart:120-128` | Display-only data, never populated. |
-| **P2-5** | `EditClinicProfileScreen` missing fields. No operating hours, no photo gallery (only logo), no specialty tags. **Split scope, verified 2026-06-01:** (a) Operating hours — the `Clinic` entity has `OpeningTime` and `ClosingTime` (TimeSpan?, `Clinic.cs:50-52`) but they are **NOT** in `UpdateClinicDto` or `CreateClinicDto`. This is a backend gap. (b) Photo gallery and specialty tags — `Clinic` entity has neither; UI work needed. | `lib/features/clinic/screens/edit_clinic_profile_screen.dart:24-65` (Flutter form); `DTOs/Clinic/ClinicDtos.cs` (backend DTO — missing operating hours); `Models/Entities/Clinic.cs:50-52` (entity has them) | Clinic can't populate fields the design shows. Operating hours requires backend DTO change first. |
+| **P2-5** | `EditClinicProfileScreen` missing fields. No operating hours, no photo gallery (only logo), no specialty tags. **Split scope:** (a) ✅ **Backend closed 2026-06-03** — `CreateClinicDto`, `UpdateClinicDto`, and `ClinicDto` now have `OpeningTime` / `ClosingTime` (`TimeSpan?`); `ClinicService` persists them on create and update. (b) Photo gallery and specialty tags — `Clinic` entity has neither; UI work needed. | `lib/features/clinic/screens/edit_clinic_profile_screen.dart:24-65` (Flutter form) | Clinic can't populate fields the design shows. Operating hours backend done — Flutter form fields needed. |
 | **P2-6** | Clinic registration has dummy data: areas list is `['Area 1', 'Area 2', 'Area 3']`. Form doesn't capture full street address or email. | `register_clinic_screen.dart:49-53` (areas), 55-88 (form fields) | Onboarding gap. |
 | **P2-7** | Voice mic icon on Patient Home has no handler. `patient_home_screen.dart:238` shows `Icons.mic` with no `onTap`. Figma shows voice search; `speech_to_text` is not in `pubspec.yaml`. | `lib/features/patient/home/patient_home_screen.dart:238`; `pubspec.yaml` (no `speech_to_text`) | User taps it expecting voice input, nothing happens. **Out of scope** per F2 design — see §0. |
-| **P2-8** | Notification delete — no backend endpoint AND no UI. Both layers are missing. | `app_constants.dart` (no `DELETE /api/notification/{id}`); no delete button in `notifications_screen.dart` | Backend gap. Add endpoint, then wire up UI. |
+| **P2-8** | Notification delete — no UI button. Backend endpoint shipped 2026-06-03 (`DELETE /api/notification/{id}` — owner-only delete). | `notifications_screen.dart` (no delete button) | Backend done. Add delete UI in Flutter. |
 | **P2-9** | Notification tap marks as read but does not deep-link to the related entity (appointment, post, etc.). | `lib/features/patient/notifications/notifications_screen.dart` (onTap handler) | Notifications are read-only markers. |
+| **P2-10** | Patient `chronicDiseases` not captured in edit form. `PatientProfile` model has it (line 43), backend accepts it. `edit_patient_profile_screen.dart` has controllers for bloodType and allergies but no chronic diseases field. | `lib/features/patient/profile/edit_patient_profile_screen.dart` | Health data gap — patient can't record chronic conditions. |
+| **P2-11** | Patient `dateOfBirth` not captured. Model has `dateOfBirth` (`DateTime?`), backend accepts it. Edit screen only has an age text field (line 273) — no date picker for actual DOB. | `lib/features/patient/profile/edit_patient_profile_screen.dart:273` | Age text field is a proxy; DOB is the canonical field. |
+| **P2-12** | Family member `medicalHistory`/`allergies`/`chronicDiseases` not captured. `FamilyMember` model has all three (lines 41-43). `add_family_member_screen.dart` only captures name, relation, age, gender, bloodType. | `lib/features/patient/profile/add_family_member_screen.dart` | Health data gap for family members. |
+| **P2-13** | Notification `type`/`relatedId` ignored for deep-linking. Model has both fields (lines 7-8, 17). `notifications_screen.dart` onTap handler never reads them — can't route to related entity. | `lib/core/models/shared_models.dart:7-8`; `lib/features/patient/notifications/notifications_screen.dart` | Deep-linking data exists but is discarded. |
 
 ### 9.5 P3 — Polish
 
@@ -612,23 +655,25 @@ This section is the single source of truth for "is the Flutter app actually usin
 | **P3-7** | Patient profile: blood type, allergies, chronic diseases are stored but not surfaced in a dedicated view — only in the edit form. | `lib/features/patient/profile/patient_profile_screen.dart` (no display fields); `edit_patient_profile_screen.dart` (form fields) | Display gap. |
 | **P3-8** | Clinic payments: timeframe filter works (week / month / year) but no custom date range, no CSV/PDF export. | `lib/features/clinic/screens/payments_screen.dart` | Reporting gap. |
 | **P3-9** | Booking flow doesn't show "you booked for a family member" preview at the doctor-detail step — only on the confirmation. Causes "wrong patient" mistakes. | `lib/features/patient/appointments/book_appointment_screen.dart` | Minor UX. |
+| **P3-10** | Clinic `linkMap` is a dead field. `ClinicProfile` model has it (Google Maps URL string, line 9). Never displayed in profile view, never captured in edit form. | `lib/core/models/clinic_models.dart:9` | Dead field — either wire it or remove it. |
+| **P3-11** | Edit patient profile silent mock fallback. `edit_patient_profile_screen.dart:71-79` falls back to `_mockProfile()` on API failure. Same fake-success anti-pattern as P0 stubs (though save path is real). | `lib/features/patient/profile/edit_patient_profile_screen.dart:71-79` | Silent mock data on load failure. |
 
 ### 9.6 Coupled cross-team items
 
 These touch both Flutter and backend; assign to backend first, then Flutter:
 
 1. **Clinic lat/lng capture (P0-1)** — Backend **closed 2026-06-01** (`UpdateClinicDto:98-99`, `ClinicService.UpdateClinicProfileAsync:183-184` both accept and persist). Flutter: add lat/lng fields to `EditClinicProfileScreen` and `RegisterClinicScreen`, use a "Use my location" button (`geolocator` package — not yet in `pubspec.yaml`).
-2. **Favorite list endpoint (P1-5)** — Backend: confirm `GET /api/patient/favorites` exists, or add it (currently no definition in `app_constants.dart`). Flutter: implement `getFavorites()` in `PatientService` (replaces the `throw UnsupportedError`), wire toggle from both screens.
-3. **Notification delete (P2-8)** — Backend: add `DELETE /api/notification/{id}`. Flutter: add delete UI.
+2. **Favorite list endpoint (P1-5)** — Backend **closed 2026-06-03** (`GET /api/patient/favorites` returns `DoctorListItemDto[]`). Flutter: implement `getFavorites()` in `PatientService` (replaces the `throw UnsupportedError`), wire toggle from both screens.
+3. **Notification delete (P2-8)** — Backend **closed 2026-06-03** (`DELETE /api/notification/{id}` — owner-only delete). Flutter: add delete UI.
 
 ### 9.7 Recommended fix order
 
 1. **P0 batch (1-2 days):** Wire the three TODO stubs to their existing service methods (P0-2 Medical History, P0-3 Submit Review, P0-4 Add Family Member). Add lat/lng fields to clinic edit/register screens (P0-1) — backend already supports this.
 2. **P1 batch (2-3 days):** Replace the three clinic schedule stubs (P1-1 Manage Schedule, P1-2 hardcoded detail schedule, P1-3 list-vs-detail endpoint) with real GET/POST calls. Add per-doctor edit (P1-4). Wire the two `onFavoriteToggle: () {}` handlers (P1-5). Add community post/comment delete UI (P1-6, P1-7).
-3. **P2 batch (2-3 days):** Add doctor email to registration (P2-1). Reconcile specialization lists (P2-2). Add `My Schedule` for doctors (P2-3). Populate `associatedClinics` (P2-4). Add photo gallery + specialty tags to clinic edit (P2-5 Flutter part). Add operating hours to `UpdateClinicDto`/`CreateClinicDto` then UI (P2-5 backend part — new finding). Fix clinic registration dummy areas + missing address/email (P2-6). Add notification deep-link (P2-9) and delete (P2-8 — backend first).
-4. **P3 batch (1-2 days, opportunistic):** Polish items, address during next feature pass.
+3. **P2 batch (2-3 days):** Add doctor email to registration (P2-1). Reconcile specialization lists (P2-2). Add `My Schedule` for doctors (P2-3). Populate `associatedClinics` (P2-4). Add operating hours, photo gallery + specialty tags to clinic edit (P2-5 Flutter part — backend ready). Fix clinic registration dummy areas + missing address/email (P2-6). Add notification deep-link (P2-9) and delete UI (P2-8 — backend ready). Add `chronicDiseases` field to patient edit (P2-10). Add `dateOfBirth` date picker replacing age text (P2-11). Add `medicalHistory`/`allergies`/`chronicDiseases` to family member add (P2-12). Wire notification `type`/`relatedId` for deep-linking (P2-13).
+4. **P3 batch (1-2 days, opportunistic):** Polish items — community search/live filter, mock fallback logging, family member edit, review edit/delete, health data display, payment export, booking family member preview. Clean up or wire `linkMap` (P3-10). Fix edit patient profile mock fallback (P3-11).
 
-**Estimated total: 6-10 dev days** to close all in-scope findings.
+**Estimated total: 8-12 dev days** to close all in-scope findings (was 6-10 before the code scan surfaced 11 additional forgotten fields in §9.9).
 
 ### 9.8 Out of audit (deferred)
 
@@ -642,3 +687,36 @@ These touch both Flutter and backend; assign to backend first, then Flutter:
 - A11y for the medical history table (column widths, row tap targets)
 
 These are out of scope for this audit; flag separately if they become priorities.
+
+---
+
+## 9.9 New Findings — Code Scan 2026-06-03
+
+> Method: Direct code inspection of form screens (`edit_*_profile_screen.dart`, `register_*_screen.dart`, `add_family_member_screen.dart`), view screens (`*_profile_screen.dart`), models (`clinic_models.dart`, `user_models.dart`, `shared_models.dart`), and service layer (`patient_service.dart`, `core/services/*.dart`). Cross-referenced against backend DTOs and `app_constants.dart`.
+> Scope: In-scope only. Focus on "forgotten fields" — model/backend support exists but UI completely ignores them.
+
+This scan surfaced **11 additional items** beyond the original 29 in §9.1. All are Flutter-only; the backend already supports every field listed below.
+
+### Forgotten Fields Summary
+
+| # | Entity | Field | In Model? | In Backend? | In UI? | Severity |
+|---|--------|-------|-----------|-------------|--------|----------|
+| 1 | Clinic | `latitude` / `longitude` | ✅ | ✅ | ❌ | **P0** (already tracked as P0-1) |
+| 2 | Clinic | `openingTime` / `closingTime` | ❌ (model not updated) | ✅ (2026-06-03) | ❌ | P2 (already tracked as P2-5) |
+| 3 | Clinic | `address` (registration) | ✅ | ✅ | ❌ (only govt + area) | P2 (already tracked as P2-6) |
+| 4 | Clinic | `email` (registration) | ✅ | ✅ | ❌ | P2 (already tracked as P2-6) |
+| 5 | Clinic | `linkMap` | ✅ | ✅ | ❌ (never used) | P3 (**new** — P3-10) |
+| 6 | Patient | `chronicDiseases` | ✅ | ✅ | ❌ | P2 (**new** — P2-10) |
+| 7 | Patient | `dateOfBirth` | ✅ | ✅ | ❌ (only age text) | P2 (**new** — P2-11) |
+| 8 | Family | `medicalHistory` | ✅ | ✅ | ❌ | P2 (**new** — P2-12) |
+| 9 | Family | `allergies` | ✅ | ✅ | ❌ | P2 (**new** — P2-12) |
+| 10 | Family | `chronicDiseases` | ✅ | ✅ | ❌ | P2 (**new** — P2-12) |
+| 11 | Notification | `type` / `relatedId` | ✅ | ✅ | ❌ (not used) | P2 (**new** — P2-13) |
+| 12 | Patient (edit) | mock fallback on load | N/A | N/A | ❌ | P3 (**new** — P3-11) |
+
+### Key Patterns Identified
+
+1. **Model bloat with no UI** — Several models have fields that are never rendered or captured. The backend supports them, but the Flutter screens were built without awareness of the full model.
+2. **Registration screens are thinner than edit screens** — All three registration screens (patient, doctor, clinic) capture fewer fields than their corresponding edit screens. This creates onboarding gaps where users can't set data at signup that they can edit later.
+3. **Mock fallback anti-pattern** — `edit_patient_profile_screen.dart` uses the same silent-mock-data pattern as the P0 stubs (falling back to `_mockProfile()` on API failure). Less severe since the save path is real, but same UX risk: user shows fake data without knowing it.
+4. **Dual service architecture** — `core/services/` has mock-heavy services with `useMockDataFallback`, while `features/*/services/` has clean real-API services. Inconsistent usage means some screens silently degrade to mock data while others properly show errors.

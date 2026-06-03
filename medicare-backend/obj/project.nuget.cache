@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "mUmN1Sk0Rk0=",
+  "dgSpecHash": "+QnvuEgM2oo=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\MedicalApp.API.csproj",
+  "projectFilePath": "c:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\MedicalApp.API.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Zowail\\.nuget\\packages\\automapper\\13.0.1\\automapper.13.0.1.nupkg.sha512",
     "C:\\Users\\Zowail\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
@@ -93,9 +93,9 @@
       "code": "NU1903",
       "level": "Warning",
       "message": "Package 'AutoMapper' 13.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-rvv3-g6hj-g44x",
-      "projectPath": "C:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\MedicalApp.API.csproj",
+      "projectPath": "c:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\MedicalApp.API.csproj",
       "warningLevel": 1,
-      "filePath": "C:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\MedicalApp.API.csproj",
+      "filePath": "c:\\Users\\Zowail\\StudioProjects\\medicare\\medicare-backend\\MedicalApp.API.csproj",
       "libraryId": "AutoMapper",
       "targetGraphs": [
         "net8.0"
