@@ -6,7 +6,6 @@ class ClinicProfile {
   final String? government;
   final String? area;
   final String? address;
-  final String? linkMap;
   final String? phoneNumber;
   final String? email;
   final String? logoUrl;
@@ -26,7 +25,6 @@ class ClinicProfile {
     this.government,
     this.area,
     this.address,
-    this.linkMap,
     this.phoneNumber,
     this.email,
     this.logoUrl,
@@ -48,7 +46,6 @@ class ClinicProfile {
       government: json['government'],
       area: json['area'],
       address: json['address'],
-      linkMap: json['linkMap'],
       phoneNumber: json['phoneNumber'],
       email: json['email'],
       logoUrl: json['logoUrl'],
@@ -71,7 +68,6 @@ class ClinicProfile {
       'government': government,
       'area': area,
       'address': address,
-      'linkMap': linkMap,
       'phoneNumber': phoneNumber,
       'email': email,
       'logoUrl': logoUrl,

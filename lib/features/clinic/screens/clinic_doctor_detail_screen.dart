@@ -179,13 +179,25 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
           if (!_isLoading && _error == null)
             PopupMenuButton<String>(
               onSelected: (value) {
-                if (value == 'edit') {
+                if (value == 'fees') {
+                  _showEditFeeStatusDialog();
+                } else if (value == 'edit') {
                   context.push('${AppRoutes.clinicManageSchedule}/${widget.doctorId}');
                 } else if (value == 'remove') {
                   _removeDoctor();
                 }
               },
               itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'fees',
+                  child: Row(
+                    children: [
+                      Icon(Icons.attach_money, size: 20),
+                      SizedBox(width: 12),
+                      Text('Edit Fee & Status'),
+                    ],
+                  ),
+                ),
                 const PopupMenuItem(
                   value: 'edit',
                   child: Row(

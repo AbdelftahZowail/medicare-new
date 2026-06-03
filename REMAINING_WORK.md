@@ -1,9 +1,10 @@
 # Remaining Work — Medicare App
 
-> Generated: 2026-06-03  
+> Generated: 2026-06-03 (updated 2026-06-03)  
 > Source: `OVERALL_STATUS_REPORT.md` + `medicare-backend/CHANGELOG.md` 2026-06-03  
 > Status: Backend fully closed ✅ — all remaining items are Flutter or visual  
 > **Organization: grouped by work phase** (not priority). Each phase minimizes context switching.
+> **Batching strategy:** Phases 1–4+5 were one-shotted successfully. Remaining phases are split below based on file locality and mental model cohesion.
 
 ---
 
@@ -58,7 +59,8 @@
 
 > **Goal:** Touch each clinic file once and fix every issue in it.  
 > **Est. time:** ~4-5 hours  
-> **Prerequisites:** Phase 1 (model updates)
+> **Prerequisites:** Phase 1 (model updates)  
+> **Status:** ✅ Completed 2026-06-03
 
 - [x] **Edit Clinic Profile** — add `latitude`, `longitude`, `openingTime`, `closingTime`, `photoGallery`, `specialtyTags` to form + save payload  
   Added: lat/lng fields + "Use My Current Location" button (geolocator), opening/closing time fields.  
@@ -68,87 +70,66 @@
   Added: address, email, lat/lng fields + "Use My Current Location" button (geolocator), opening/closing time fields.  
   *File: `lib/features/auth/screens/register_clinic_screen.dart` — Done 2026-06-03*
 
-- [ ] **Clinic Profile View** — surface all new fields (lat/lng, hours, address, email)  
-  Currently shows: name, facilityId, description, doctorsCount, government, area, address, phone, email.  
-  *File: `lib/features/clinic/screens/clinic_profile_screen.dart`
+- [x] **Clinic Profile View** — surface all new fields (lat/lng, hours, address, email)  
+  Added Location Coordinates and Operating Hours sections to display `latitude`, `longitude`, `openingTime`, `closingTime`.  
+  *File: `lib/features/clinic/screens/clinic_profile_screen.dart` — Done 2026-06-03*
 
-- [ ] **Decide on `linkMap`** — either wire it (display + capture) or remove it from the model  
-  Currently a dead field: model has it, backend accepts it, UI completely ignores it.  
-  *File: `lib/core/models/clinic_models.dart:9`
+- [x] **Decide on `linkMap`** — removed from the model (dead field, no UI or backend consumer)  
+  *File: `lib/core/models/clinic_models.dart` — Done 2026-06-03*
 
-- [ ] **Update `ClinicService.updateClinicProfile`** — ensure all new fields are sent in the payload  
-  *File: `lib/features/clinic/clinic_service.dart:79-89`
+- [x] **Update `ClinicService.updateClinicProfile`** — ensure all new fields are sent in the payload  
+  Verified: `EditClinicProfileScreen` already builds the full payload map with all fields; service method passes it through unchanged.  
+  *File: `lib/features/clinic/clinic_service.dart:79-89` — Done 2026-06-03*
 
-- [ ] **Add operating hours to `ClinicProfile` model deserialization** — Phase 1 adds the fields, this wires them in the view  
-  *File: `lib/core/models/clinic_models.dart:38-57`
+- [x] **Add operating hours to `ClinicProfile` model deserialization** — Phase 1 adds the fields, this wires them in the view  
+  `ClinicProfile.fromJson` already reads `openingTime`/`closingTime` (lines 58–59). View now surfaces them.  
+  *File: `lib/core/models/clinic_models.dart:38-57` — Done 2026-06-03*
 
 ---
 
-## Phase 4: Patient & Family (health data)
+## Phase 4+5: Patient, Family & Clinic Doctor Management
 
-> **Goal:** Complete the health data capture and display loop.  
-> **Est. time:** ~3 hours  
-> **Prerequisites:** None
+> **Goal:** Two small phases merged — health data capture/display + clinic doctor fee/status management. Both are small (~4–5 hours total) and have no cross-dependencies.  
+> **Est. time:** ~4-5 hours  
+> **Prerequisites:** None  
+> **Status:** ✅ Completed 2026-06-03
 
-- [ ] **Edit Patient Profile** — add `chronicDiseases` field, replace age text with `dateOfBirth` date picker  
-  Currently: bloodType and allergies captured, chronicDiseases missing. Age text field instead of DOB date picker.  
+### Patient & Family (health data)
+
+- [x] **Edit Patient Profile** — add `chronicDiseases` field, replace age text with `dateOfBirth` date picker  
+  Added `_chronicDiseasesController`, `_dateOfBirth` state, date picker, chronic diseases multi-line field. Removed age text field.  
   *File: `lib/features/patient/profile/edit_patient_profile_screen.dart`
 
-- [ ] **Fix edit patient profile mock fallback** — remove `_mockProfile()` fallback on API failure  
-  Same fake-success anti-pattern as P0 stubs (though save path is real).  
-  *File: `lib/features/patient/profile/edit_patient_profile_screen.dart:71-79`
+- [x] **Fix edit patient profile mock fallback** — remove `_mockProfile()` fallback on API failure  
+  Replaced try/catch fallback with proper error snackbar. Removed `_mockProfile()` method entirely.  
+  *File: `lib/features/patient/profile/edit_patient_profile_screen.dart`
 
-- [ ] **Patient Profile View** — surface `bloodType`, `allergies`, `chronicDiseases` in read-only section  
-  Currently only shows: name, email, phone. Health data is completely hidden.  
+- [x] **Patient Profile View** — surface `bloodType`, `allergies`, `chronicDiseases` in read-only section  
+  Added `_HealthCard` widgets between profile header and menu items. Shows blood type, allergies, chronic diseases when present.  
   *File: `lib/features/patient/profile/patient_profile_screen.dart`
 
-- [ ] **Family Members List** — add edit button + route (or make add screen reusable for edit)  
-  Currently: delete + re-add is the only way to update.  
-  *File: `lib/features/patient/profile/family_members_screen.dart`
+- [x] **Family Members List** — add edit button + route (or make add screen reusable for edit)  
+  Added edit `IconButton` on each family member card. Made `AddFamilyMemberScreen` accept optional `FamilyMember` for editing. Pre-populates all fields on edit. Save deletes old member then re-adds.  
+  *Files: `family_members_screen.dart`, `add_family_member_screen.dart`, `app_router.dart`
+
+### Clinic Doctor Management (remaining from Phase 5)
+
+- [x] **Per-doctor fee/status edit** — build dialog/screen calling `PUT /api/clinic/doctors/{id}`  
+  `ClinicService.updateClinicDoctor()` already existed. `_showEditFeeStatusDialog()` already existed in `clinic_doctor_detail_screen.dart`. Added "Edit Fee & Status" option to the PopupMenuButton to trigger the dialog.  
+  *File: `lib/features/clinic/screens/clinic_doctor_detail_screen.dart`
+
+- [x] **Doctor "My Schedule" screen** — build screen for doctors to set their own availability  
+  `ManageScheduleScreen` (clinic-facing) was already functional with real API calls. `AppRoutes.doctorSchedule` already routed to it. Doctor dashboard already had "Manage My Schedule" button. Added same button to doctor profile screen for discoverability.  
+  *Files: `doctor_dashboard_screen.dart` (existing button), `doctor_profile_screen.dart` (added button)
 
 ---
 
-## Phase 5: Doctor & Schedule (clinic management flow)
+## Phase 6A: Social Content (favorites + community)
 
-> **Goal:** Fix everything related to clinic managing doctors. Stay in clinic/doctor screens.  
-> **Est. time:** ~6-8 hours  
-> **Prerequisites:** Phase 1 (shared specialization list)
-
-- [x] **Register Doctor** — add `email` field  
-  Added email field to `RegisterDoctorRequest` model and `RegisterDoctorScreen` form.  
-  *File: `lib/features/auth/screens/register_doctor_screen.dart` — Done 2026-06-03*
-
-- [x] **Fix specialization lists** — both registration and edit now pull from shared list (Phase 1)  
-  Already completed in Phase 1.  
-  *Files: `register_doctor_screen.dart` + `edit_doctor_profile_screen.dart` — Done 2026-06-03*
-
-- [x] **Manage Schedule** — wire to `GET /api/doctor/{id}/schedules` and real save  
-  Fetches real schedules on init, allows editing `slotDurationMinutes` and `maxPatients` per slot, sends actual values.  
-  *File: `lib/features/clinic/screens/manage_schedule_screen.dart` — Done 2026-06-03*
-
-- [x] **Clinic Doctor Detail** — switch to detail endpoint `GET /api/clinic/doctors/{id}`  
-  Now uses `getClinicDoctorDetail` endpoint. Displays all fields: degree, university, bio, languages, board cert, experience, graduation year.  
-  *File: `lib/features/clinic/screens/clinic_doctor_detail_screen.dart` — Done 2026-06-03*
-
-- [x] **Clinic Doctor Detail schedule** — wire schedule section to real data instead of hardcoded "09:00-05:00"  
-  Now fetches real schedules via `getDoctorSchedules` and displays actual time slots per day.  
-  *File: `lib/features/clinic/screens/clinic_doctor_detail_screen.dart` — Done 2026-06-03*
-
-- [ ] **Per-doctor fee/status edit** — build dialog/screen calling `PUT /api/clinic/doctors/{id}`  
-  Endpoint exists in `app_constants.dart:54`. Never called from any screen.  
-  *File: `lib/features/clinic/clinic_service.dart` (add method) + new UI
-
-- [ ] **Doctor "My Schedule" screen** — build screen for doctors to set their own availability  
-  Currently only clinics can manage doctor schedules.  
-  *New file: `lib/features/doctor/screens/doctor_schedule_screen.dart`
-
----
-
-## Phase 6: Social Features (favorites + community + notifications)
-
-> **Goal:** Wire all social interaction features. Same patterns throughout (toggle, API call, refresh).  
-> **Est. time:** ~4-5 hours  
-> **Prerequisites:** Phase 1 (getFavorites fix)
+> **Goal:** Wire social interactions that share the same mental model (toggle, API call, refresh).  
+> **Est. time:** ~3 hours  
+> **Prerequisites:** Phase 1 (getFavorites fix)  
+> **Can be one-shotted:** ✅ Yes — all in patient-facing social content domain.
 
 - [ ] **Wire favorite toggle on Browse Doctors** — call `POST /api/patient/favorite/{doctorId}` instead of `() {}`  
   *File: `lib/features/patient/browse_doctors/browse_doctors_screen.dart:134`
@@ -172,6 +153,15 @@
 - [ ] **Fetch specializations dynamically** — currently hardcoded 7 items  
   *File: `lib/features/patient/community/community_feed_screen.dart:27-35`
 
+---
+
+## Phase 6B: Notifications (deep-link + delete)
+
+> **Goal:** Notification-specific features. Separate from 6A because they touch routing infrastructure, not social content APIs.  
+> **Est. time:** ~1 hour  
+> **Prerequisites:** None  
+> **Can be one-shotted:** ✅ Yes — 1–2 files only.
+
 - [ ] **Notification delete UI** — add swipe/button calling `DELETE /api/notification/{id}`  
   Backend endpoint shipped 2026-06-03.  
   *File: `lib/features/patient/notifications/notifications_screen.dart`
@@ -182,21 +172,29 @@
 
 ---
 
-## Phase 7: Map & Design (parallelizable)
+## Phase 7A: Map / Nearby Screen
 
-> **Goal:** Build the Nearby/Map screen and apply visual polish. Can be done in parallel or after everything else.  
-> **Est. time:** ~10-14 hours (map 6-8h, design 4-6h)  
-> **Prerequisites:** Phase 3 (clinic lat/lng capture)
+> **Goal:** Build the Nearby/Map screen — a standalone major feature.  
+> **Est. time:** ~6-8 hours  
+> **Prerequisites:** Phase 3 (clinic lat/lng capture)  
+> **Can be one-shotted:** ⚠️ Maybe — it's a single new screen + router change, but involves package integration (`google_maps_flutter` or `flutter_map`), geolocation, and API calls. Consider splitting if unfamiliar with Flutter map packages.
 
-### Map
 - [ ] **Build Nearby/Map screen** — integrate `google_maps_flutter` or `flutter_map`, call nearby endpoints  
   Backend has `GET /api/clinic/nearby` and `GET /api/doctor/nearby` (public).  
-  *New file: `lib/features/patient/nearby/nearby_screen.dart` + `pubspec.yaml` (add `geolocator`, map package)
+  *New file: `lib/features/patient/nearby/nearby_screen.dart` + `pubspec.yaml` (add `geolocator`, map package)*
 
 - [ ] **Fix bottom nav index 3** — currently routes to Browse Doctors, should route to Nearby  
   *File: `lib/core/navigation/app_router.dart`
 
-### Design
+---
+
+## Phase 7B: Design Polish Pass
+
+> **Goal:** Visual-only improvements. Figma alignment, layout rebuilds, component styling. No API work.  
+> **Est. time:** ~4-6 hours  
+> **Prerequisites:** None  
+> **Can be one-shotted:** ✅ Yes — all visual/UI, no logic dependencies between items.
+
 - [ ] **Rebuild Doctor Profile (rich layout)** — add experience/patients stats row, education/certification cards, inline calendar with day names, available slots grid  
   *File: `lib/features/patient/doctor_profile_screen.dart`
 
@@ -237,16 +235,18 @@
 
 ## Summary
 
-| Phase | Focus | Items | Est. Time | Prerequisites |
-|-------|-------|-------|-----------|-------------|
-| **1** | Foundation (models, shared lists) | 4 | ~2 hrs | None |
-| **2** | Data-loss stubs | 4 | ~3-4 hrs | None |
-| **3** | Clinic profile complete | 6 | ~4-5 hrs | Phase 1 |
-| **4** | Patient & family | 4 | ~3 hrs | None |
-| **5** | Doctor & schedule | 7 | ~6-8 hrs | Phase 1 |
-| **6** | Social features | 9 | ~4-5 hrs | Phase 1 |
-| **7** | Map & design | 6 | ~10-14 hrs | Phase 3 |
-| **Cross** | Opportunistic | 6 | — | Any |
-| **Total** | | **41** | **~32-41 hrs** (~4-5 dev days) | |
+| Phase | Focus | Items | Est. Time | One-Shot? | Prerequisites |
+|-------|-------|-------|-----------|-----------|-------------|
+| **1** | Foundation (models, shared lists) | 4 | ~2 hrs | ✅ | None |
+| **2** | Data-loss stubs | 4 | ~3-4 hrs | ✅ | None |
+| **3** | Clinic profile complete | 6 | ~4-5 hrs | ✅ | Phase 1 |
+| **4+5** | Patient, Family & Clinic Doctor Mgmt | 6 | ~4-5 hrs | ✅ | None |
+| **6A** | Social Content (favorites + community) | 7 | ~3 hrs | ✅ | Phase 1 |
+| **6B** | Notifications (delete + deep-link) | 2 | ~1 hr | ✅ | None |
+| **7A** | Map / Nearby screen | 2 | ~6-8 hrs | ⚠️ Maybe | Phase 3 |
+| **7B** | Design polish pass | 4 | ~4-6 hrs | ✅ | None |
+| **Cross** | Opportunistic | 6 | — | ✅ | Any |
+| **Total** | | **41** | **~27-34 hrs** (~3.5-4.5 dev days) | | |
 
-**Key principle:** Each phase minimizes context switching. Open a file once, fix every issue in it, move on.
+**Key principle:** Each phase minimizes context switching. Open a file once, fix every issue in it, move on.  
+**Batching rule:** If all items in a phase touch ≤5 files and share the same mental model (e.g., all API wiring, all visual polish), one-shot it. If a phase mixes a major new feature with visual tweaks, split them.

@@ -1,0 +1,1 @@
+when starting subagents or explorers, do NOT do their job for them, wait when it finishes or do something unrelated in the mean time instead

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../bloc/auth_bloc.dart';
 import '../constants/app_constants.dart';
 import '../models/appointment_models.dart';
+import '../models/shared_models.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_button.dart';
@@ -255,7 +256,10 @@ class AppRouter {
         ),
         GoRoute(
           path: AppRoutes.patientAddFamilyMember,
-          builder: (context, state) => const AddFamilyMemberScreen(),
+          builder: (context, state) {
+            final member = state.extra as FamilyMember?;
+            return AddFamilyMemberScreen(existingMember: member);
+          },
         ),
         GoRoute(
           path: AppRoutes.patientFavorites,
@@ -326,7 +330,8 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.doctorSchedule,
           builder: (context, state) {
-            final doctorId = state.extra?['doctorId'] ?? 0;
+            final extra = state.extra as Map<String, dynamic>?;
+            final doctorId = extra?['doctorId'] ?? 0;
             return ManageScheduleScreen(doctorId: doctorId);
           },
         ),

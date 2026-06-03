@@ -130,7 +130,35 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                         _profile?.phoneNumber ?? '',
                         style: AppTextStyles.bodySmall,
                       ),
-                      const SizedBox(height: 24),
+                      // Health Info Section
+                      if (_profile?.bloodType != null ||
+                          _profile?.allergies != null ||
+                          _profile?.chronicDiseases != null) ...[
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Text('Health Information', style: AppTextStyles.heading3),
+                        ),
+                        const SizedBox(height: 12),
+                        if (_profile?.bloodType != null)
+                          _HealthCard(
+                            icon: Icons.bloodtype,
+                            title: 'Blood Type',
+                            value: _profile!.bloodType!,
+                          ),
+                        if (_profile?.allergies != null && _profile!.allergies!.isNotEmpty)
+                          _HealthCard(
+                            icon: Icons.warning_amber_rounded,
+                            title: 'Allergies',
+                            value: _profile!.allergies!,
+                          ),
+                        if (_profile?.chronicDiseases != null && _profile!.chronicDiseases!.isNotEmpty)
+                          _HealthCard(
+                            icon: Icons.medical_services_outlined,
+                            title: 'Chronic Diseases',
+                            value: _profile!.chronicDiseases!,
+                          ),
+                        const SizedBox(height: 24),
+                      ],
 
                       // Add Family Member Button
                       AppButton(
@@ -228,6 +256,53 @@ class _MenuItem extends StatelessWidget {
             const Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 20),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _HealthCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+
+  const _HealthCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: 40,
+            width: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primary50,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary)),
+              const SizedBox(height: 2),
+              Text(value, style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ],
       ),
     );
   }

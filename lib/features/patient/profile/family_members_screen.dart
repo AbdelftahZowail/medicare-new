@@ -106,6 +106,10 @@ class _FamilyMembersScreenState extends State<FamilyMembersScreen> {
                           final member = _members[index];
                           return _FamilyMemberCard(
                             member: member,
+                            onEdit: () => context.push(
+                              AppRoutes.patientAddFamilyMember,
+                              extra: member,
+                            ),
                             onDelete: () => _deleteMember(member),
                           );
                         },
@@ -122,10 +126,12 @@ class _FamilyMembersScreenState extends State<FamilyMembersScreen> {
 
 class _FamilyMemberCard extends StatelessWidget {
   final FamilyMember member;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _FamilyMemberCard({
     required this.member,
+    required this.onEdit,
     required this.onDelete,
   });
 
@@ -191,6 +197,10 @@ class _FamilyMemberCard extends StatelessWidget {
                 ],
               ],
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+            onPressed: onEdit,
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline, color: AppColors.error),

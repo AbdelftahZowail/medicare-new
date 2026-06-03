@@ -29,6 +29,7 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
   final _addressController = TextEditingController();
   final _bloodTypeController = TextEditingController();
   final _allergiesController = TextEditingController();
+  final _chronicDiseasesController = TextEditingController();
   final _emergencyNameController = TextEditingController();
   final _emergencyPhoneController = TextEditingController();
 
@@ -36,6 +37,7 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
   bool _saving = false;
   bool _isUploading = false;
   int? _selectedGender;
+  DateTime? _dateOfBirth;
   PatientProfile? _profile;
   String? _profileImageUrl;
 
@@ -54,6 +56,7 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
     _addressController.dispose();
     _bloodTypeController.dispose();
     _allergiesController.dispose();
+    _chronicDiseasesController.dispose();
     _emergencyNameController.dispose();
     _emergencyPhoneController.dispose();
     super.dispose();
@@ -70,12 +73,10 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      final profile = _mockProfile();
-      _populateFields(profile);
-      setState(() {
-        _profile = profile;
-        _loading = false;
-      });
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load profile: $e')),
+      );
     }
   }
 
@@ -83,32 +84,15 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
     _nameController.text = profile.fullName;
     _phoneController.text = profile.phoneNumber;
     _emailController.text = profile.email ?? '';
-    _ageController.text = profile.age?.toString() ?? '';
     _addressController.text = profile.address ?? '';
     _bloodTypeController.text = profile.bloodType ?? '';
     _allergiesController.text = profile.allergies ?? '';
+    _chronicDiseasesController.text = profile.chronicDiseases ?? '';
     _emergencyNameController.text = profile.emergencyContactName ?? '';
     _emergencyPhoneController.text = profile.emergencyContactPhone ?? '';
     _selectedGender = profile.gender;
+    _dateOfBirth = profile.dateOfBirth;
     _profileImageUrl = profile.profileImageUrl;
-  }
-
-  PatientProfile _mockProfile() {
-    return PatientProfile(
-      id: 1,
-      userId: 1,
-      fullName: 'John Doe',
-      phoneNumber: '+20 123 456 7890',
-      email: 'john.doe@example.com',
-      gender: 0,
-      age: 32,
-      profileImageUrl: null,
-      address: '123 Main St, Cairo',
-      bloodType: 'O+',
-      allergies: 'None',
-      emergencyContactName: 'Jane Doe',
-      emergencyContactPhone: '+20 123 456 7891',
-    );
   }
 
   Future<void> _pickAndUploadPhoto() async {
@@ -152,6 +136,20 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
     }
   }
 
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dateOfBirth ?? DateTime(now.year - 30),
+      firstDate: DateTime(1900),
+      lastDate: now,
+      helpText: 'Select Date of Birth',
+    );
+    if (picked != null) {
+      setState(() => _dateOfBirth = picked);
+    }
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -164,10 +162,11 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
       phoneNumber: _phoneController.text.trim(),
       email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
       gender: _selectedGender,
-      age: int.tryParse(_ageController.text.trim()),
+      dateOfBirth: _dateOfBirth,
       address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
       bloodType: _bloodTypeController.text.trim().isEmpty ? null : _bloodTypeController.text.trim(),
       allergies: _allergiesController.text.trim().isEmpty ? null : _allergiesController.text.trim(),
+      chronicDiseases: _chronicDiseasesController.text.trim().isEmpty ? null : _chronicDiseasesController.text.trim(),
       emergencyContactName: _emergencyNameController.text.trim().isEmpty ? null : _emergencyNameController.text.trim(),
       emergencyContactPhone: _emergencyPhoneController.text.trim().isEmpty ? null : _emergencyPhoneController.text.trim(),
       profileImageUrl: _profileImageUrl,
@@ -268,10 +267,39 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 16),
-                      AppTextField(
-                        label: 'Age',
-                        controller: _ageController,
-                        keyboardType: TextInputType.number,
+                      // Date of Birth
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text('Date of Birth', style: AppTextStyles.labelLarge),
+                      ),
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: _pickDate,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_today, color: AppColors.textTertiary, size: 20),
+                              const SizedBox(width: 12),
+                              Text(
+                                _dateOfBirth != null
+                                    ? '${_dateOfBirth!.day}/${_dateOfBirth!.month}/${_dateOfBirth!.year}'
+                                    : 'Select date of birth',
+                                style: AppTextStyles.bodyLarge.copyWith(
+                                  color: _dateOfBirth != null
+                                      ? AppColors.textPrimary
+                                      : AppColors.textTertiary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 16),
 
@@ -338,6 +366,13 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
                         label: 'Allergies',
                         controller: _allergiesController,
                         maxLines: 2,
+                      ),
+                      const SizedBox(height: 16),
+                      AppTextField(
+                        label: 'Chronic Diseases',
+                        controller: _chronicDiseasesController,
+                        maxLines: 2,
+                        hint: 'e.g. Diabetes, Hypertension',
                       ),
                       const SizedBox(height: 16),
                       AppTextField(

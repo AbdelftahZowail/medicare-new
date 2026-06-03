@@ -74,6 +74,10 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
     final logoUrl = _profileData?['logoUrl'] as String?;
     final doctorsCount = _profileData?['doctorsCount'] ?? 0;
     final isActive = _profileData?['isActive'] ?? false;
+    final latitude = _profileData?['latitude'] as double?;
+    final longitude = _profileData?['longitude'] as double?;
+    final openingTime = _profileData?['openingTime'] as String?;
+    final closingTime = _profileData?['closingTime'] as String?;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -134,6 +138,26 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
                                 _InfoItem(icon: Icons.phone, label: 'Phone', value: phoneNumber),
                               if (email != null)
                                 _InfoItem(icon: Icons.email, label: 'Email', value: email),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          _buildInfoSection(
+                            title: 'Location Coordinates',
+                            items: [
+                              if (latitude != null)
+                                _InfoItem(icon: Icons.explore, label: 'Latitude', value: latitude.toString()),
+                              if (longitude != null)
+                                _InfoItem(icon: Icons.explore, label: 'Longitude', value: longitude.toString()),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          _buildInfoSection(
+                            title: 'Operating Hours',
+                            items: [
+                              if (openingTime != null)
+                                _InfoItem(icon: Icons.access_time, label: 'Opening Time', value: openingTime),
+                              if (closingTime != null)
+                                _InfoItem(icon: Icons.access_time_filled, label: 'Closing Time', value: closingTime),
                             ],
                           ),
                           const SizedBox(height: 24),

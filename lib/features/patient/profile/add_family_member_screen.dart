@@ -10,7 +10,9 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 
 class AddFamilyMemberScreen extends StatefulWidget {
-  const AddFamilyMemberScreen({super.key});
+  final FamilyMember? existingMember;
+
+  const AddFamilyMemberScreen({super.key, this.existingMember});
 
   @override
   State<AddFamilyMemberScreen> createState() => _AddFamilyMemberScreenState();
@@ -29,6 +31,8 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
   int? _selectedRelation;
   int? _selectedGender;
 
+  bool get _isEditing => widget.existingMember != null;
+
   final List<Map<String, dynamic>> _relations = [
     {'value': AppEnums.parent, 'label': 'Parent'},
     {'value': AppEnums.child, 'label': 'Child'},
@@ -36,6 +40,22 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     {'value': AppEnums.sibling, 'label': 'Sibling'},
     {'value': AppEnums.other, 'label': 'Other'},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final member = widget.existingMember;
+    if (member != null) {
+      _nameController.text = member.name;
+      _ageController.text = member.age?.toString() ?? '';
+      _bloodTypeController.text = member.bloodType ?? '';
+      _medicalHistoryController.text = member.medicalHistory ?? '';
+      _allergiesController.text = member.allergies ?? '';
+      _chronicDiseasesController.text = member.chronicDiseases ?? '';
+      _selectedRelation = member.relation;
+      _selectedGender = member.gender;
+    }
+  }
 
   @override
   void dispose() {
@@ -61,8 +81,8 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
 
     try {
       final member = FamilyMember(
-        id: 0,
-        patientId: 0,
+        id: widget.existingMember?.id ?? 0,
+        patientId: widget.existingMember?.patientId ?? 0,
         name: _nameController.text.trim(),
         relation: _selectedRelation!,
         age: int.tryParse(_ageController.text.trim()),
@@ -81,18 +101,24 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
             : _chronicDiseasesController.text.trim(),
       );
 
-      await PatientService().addFamilyMember(member);
+      final service = PatientService();
+      if (_isEditing && widget.existingMember!.id > 0) {
+        await service.removeFamilyMember(widget.existingMember!.id);
+      }
+      await service.addFamilyMember(member);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Family member added successfully')),
+        SnackBar(content: Text(_isEditing
+            ? 'Family member updated successfully'
+            : 'Family member added successfully')),
       );
       context.pop();
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add family member: ${e.toString()}')),
+        SnackBar(content: Text('Failed to save family member: ${e.toString()}')),
       );
     }
   }
@@ -102,7 +128,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Add Family Member'),
+        title: Text(_isEditing ? 'Edit Family Member' : 'Add Family Member'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => context.pop(),
@@ -236,7 +262,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
                 const SizedBox(height: 24),
 
                 AppButton(
-                  text: 'Save',
+                  text: _isEditing ? 'Update' : 'Save',
                   isLoading: _saving,
                   onPressed: _saveMember,
                 ),

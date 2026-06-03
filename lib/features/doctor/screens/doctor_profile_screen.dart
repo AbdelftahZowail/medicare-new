@@ -163,6 +163,32 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                     height: 52,
                     width: double.infinity,
                     child: OutlinedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final prof = await _service.getProfile();
+                          if (mounted) {
+                            context.push(
+                              AppRoutes.doctorSchedule,
+                              extra: {'doctorId': prof.id},
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $e')),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.edit_calendar, size: 18),
+                      label: const Text('Manage My Schedule'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 52,
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
                       onPressed: () => context.push(AppRoutes.doctorQrCode),
                       icon: const Icon(Icons.qr_code, size: 18),
                       label: const Text('View QR Code'),
