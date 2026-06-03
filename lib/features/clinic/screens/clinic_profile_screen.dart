@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/bloc/auth_bloc.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -58,6 +60,30 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
       case 3:
         context.go(AppRoutes.clinicProfile);
         break;
+    }
+  }
+
+  Future<void> _showLogoutDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      context.read<AuthBloc>().add(AuthLogoutRequested());
     }
   }
 
@@ -168,6 +194,20 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
                               onPressed: () => context.push(AppRoutes.clinicEditProfile),
                               icon: const Icon(Icons.edit),
                               label: const Text('Edit Profile'),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 52,
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _showLogoutDialog,
+                              icon: const Icon(Icons.logout, size: 18),
+                              label: const Text('Logout'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.error,
+                                side: const BorderSide(color: AppColors.error),
+                              ),
                             ),
                           ),
                         ],

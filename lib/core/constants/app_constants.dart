@@ -47,6 +47,10 @@ class ApiEndpoints {
   // Clinic (public)
   static const String clinics = '$apiBase/clinic';
   static String clinicDetail(int id) => '$apiBase/clinic/$id';
+  static String nearbyClinics(double lat, double lng, {double radiusKm = 10}) =>
+      '$apiBase/clinic/nearby?lat=$lat&lng=$lng&radiusKm=$radiusKm';
+  static String nearbyDoctors(double lat, double lng, {double radiusKm = 10}) =>
+      '$apiBase/doctor/nearby?lat=$lat&lng=$lng&radiusKm=$radiusKm';
 
   // Clinic (authenticated)
   static const String clinicProfile = '$apiBase/clinic/profile';
@@ -139,6 +143,7 @@ class AppRoutes {
   static const String patientFavorites = '/patient/favorites';
   static const String patientNotifications = '/patient/notifications';
   static const String patientSubmitReview = '/patient/submit-review';
+  static const String patientNearby = '/patient/nearby';
 
   // Doctor
   static const String doctorDashboard = '/doctor/dashboard';

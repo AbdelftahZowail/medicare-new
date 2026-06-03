@@ -19,6 +19,7 @@ class AppointmentService {
       if (kDebugMode) debugPrint('bookAppointment failed: $e');
       if (!useMockDataFallback) rethrow;
     }
+    debugPrint('⚠️ MOCK FALLBACK: AppointmentService.bookAppointment returning mock data');
     return _mockAppointment(request.doctorId);
   }
 
@@ -37,6 +38,7 @@ class AppointmentService {
       if (kDebugMode) debugPrint('getPatientAppointments failed: $e');
       if (!useMockDataFallback) rethrow;
     }
+    debugPrint('⚠️ MOCK FALLBACK: AppointmentService.getPatientAppointments returning mock data');
     return _mockAppointments;
   }
 
@@ -51,6 +53,7 @@ class AppointmentService {
       if (kDebugMode) debugPrint('getAppointmentDetail failed: $e');
       if (!useMockDataFallback) rethrow;
     }
+    debugPrint('⚠️ MOCK FALLBACK: AppointmentService.getAppointmentDetail returning mock data');
     return _mockAppointments.firstWhere((a) => a.id == id, orElse: () => _mockAppointments.first);
   }
 

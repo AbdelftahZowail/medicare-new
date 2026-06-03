@@ -21,6 +21,7 @@ class PatientService {
       if (kDebugMode) debugPrint('getProfile failed: $e');
       if (!useMockDataFallback) rethrow;
     }
+    debugPrint('⚠️ MOCK FALLBACK: PatientService.getProfile returning mock data');
     return _mockProfile;
   }
 
@@ -52,6 +53,7 @@ class PatientService {
       if (kDebugMode) debugPrint('getFamilyMembers failed: $e');
       if (!useMockDataFallback) rethrow;
     }
+    debugPrint('⚠️ MOCK FALLBACK: PatientService.getFamilyMembers returning mock data');
     return _mockFamilyMembers;
   }
 
@@ -94,6 +96,7 @@ class PatientService {
       if (kDebugMode) debugPrint('getNotifications failed: $e');
       if (!useMockDataFallback) rethrow;
     }
+    debugPrint('⚠️ MOCK FALLBACK: PatientService.getNotifications returning mock data');
     return _mockNotifications;
   }
 
@@ -123,6 +126,7 @@ class PatientService {
       if (kDebugMode) debugPrint('getFavorites failed: $e');
       if (!useMockDataFallback) rethrow;
     }
+    debugPrint('⚠️ MOCK FALLBACK: PatientService.getFavorites returning mock data');
     return _mockFavorites;
   }
 

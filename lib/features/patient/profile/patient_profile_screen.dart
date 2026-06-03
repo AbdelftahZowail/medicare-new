@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/bloc/auth_bloc.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/user_models.dart';
 import '../../../core/theme/app_colors.dart';
@@ -65,6 +67,30 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       case 4:
         // Already on profile
         break;
+    }
+  }
+
+  Future<void> _showLogoutDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      context.read<AuthBloc>().add(AuthLogoutRequested());
     }
   }
 
@@ -201,6 +227,20 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                             applicationLegalese: 'Your trusted healthcare companion.',
                           );
                         },
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 52,
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _showLogoutDialog,
+                          icon: const Icon(Icons.logout, size: 18),
+                          label: const Text('Logout'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                            side: const BorderSide(color: AppColors.error),
+                          ),
+                        ),
                       ),
                     ],
                   ),

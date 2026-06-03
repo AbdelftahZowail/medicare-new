@@ -224,17 +224,17 @@ class _TodayAppointmentsCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              _StatChip(label: 'New Visit', value: newPatients, color: AppColors.primary50),
+              _StatChip(label: 'New Visit', value: newPatients, color: AppColors.primary50, icon: Icons.person_add_alt_1),
               const SizedBox(width: 8),
-              _StatChip(label: 'Follow Up', value: followUps, color: AppColors.successBg),
+              _StatChip(label: 'Follow Up', value: followUps, color: AppColors.successBg, icon: Icons.repeat),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              _StatChip(label: 'Walk-in', value: walkIns, color: AppColors.warningBg),
+              _StatChip(label: 'Walk-in', value: walkIns, color: AppColors.warningBg, icon: Icons.directions_walk),
               const SizedBox(width: 8),
-              _StatChip(label: 'Online', value: online, color: AppColors.infoBg),
+              _StatChip(label: 'Online', value: online, color: AppColors.infoBg, icon: Icons.videocam_outlined),
             ],
           ),
         ],
@@ -247,21 +247,24 @@ class _StatChip extends StatelessWidget {
   final String label;
   final int value;
   final Color color;
+  final IconData icon;
 
-  const _StatChip({required this.label, required this.value, required this.color});
+  const _StatChip({required this.label, required this.value, required this.color, required this.icon});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+        padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Icon(icon, size: 18, color: AppColors.primary),
+            const SizedBox(height: 8),
             Text(
               value.toString(),
               style: AppTextStyles.heading4.copyWith(color: AppColors.primaryDark),

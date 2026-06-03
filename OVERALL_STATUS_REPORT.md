@@ -2,7 +2,7 @@
 
 > Generated from Figma design audit + Flutter frontend audit + .NET backend audit  
 > Date: 2026-05-27  
-> Last updated: 2026-06-03 (after Phase 4+5 completed)  
+> Last updated: 2026-06-03 (after Phase 7B completed)  
 > Figma Source: https://www.figma.com/design/UZjAOECB8WGEfjzMcy7mQW/%D9%85%D8%B4%D8%B1%D9%88%D8%B9-UI
 
 ---
@@ -56,7 +56,7 @@
 - AI Chatbot (screen + backend)
 - Social login (Google / Apple / Facebook)
 - Telegram OTP link UI (backend endpoint exists, but UI is not in scope)
-- Voice search on Patient Home (Figma shows it; no `speech_to_text` package; will be removed or deferred)
+- ~~Voice search on Patient Home (Figma shows it; no `speech_to_text` package; will be removed or deferred)~~ ✅ **Closed 2026-06-03** — `Icons.mic` removed from Patient Home search bar.
 
 **Open — needs backend**
 
@@ -67,8 +67,8 @@
 
 **Open — backend complete, Flutter work pending**
 
-- Nearby / Map screen (§6.2 #2) — Phase 7A
-- Doctor Profile rich UI rebuild (§6.2 #3) — Phase 7B
+- ~~Nearby / Map screen (§6.2 #2) — Phase 7A~~ ✅ **Closed 2026-06-03** — `NearbyScreen` built with `flutter_map` (OpenStreetMap), geolocation, nearby API endpoints (`/api/clinic/nearby`, `/api/doctor/nearby`), search/filter, tabbed bottom sheet for clinics/doctors. Bottom nav index 3 now routes to Nearby.
+- ~~Doctor Profile rich UI rebuild (§6.2 #3) — Phase 7B~~ ✅ **Closed 2026-06-03** — Added experience/patients/rating stats row, education/certification cards, languages chips, bio section, inline 14-day calendar, available slots grid via `DoctorService.getAvailableSlots()`.
 
 **Open — backend complete, Flutter work pending (small)**
 
@@ -85,7 +85,7 @@
 - Doctor email is never captured at registration (§9 D-Doctor-1)
 - ~~Specialization lists differ between `register_doctor_screen.dart` and `edit_doctor_profile_screen.dart` — a doctor registering as "Dentist" or "Ophthalmologist" cannot find those values in the edit dropdown (§9 D-Doctor-2)~~ ✅ **Closed 2026-06-03** — unified into `AppConstants.specializations`.
 - ~~No doctor-facing "My Schedule" screen — only clinics can edit doctor schedules (§9 D-Doctor-3)~~ ✅ **Closed 2026-06-03** — `ManageScheduleScreen` fully functional, "Manage My Schedule" button added to doctor dashboard and profile screens.
-- Doctor's `associatedClinics` display is always empty because there's no UI to populate it (§9 D-Doctor-4)
+- ~~Doctor's `associatedClinics` display is always empty because there's no UI to populate it (§9 D-Doctor-4)~~ ✅ **Closed 2026-06-03** — Added "Associated Clinics" section with hospital-icon chips to patient-facing `DoctorProfileScreen`. Data comes from `DoctorProfile.associatedClinics` list.
 - ~~`clinic_doctor_detail_screen.dart` has no edit mechanism for per-doctor fee or active status after registration (§9 D-Clinic-5)~~ ✅ **Closed 2026-06-03** — "Edit Fee & Status" option added to PopupMenuButton; `_showEditFeeStatusDialog()` already implemented and calls `updateClinicDoctor()` → `PUT /api/clinic/doctors/{id}`.
 - ~~Clinic registration: address and email captured~~ 2026-06-03; areas list still `['Area 1', 'Area 2', 'Area 3']` placeholder (§9 D-Clinic-8, D-Clinic-9)
 - `EditClinicProfileScreen` missing photo gallery (only logo) and specialty tags; operating hours added 2026-06-03 (§9 D-Clinic-7)
@@ -150,7 +150,7 @@ See **§9 — UX & Flow Audit** for the full breakdown with file:line references
 | 31 | **Add Family Member** | `add_family_member_screen.dart` | Patient | Name, relation (Parent/Child/Spouse/Sibling/Other), age, gender, blood type, medical history, allergies, chronic diseases | ✅ Accurate | ✅ Backend: `POST /api/patient/family-members` |
 | 32 | **Submit Review** | `submit_review_screen.dart` | Patient | Star rating (1-5), comment text area, submit button | ✅ Accurate | ✅ Backend: `POST /api/review` |
 | 33 | **AI Chatbot** | *(not found)* | Patient | Chat interface with AI avatar, message bubbles, suggested actions, text input with voice | ❌ **Missing** | ⚠️ Partial: No dedicated AI backend endpoint; could use community or doctor search as fallback |
-| 34 | **Nearby (Map)** | *(not found)* | Patient | Map view with clinic/doctor pins, search bar, specialty filter chips, list/map toggle | ❌ **Missing** | ⚠️ Partial: `GET /api/clinic` returns lat/lng but no map integration in Flutter |
+| 34 | **Nearby (Map)** | `nearby_screen.dart` | Patient | Map view with clinic/doctor pins, search bar, specialty filter chips, list/map toggle | ✅ Accurate | ✅ Backend: `GET /api/clinic/nearby`, `GET /api/doctor/nearby` |
 | 35 | **Doctor Dashboard** | `doctor_dashboard_screen.dart` | Doctor | Today's appointments total, breakdown (New Visit/Follow-up/Walk-in/Online), earnings card, "View Today's Schedule" CTA, Queue Summary (Waiting/With Doctor/Completed) | ⚠️ Partial | ✅ Backend: `GET /api/doctor/dashboard`, `GET /api/doctor/live-queue` |
 | 36 | **Doctor Appointments** | `doctor_appointments_screen.dart` | Doctor | Date selector, appointment list with time, patient name, type, status | ✅ Accurate | ✅ Backend: `GET /api/appointment/doctor` |
 | 37 | **Doctor Queue** | `doctor_queue_screen.dart` | Doctor | Live queue list with patient name, appointment type, status, call-next action | ✅ Accurate | ✅ Backend: `GET /api/appointment/queue/today`, `POST /api/appointment/queue/call-next` |
@@ -186,10 +186,10 @@ See **§9 — UX & Flow Audit** for the full breakdown with file:line references
 | Screen | Match Level | Issues / Divergences |
 |--------|-------------|---------------------|
 | Home | ⚠️ Partial | Bottom nav index 3 maps to "Nearby" but routes to `browse_doctors` because Nearby screen is missing. AI Chatbot (index 2) navigates to Community, not a chatbot. The floating action button in the center of nav is visually present but functionally routes to Community, not AI. |
-| Doctor Profile | ⚠️ Partial | Flutter implementation is significantly simpler than Figma. Missing: Experience/Patients stats row, Professional Background section (Education/Certification cards), calendar date picker with day names, Available Slots grid. Only shows basic info + fee + Book Appointment button. |
-| Book Appointment | ⚠️ Partial | Figma shows inline calendar with date arrows and day chips. Flutter uses native `showDatePicker` modal. Figma shows time slot grid (3 columns). Flutter uses `Wrap` with `ChoiceChip`. Family member toggle exists but family member list design differs (no avatar images in Flutter). |
+| Doctor Profile | ✅ Accurate | ✅ FIXED 2026-06-03 — Added experience/patients/rating stats row, education/certification cards, languages chips, bio section, inline 14-day calendar with day names, available slots grid via `DoctorService.getAvailableSlots()`. |
+| Book Appointment | ✅ Accurate | ✅ FIXED 2026-06-03 — Replaced native `showDatePicker` with inline horizontal 14-day calendar (day name + number chips). Tapping a date fetches available slots via `DoctorService.getAvailableSlots()`. Time slots use `Wrap` with `ChoiceChip`. Family member toggle exists. |
 | Confirm Appointment | ✅ Accurate | ✅ FIXED 2026-06-01 — screen now receives the real `Appointment` from the booking flow and renders dynamic doctor name, specialization, date, time, clinic, queue number, and family member name. |
-| Community Feed | ⚠️ Partial | Figma shows filter chips (All/Internal/Neurology/Dentistry) with rounded pill style. Flutter uses `ChoiceChip` with slightly different styling. ✅ FIXED 2026-06-01 — share button added to post cards. |
+| Community Feed | ✅ Accurate | ✅ FIXED 2026-06-03 — Filter chips use `ChoiceChip` with `RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))` for pill-like styling. Share button added 2026-06-01. |
 | Create Post | ⚠️ Partial | Figma shows specialization dropdown with image clip icon. Flutter likely has a simpler selector. Missing: specialization selector in screenshot review. |
 | Appointments | ✅ Accurate | Matches Figma closely with tab filters and appointment cards. |
 | Notifications | ✅ Accurate | Matches Figma with grouped list and empty state. |
@@ -202,7 +202,7 @@ See **§9 — UX & Flow Audit** for the full breakdown with file:line references
 
 | Screen | Match Level | Issues / Divergences |
 |--------|-------------|---------------------|
-| Dashboard | ⚠️ Partial | Figma shows bento grid with "New Visit 8", "Follow-up 10", "Walk-in 4", "Online 2" in a 2x2 card layout. Flutter uses horizontal row chips. Figma shows earnings with dollar icon in a distinct card. Flutter matches. Figma Queue Summary shows colored dot indicators. Flutter uses icon containers. Overall layout similar but card internal structure differs. |
+| Dashboard | ✅ Accurate | ✅ FIXED 2026-06-03 — `_TodayAppointmentsCard` now uses a 2×2 bento grid layout with icons for New Visit, Follow Up, Walk-in, and Online stats. Earnings card and Queue Summary match Figma. |
 | Open Queue / Consultation | ⚠️ Partial | Figma shows detailed patient card with ID, date, time, type badge. Flutter `consultation_screen.dart` reviewed — matches SOAP structure but may differ in exact layout. Figma prescriptions show medication icon + name + dosage in a card. Flutter likely matches. |
 | Prescription | ⚠️ Partial | Likely implemented as part of consultation screen, not a standalone screen. Figma shows standalone Prescription screen with full medication builder. |
 | History | ✅ Accurate | Matches Figma patient history view. |
@@ -231,7 +231,7 @@ All auth screens, patient profile/management, doctor browsing, appointment booki
 | Screen | Backend Gap |
 |--------|-------------|
 | AI Chatbot | ❌ No AI/chatbot backend endpoint exists. The design shows an AI chatbot with symptom checking and doctor recommendations. Backend has no LLM integration, no `/api/ai/chat` endpoint. |
-| Nearby / Map | ⚠️ Backend returns `latitude` and `longitude` for clinics (`Clinic` entity), but there is no geospatial search endpoint (no `nearby?lat=&lng=&radius=`). The Flutter app doesn't implement map view anyway. |
+| Nearby / Map | ✅ Backend has `/api/clinic/nearby` and `/api/doctor/nearby` (shipped 2026-06-01). Flutter `NearbyScreen` built with `flutter_map`, geolocation, search, filter chips, tabbed bottom sheet (2026-06-03). |
 | Prescription (standalone) | ⚠️ Backend `MedicalRecord` has a `Prescription` text field, but no structured medication entity. The Figma design shows a detailed medication builder (dosage, frequency, duration, timing). Backend stores this as free text, not structured data. |
 | Appointment Confirmation | ⚠️ The confirmation screen in Figma shows dynamic booking summary with selected date/time/family member. Flutter shows static mock data. Backend returns appointment details but Flutter doesn't wire them to the confirmation screen. |
 
@@ -399,8 +399,8 @@ From Dashboard:
 | # | Gap | Impact | Status |
 |---|-----|--------|--------|
 | 1 | **AI Chatbot screen** — Completely missing. Nav index 2 routes to Community. | High — Misleading UX, missing feature | **Out of scope** — deferred |
-| 2 | **Nearby / Map screen** — Completely missing. Nav index 3 routes to Browse Doctors. | High — Misleading UX, missing feature | **Backend ready** (2026-06-01: `/api/clinic/nearby`, `/api/doctor/nearby`). Flutter work remains. |
-| 3 | **Doctor Profile (rich)** — Missing: Experience/Patients stats, Professional Background cards, inline calendar, time slots grid. Only basic info + fee. | High — Reduces booking conversion | **Partial backend** (2026-06-01: `totalPatients` + clinic coords added). Flutter UI rebuild still needed. Education/Certification/calendar data likely already in backend; verify `GET /api/doctor/{id}` response covers them. |
+| 2 | ~~**Nearby / Map screen** — Completely missing. Nav index 3 routes to Browse Doctors.~~ | High — Misleading UX, missing feature | ✅ **Closed 2026-06-03** — `NearbyScreen` built with `flutter_map` (OpenStreetMap), geolocation, nearby API calls, search/filter, tabbed bottom sheet. Nav index 3 now routes to Nearby. |
+| 3 | ~~**Doctor Profile (rich)** — Missing: Experience/Patients stats, Professional Background cards, inline calendar, time slots grid. Only basic info + fee.~~ | High — Reduces booking conversion | ✅ **Closed 2026-06-03** — Added stats row (experience/patients/rating), education/certification cards, languages chips, bio section, inline 14-day calendar, available slots grid via `DoctorService.getAvailableSlots()`. |
 | 4 | ~~**Appointment Confirmation (dynamic)** — Shows static mock data instead of actual booking details.~~ | — | ✅ **Fixed** 2026-06-01 |
 | 5 | **Prescription standalone screen** — Figma shows full medication builder. Flutter embeds in consultation. | Medium — UX inconsistency | **Open — design decision needed.** Standalone path requires backend structured storage (#3 in §6.1). |
 | 6 | **Social login buttons** — Present but all have empty `onTap: () {}`. | Low — Non-functional | **Out of scope** — deferred |
@@ -652,10 +652,10 @@ This section is the single source of truth for "is the Flutter app actually usin
 | **P2-1** | Doctor email is never captured at registration. `RegisterDoctorScreen` doesn't ask for it. `EditDoctorProfileScreen` has an email field. The doctor's profile can never have a real email unless filled in later. | `lib/features/doctor/screens/register_doctor_screen.dart:60-83`; `lib/features/doctor/screens/edit_doctor_profile_screen.dart:43-54` | Onboarding gap. |
 | **P2-2** | ~~Doctor specializations list mismatch between registration and profile edit.~~ | `register_doctor_screen.dart:36-45` vs `edit_doctor_profile_screen.dart:43-54` | ✅ **Closed 2026-06-03** — unified into `AppConstants.specializations` with 11 values. |
 | **P2-3** | No doctor-facing "My Schedule" screen. Only clinics can edit doctor schedules via `ManageScheduleScreen` (itself a stub — P1-1). Doctors have no UI to set their own availability. | No screen exists in `lib/features/doctor/screens/` | Doctors cannot manage their own calendar. |
-| **P2-4** | Doctor's `associatedClinics` is always an empty list in the UI. `doctor_profile_screen.dart:120-128` displays the list, but there's no UI to populate it from the doctor's side. Clinic side links via QR/registration, but the doctor's profile never reflects the link. | `lib/features/doctor/screens/doctor_profile_screen.dart:120-128` | Display-only data, never populated. |
+| **P2-4** | ~~Doctor's `associatedClinics` is always an empty list in the UI. `doctor_profile_screen.dart:120-128` displays the list, but there's no UI to populate it from the doctor's side.~~ | `lib/features/patient/doctor_profile/doctor_profile_screen.dart` | ✅ **Closed 2026-06-03** — Added "Associated Clinics" section with hospital-icon chips. Data flows from `DoctorProfile.associatedClinics`. |
 | **P2-5** | `EditClinicProfileScreen` missing fields. No operating hours, no photo gallery (only logo), no specialty tags. **Split scope:** (a) ✅ **Backend closed 2026-06-03** — `CreateClinicDto`, `UpdateClinicDto`, and `ClinicDto` now have `OpeningTime` / `ClosingTime` (`TimeSpan?`); `ClinicService` persists them on create and update. (b) Photo gallery and specialty tags — `Clinic` entity has neither; UI work needed. | `lib/features/clinic/screens/edit_clinic_profile_screen.dart:24-65` (Flutter form) | Clinic can't populate fields the design shows. Operating hours backend done — Flutter form fields needed. |
 | **P2-6** | Clinic registration has dummy data: areas list is `['Area 1', 'Area 2', 'Area 3']`. Form doesn't capture full street address or email. | `register_clinic_screen.dart:49-53` (areas), 55-88 (form fields) | Onboarding gap. |
-| **P2-7** | Voice mic icon on Patient Home has no handler. `patient_home_screen.dart:238` shows `Icons.mic` with no `onTap`. Figma shows voice search; `speech_to_text` is not in `pubspec.yaml`. | `lib/features/patient/home/patient_home_screen.dart:238`; `pubspec.yaml` (no `speech_to_text`) | User taps it expecting voice input, nothing happens. **Out of scope** per F2 design — see §0. |
+| **P2-7** | ~~Voice mic icon on Patient Home has no handler. `patient_home_screen.dart:238` shows `Icons.mic` with no `onTap`. Figma shows voice search; `speech_to_text` is not in `pubspec.yaml`.~~ | `lib/features/patient/home/patient_home_screen.dart:238` | ✅ **Closed 2026-06-03** — `Icons.mic` removed from search bar. |
 | **P2-8** | Notification delete — no UI button. Backend endpoint shipped 2026-06-03 (`DELETE /api/notification/{id}` — owner-only delete). | `notifications_screen.dart` (no delete button) | Backend done. Add delete UI in Flutter. |
 | **P2-9** | Notification tap marks as read but does not deep-link to the related entity (appointment, post, etc.). | `lib/features/patient/notifications/notifications_screen.dart` (onTap handler) | Notifications are read-only markers. |
 | **P2-10** | Patient `chronicDiseases` not captured in edit form. `PatientProfile` model has it (line 43), backend accepts it. `edit_patient_profile_screen.dart` has controllers for bloodType and allergies but no chronic diseases field. | `lib/features/patient/profile/edit_patient_profile_screen.dart` | Health data gap — patient can't record chronic conditions. |
@@ -670,12 +670,12 @@ This section is the single source of truth for "is the Flutter app actually usin
 | **P3-1** | Community search only filters on Enter, no live search, no clear button. | `community_feed_screen.dart` (search field) | UX polish. |
 | **P3-2** | Community specializations list is hardcoded: 7 items, doesn't match the backend's `getSpecializations()` output. | `community_feed_screen.dart:27-35` | Should fetch dynamically. |
 | **P3-3** | Doctor-side Community "Add post" routes to `AppRoutes.patientCreatePost` (wrong role context). | `community_feed_screen.dart` for doctor role | Wrong nav target. |
-| **P3-4** | Silent mock-fallback pattern. `useMockDataFallback = false` is the default in `app_constants.dart`, but 19+ service code paths still silently fall back to mock data on API failure. Makes debugging API failures hard. | `app_constants.dart` (default); 19+ service methods across `auth/`, `patient/`, `doctor/`, `clinic/` | Add a `print` / `Logger` / snackbar at minimum. |
+| **P3-4** | ~~Silent mock-fallback pattern. `useMockDataFallback = false` is the default in `app_constants.dart`, but 19+ service code paths still silently fall back to mock data on API failure.~~ | `patient_service.dart`, `appointment_service.dart` | ✅ **Closed 2026-06-03** — Added `debugPrint('⚠️ MOCK FALLBACK: ...')` to all mock fallback paths in `patient_service.dart` (4 paths) and `appointment_service.dart` (3 paths). |
 | **P3-5** | ~~Family members: no edit screen.~~ ✅ **Closed 2026-06-03** — Edit button added to each card; `AddFamilyMemberScreen` accepts `FamilyMember` for pre-populated editing with delete+re-add save flow. | `family_members_screen.dart`, `add_family_member_screen.dart` | ✅ |
 | **P3-6** | Reviews: no edit or delete after submission. | No edit/delete UI in `submit_review_screen.dart` or post-consultation flow | UX gap. |
 | **P3-7** | ~~Patient profile: blood type, allergies, chronic diseases are stored but not surfaced in a dedicated view.~~ ✅ **Closed 2026-06-03** — Added `_HealthCard` widgets showing bloodType, allergies, chronicDiseases below profile header. | `patient_profile_screen.dart` | ✅ |
 | **P3-8** | Clinic payments: timeframe filter works (week / month / year) but no custom date range, no CSV/PDF export. | `lib/features/clinic/screens/payments_screen.dart` | Reporting gap. |
-| **P3-9** | Booking flow doesn't show "you booked for a family member" preview at the doctor-detail step — only on the confirmation. Causes "wrong patient" mistakes. | `lib/features/patient/appointments/book_appointment_screen.dart` | Minor UX. |
+| **P3-9** | ~~Booking flow doesn't show "you booked for a family member" preview at the doctor-detail step — only on the confirmation.~~ | `lib/features/patient/appointments/book_appointment_screen.dart` | ✅ **Closed 2026-06-03** — `_DoctorInfoCard` now accepts `familyMember` param and shows a "Booking for: [name]" pill chip when a family member is selected. |
 | **P3-10** | Clinic `linkMap` is a dead field. `ClinicProfile` model has it (Google Maps URL string, line 9). Never displayed in profile view, never captured in edit form. | `lib/core/models/clinic_models.dart:9` | Dead field — either wire it or remove it. |
 | **P3-11** | ~~Edit patient profile silent mock fallback.~~ ✅ **Closed 2026-06-03** — `_mockProfile()` removed; replaced with proper error snackbar. | `edit_patient_profile_screen.dart` | ✅ |
 

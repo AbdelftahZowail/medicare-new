@@ -52,8 +52,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         context.go(AppRoutes.patientCommunity);
         break;
       case 3:
-        // Nearby route isn't defined yet; keep user in browse doctors.
-        context.go(AppRoutes.patientBrowseDoctors);
+        context.go(AppRoutes.patientNearby);
         break;
       case 4:
         context.go(AppRoutes.patientProfile);
@@ -234,8 +233,7 @@ class _SearchBar extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          const Icon(Icons.mic, color: AppColors.primary),
+          // Voice search removed — no speech_to_text package available
         ],
       ),
     );

@@ -28,6 +28,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
   bool _loading = true;
   bool _booking = false;
+  bool _slotsLoading = false;
   DoctorProfile? _doctor;
   List<FamilyMember> _familyMembers = [];
 
@@ -36,7 +37,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   bool _forFamilyMember = false;
   FamilyMember? _selectedFamilyMember;
 
-  final List<String> _timeSlots = [];
+  List<AvailableSlot> _availableSlots = [];
 
   @override
   void initState() {
@@ -97,16 +98,28 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     }
   }
 
-  Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: now,
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 30)),
-    );
-    if (picked != null) {
-      setState(() => _selectedDate = picked);
+  Future<void> _loadSlots(DateTime date) async {
+    setState(() {
+      _slotsLoading = true;
+      _selectedDate = date;
+      _selectedTime = null;
+    });
+    try {
+      final slots = await _doctorService.getAvailableSlots(
+        doctorId: widget.doctorId,
+        date: date,
+      );
+      if (!mounted) return;
+      setState(() {
+        _availableSlots = slots.where((s) => s.isAvailable).toList();
+        _slotsLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _availableSlots = [];
+        _slotsLoading = false;
+      });
     }
   }
 
@@ -130,69 +143,123 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Doctor Info Summary
-                    _DoctorInfoCard(doctor: _doctor),
+                    _DoctorInfoCard(
+                      doctor: _doctor,
+                      familyMember: _forFamilyMember ? _selectedFamilyMember : null,
+                    ),
                     const SizedBox(height: 20),
 
-                    // Date Selection
+                    // Inline Calendar
                     Text('Select Date', style: AppTextStyles.heading3),
                     const SizedBox(height: 10),
-                    InkWell(
-                      onTap: _pickDate,
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.calendar_today, color: AppColors.primary, size: 20),
-                            const SizedBox(width: 12),
-                            Text(
-                              _selectedDate == null
-                                  ? 'Choose a date'
-                                  : DateFormat('EEEE, MMM d, yyyy').format(_selectedDate!),
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: _selectedDate == null ? AppColors.textTertiary : AppColors.textPrimary,
+                    SizedBox(
+                      height: 80,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: 14,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (context, index) {
+                          final date = DateTime.now().add(Duration(days: index));
+                          final isSelected = _selectedDate != null &&
+                              date.year == _selectedDate!.year &&
+                              date.month == _selectedDate!.month &&
+                              date.day == _selectedDate!.day;
+                          return GestureDetector(
+                            onTap: () => _loadSlots(date),
+                            child: Container(
+                              width: 60,
+                              padding: const EdgeInsets.fromLTRB(4, 10, 4, 10),
+                              decoration: BoxDecoration(
+                                color: isSelected ? AppColors.primary : AppColors.surface,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: isSelected ? AppColors.primary : AppColors.borderLight,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    DateFormat('EEE').format(date),
+                                    style: AppTextStyles.labelMedium.copyWith(
+                                      color: isSelected ? AppColors.textOnPrimary : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${date.day}',
+                                    style: AppTextStyles.heading3.copyWith(
+                                      color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const Spacer(),
-                            const Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 20),
-                          ],
-                        ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 20),
 
                     // Time Selection
-                    Text('Select Time', style: AppTextStyles.heading3),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: _timeSlots.map((time) {
-                        final isSelected = _selectedTime == time;
-                        return ChoiceChip(
-                          label: Text(time),
-                          selected: isSelected,
-                          onSelected: (_) => setState(() => _selectedTime = time),
-                          selectedColor: AppColors.primary,
-                          backgroundColor: AppColors.surface,
-                          labelStyle: AppTextStyles.labelMedium.copyWith(
-                            color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
+                    if (_selectedDate != null) ...[
+                      Row(
+                        children: [
+                          Text('Select Time', style: AppTextStyles.heading3),
+                          const Spacer(),
+                          if (_slotsLoading)
+                            const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      if (!_slotsLoading && _availableSlots.isEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.borderLight),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            side: BorderSide(
-                              color: isSelected ? AppColors.primary : AppColors.border,
+                          child: Center(
+                            child: Text(
+                              'No available slots for this date',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20),
+                        )
+                      else
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: _availableSlots.map((slot) {
+                            final isSelected = _selectedTime == slot.time;
+                            return ChoiceChip(
+                              label: Text(slot.time),
+                              selected: isSelected,
+                              onSelected: (_) => setState(() => _selectedTime = slot.time),
+                              selectedColor: AppColors.primary,
+                              backgroundColor: AppColors.surface,
+                              labelStyle: AppTextStyles.labelMedium.copyWith(
+                                color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: BorderSide(
+                                  color: isSelected ? AppColors.primary : AppColors.border,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      const SizedBox(height: 20),
+                    ],
 
                     // Family Member Toggle
                     if (_familyMembers.isNotEmpty) ...[
@@ -344,7 +411,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
 class _DoctorInfoCard extends StatelessWidget {
   final DoctorProfile? doctor;
-  const _DoctorInfoCard({required this.doctor});
+  final FamilyMember? familyMember;
+  const _DoctorInfoCard({required this.doctor, this.familyMember});
 
   @override
   Widget build(BuildContext context) {
@@ -399,6 +467,27 @@ class _DoctorInfoCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (familyMember != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(10, 4, 10, 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary50,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.family_restroom, size: 14, color: AppColors.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Booking for: ${familyMember!.name}',
+                          style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

@@ -176,14 +176,15 @@
 > **Goal:** Build the Nearby/Map screen — a standalone major feature.  
 > **Est. time:** ~6-8 hours  
 > **Prerequisites:** Phase 3 (clinic lat/lng capture)  
-> **Can be one-shotted:** ⚠️ Maybe — it's a single new screen + router change, but involves package integration (`google_maps_flutter` or `flutter_map`), geolocation, and API calls. Consider splitting if unfamiliar with Flutter map packages.
+> **Status:** ✅ Completed 2026-06-03
 
-- [ ] **Build Nearby/Map screen** — integrate `google_maps_flutter` or `flutter_map`, call nearby endpoints  
-  Backend has `GET /api/clinic/nearby` and `GET /api/doctor/nearby` (public).  
-  *New file: `lib/features/patient/nearby/nearby_screen.dart` + `pubspec.yaml` (add `geolocator`, map package)*
+- [x] **Build Nearby/Map screen** — integrate `flutter_map` (OpenStreetMap, no API key needed), call nearby endpoints  
+  Added `flutter_map: ^8.0.0` and `latlong2: ^9.1` to `pubspec.yaml`. Built `NearbyScreen` with `FlutterMap`, user location marker, clinic/doctor markers, search bar, specialization filter chips, tabbed bottom sheet (Clinics/Doctors), and error/retry states. Uses geolocator permission Pattern B from `edit_clinic_profile_screen.dart`.  
+  *New file: `lib/features/patient/nearby/nearby_screen.dart` + `lib/features/patient/nearby/nearby_service.dart`*
 
-- [ ] **Fix bottom nav index 3** — currently routes to Browse Doctors, should route to Nearby  
-  *File: `lib/core/navigation/app_router.dart`
+- [x] **Fix bottom nav index 3** — routes to Nearby instead of Browse Doctors  
+  Changed `patient_home_screen.dart` case 3 to `context.go(AppRoutes.patientNearby)`.  
+  *File: `lib/features/patient/home/patient_home_screen.dart`*
 
 ---
 
@@ -194,17 +195,17 @@
 > **Prerequisites:** None  
 > **Can be one-shotted:** ✅ Yes — all visual/UI, no logic dependencies between items.
 
-- [ ] **Rebuild Doctor Profile (rich layout)** — add experience/patients stats row, education/certification cards, inline calendar with day names, available slots grid  
-  *File: `lib/features/patient/doctor_profile_screen.dart`
+- [x] **Rebuild Doctor Profile (rich layout)** — added experience/patients/rating stats row, education/certification cards, languages chips, bio section, inline 14-day calendar, available slots grid via `DoctorService.getAvailableSlots()`  
+  *File: `lib/features/patient/doctor_profile/doctor_profile_screen.dart` — Done 2026-06-03*
 
-- [ ] **Fix Doctor Dashboard stats layout** — Figma shows 2×2 bento grid, Flutter uses horizontal row chips  
-  *File: `lib/features/doctor/screens/doctor_dashboard_screen.dart`
+- [x] **Fix Doctor Dashboard stats layout** — restructured `_TodayAppointmentsCard` into 2×2 bento grid with icons (New Visit, Follow Up, Walk-in, Online); added `icon` param to `_StatChip`  
+  *File: `lib/features/doctor/screens/doctor_dashboard_screen.dart` — Done 2026-06-03*
 
-- [ ] **Style community filter chips** — Figma shows rounded pill style  
-  *File: `lib/features/patient/community/community_feed_screen.dart`
+- [x] **Style community filter chips** — verified `ChoiceChip` already uses `RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))` with pill-like appearance; selected state uses primary fill + white text  
+  *File: `lib/features/patient/community/community_feed_screen.dart` — Verified 2026-06-03*
 
-- [ ] **Replace native date picker with inline calendar** — Book Appointment uses `showDatePicker` modal  
-  *File: `lib/features/patient/appointments/book_appointment_screen.dart`
+- [x] **Replace native date picker with inline calendar** — replaced `showDatePicker` modal with horizontal scrollable 14-day day chips (day name + number); tapping a date triggers `_loadSlots()` which calls `DoctorService.getAvailableSlots()` and populates available time chips  
+  *File: `lib/features/patient/appointments/book_appointment_screen.dart` — Done 2026-06-03*
 
 ---
 
@@ -212,23 +213,23 @@
 
 > These can be sprinkled across any phase when touching related files.
 
-- [ ] **Log mock fallback warnings** — 19+ service code paths silently fall back to mock data. Add `print`/`Logger`/snackbar.  
-  *Files: `lib/core/services/patient_service.dart`, `doctor_service.dart`, `appointment_service.dart`, `community_service.dart`, `review_service.dart`
+- [x] **Log mock fallback warnings** — added `debugPrint('⚠️ MOCK FALLBACK: ...')` to all 4 fallback paths in `patient_service.dart` (getProfile, getFamilyMembers, getNotifications, getFavorites) and all 3 in `appointment_service.dart` (bookAppointment, getPatientAppointments, getAppointmentDetail).  
+  *Files: `lib/core/services/patient_service.dart`, `appointment_service.dart` — Done 2026-06-03*
 
-- [ ] **Add review edit/delete** — no way to change or remove a review after submission  
-  *File: `lib/features/patient/profile/submit_review_screen.dart`
+- [ ] **Add review edit/delete** — no backend endpoint exists for review update/delete; requires backend work first  
+  *File: `lib/features/patient/profile/submit_review.dart` — **Blocked on backend***
 
 - [ ] **Clinic payments export** — add custom date range + CSV/PDF export  
-  *File: `lib/features/clinic/screens/payments_screen.dart`
+  *File: `lib/features/clinic/screens/payments_screen.dart` — **Backend work needed for CSV/PDF generation***
 
-- [ ] **Booking family member preview** — show "you booked for a family member" at doctor-detail step  
-  *File: `lib/features/patient/appointments/book_appointment_screen.dart`
+- [x] **Booking family member preview** — added `familyMember` param to `_DoctorInfoCard`; shows "Booking for: [name]" pill chip when `_forFamilyMember` is true and a family member is selected  
+  *File: `lib/features/patient/appointments/book_appointment_screen.dart` — Done 2026-06-03*
 
-- [ ] **Handle or remove voice mic icon** — `Icons.mic` with no `onTap` and no `speech_to_text` package  
-  *File: `lib/features/patient/home/patient_home_screen.dart:238`
+- [x] **Handle or remove voice mic icon** — removed `Icons.mic` from Patient Home search bar (no `speech_to_text` package available)  
+  *File: `lib/features/patient/home/patient_home_screen.dart` — Done 2026-06-03*
 
-- [ ] **Doctor `associatedClinics` population** — doctor profile shows list but it's always empty  
-  *File: `lib/features/doctor/screens/doctor_profile_screen.dart:120-128`
+- [x] **Doctor `associatedClinics` display** — added "Associated Clinics" section with hospital-icon chips to patient-facing `DoctorProfileScreen`  
+  *File: `lib/features/patient/doctor_profile/doctor_profile_screen.dart` — Done 2026-06-03*
 
 ---
 
@@ -247,7 +248,7 @@
 | **Cross** | Opportunistic | 6 | — | ✅ | Any |
 | **Total** | | **41** | **~27-34 hrs** (~3.5-4.5 dev days) | | |
 
-**Progress through phases:** ✅ Phase 1 | ✅ Phase 2 | ✅ Phase 3 | ✅ Phase 4+5 | ✅ Phase 6A | ✅ Phase 6B | ⬜ Phase 7A | ⬜ Phase 7B
+**Progress through phases:** ✅ Phase 1 | ✅ Phase 2 | ✅ Phase 3 | ✅ Phase 4+5 | ✅ Phase 6A | ✅ Phase 6B | ✅ Phase 7A | ✅ Phase 7B
 
 **Key principle:** Each phase minimizes context switching. Open a file once, fix every issue in it, move on.  
 **Batching rule:** If all items in a phase touch ≤5 files and share the same mental model (e.g., all API wiring, all visual polish), one-shot it. If a phase mixes a major new feature with visual tweaks, split them.

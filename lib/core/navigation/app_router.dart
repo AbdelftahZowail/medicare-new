@@ -26,6 +26,7 @@ import '../../features/auth/screens/reset_password_screen.dart';
 import '../../features/patient/browse_doctors/browse_doctors_screen.dart';
 import '../../features/patient/doctor_profile/doctor_profile_screen.dart';
 import '../../features/patient/home/patient_home_screen.dart';
+import '../../features/patient/nearby/nearby_screen.dart';
 import '../../features/patient/specializations/specializations_screen.dart';
 
 import '../../features/patient/appointments/book_appointment_screen.dart';
@@ -178,6 +179,10 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.patientBrowseDoctors,
           builder: (context, state) => const BrowseDoctorsScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.patientNearby,
+          builder: (context, state) => const NearbyScreen(),
         ),
         GoRoute(
           path: AppRoutes.patientDoctorProfile,
