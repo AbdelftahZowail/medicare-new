@@ -90,6 +90,7 @@ class RegisterPatientRequest {
 class RegisterDoctorRequest {
   final String name;
   final String phone;
+  final String? email;
   final String password;
   final String confirmPassword;
   final String specialization;
@@ -98,6 +99,7 @@ class RegisterDoctorRequest {
   RegisterDoctorRequest({
     required this.name,
     required this.phone,
+    this.email,
     required this.password,
     required this.confirmPassword,
     required this.specialization,
@@ -107,6 +109,7 @@ class RegisterDoctorRequest {
   Map<String, dynamic> toJson() => {
         'name': name,
         'phone': phone,
+        if (email != null) 'email': email,
         'password': password,
         'confirmPassword': confirmPassword,
         'specialization': specialization,
@@ -121,6 +124,12 @@ class RegisterClinicRequest {
   final String confirmPassword;
   final String? government;
   final String? area;
+  final String? address;
+  final String? email;
+  final double? latitude;
+  final double? longitude;
+  final String? openingTime;
+  final String? closingTime;
   final String? licenseFileUrl;
 
   RegisterClinicRequest({
@@ -130,6 +139,12 @@ class RegisterClinicRequest {
     required this.confirmPassword,
     this.government,
     this.area,
+    this.address,
+    this.email,
+    this.latitude,
+    this.longitude,
+    this.openingTime,
+    this.closingTime,
     this.licenseFileUrl,
   });
 
@@ -140,6 +155,12 @@ class RegisterClinicRequest {
         'confirmPassword': confirmPassword,
         if (government != null) 'government': government,
         if (area != null) 'area': area,
+        if (address != null) 'address': address,
+        if (email != null) 'email': email,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
+        if (openingTime != null) 'openingTime': openingTime,
+        if (closingTime != null) 'closingTime': closingTime,
         if (licenseFileUrl != null) 'licenseFileUrl': licenseFileUrl,
       };
 }

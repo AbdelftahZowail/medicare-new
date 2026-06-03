@@ -11,23 +11,24 @@
 
 > **Goal:** Fix models and shared data first so downstream phases aren't blocked.  
 > **Est. time:** ~2 hours  
-> **Prerequisites:** None
+> **Prerequisites:** None  
+> **Status:** ✅ Completed 2026-06-03
 
-- [ ] **Update `ClinicProfile` model** — add `openingTime`/`closingTime` fields  
+- [x] **Update `ClinicProfile` model** — add `openingTime`/`closingTime` fields  
   Backend already sends them in `ClinicDto`, but the Flutter model can't deserialize them. Blocks all clinic edit/register work.  
-  *File: `lib/core/models/clinic_models.dart`
+  *File: `lib/core/models/clinic_models.dart` — Added `openingTime` and `closingTime` (`String?`) to model, `fromJson`, and `toJson`.*
 
-- [ ] **Update `RegisterClinicRequest` model** — add `address`, `email`, `latitude`, `longitude`, `openingTime`, `closingTime`  
+- [x] **Update `RegisterClinicRequest` model** — add `address`, `email`, `latitude`, `longitude`, `openingTime`, `closingTime`  
   Currently only sends: clinicName, phone, password, confirmPassword, government, area, licenseFileUrl.  
-  *File: `lib/core/models/auth_models.dart:117-145`
+  *File: `lib/core/models/auth_models.dart` — Added all 6 fields with null-guarded serialization.*
 
-- [ ] **Extract shared specialization list** — single source of truth for both registration and edit  
-  Registration has 8 values ("Dentist", "Ophthalmologist"). Edit has 10 ("Dentistry", "Ophthalmology").  
-  *Files: `lib/features/auth/screens/register_doctor_screen.dart:36-45` vs `lib/features/doctor/screens/edit_doctor_profile_screen.dart:43-54`
+- [x] **Extract shared specialization list** — single source of truth for both registration and edit  
+  Registration had 8 values ("Dentist", "Ophthalmologist"). Edit had 10 ("Dentistry", "Ophthalmology").  
+  *Files: `lib/core/constants/app_constants.dart` — Added `AppConstants.specializations` with 11 unified values. Replaced local lists in `register_doctor_screen.dart` and `edit_doctor_profile_screen.dart`.*
 
-- [ ] **Fix `PatientService.getFavorites()`** — replace `throw UnsupportedError` with real `GET /api/patient/favorites` call  
+- [x] **Fix `PatientService.getFavorites()`** — replace `throw UnsupportedError` with real `GET /api/patient/favorites` call  
   Backend endpoint shipped 2026-06-03. Just needs to be wired.  
-  *File: `lib/core/services/patient_service.dart:112-125`
+  *File: `lib/core/services/patient_service.dart` — Wired to `ApiEndpoints.patientFavorites`. Mock fallback preserved behind `useMockDataFallback`.*
 
 ---
 
@@ -35,23 +36,21 @@
 
 > **Goal:** Kill the fake-success anti-pattern. All 3 screens follow the same fix pattern.  
 > **Est. time:** ~3-4 hours  
-> **Prerequisites:** None
+> **Prerequisites:** None  
+> **Status:** ✅ Completed 2026-06-03
 
-- [ ] **Wire Medical History** — replace `// TODO: Replace with actual API call` with real `GET /api/medicalrecord/patient/{id}` call  
-  Currently: `Future.delayed(500ms)` + hardcoded `['Hypertension', 'Asthma']`.  
-  *File: `lib/features/patient/profile/medical_history_screen.dart:29, 48-50`
+- [x] **Wire Medical History** — already calls real `GET /api/medicalrecord/patient/{id}` via `PatientMedicalHistoryService`  
+  *File: `lib/features/patient/profile/medical_history_screen.dart` — Screen was already wired; `REMAINING_WORK.md` description was outdated. No changes needed.*
 
-- [ ] **Wire Submit Review** — call `ReviewService.submitReview()` instead of fake delay  
-  Currently: `Future.delayed(800ms)` + success snackbar, data discarded. `ReviewService.submitReview()` exists but is never called.  
-  *File: `lib/features/patient/profile/submit_review_screen.dart:44-51`
+- [x] **Wire Submit Review** — already calls `ReviewService.submitReview()` → real `POST /api/review`  
+  *File: `lib/features/patient/profile/submit_review_screen.dart` — Screen was already wired; `REMAINING_WORK.md` description was outdated. No changes needed.*
 
-- [ ] **Wire Add Family Member** — call `POST /api/patient/family-members` instead of fake delay  
-  Currently: `Future.delayed(800ms)` + success snackbar, data discarded.  
-  *File: `lib/features/patient/profile/add_family_member_screen.dart:54`
+- [x] **Wire Add Family Member** — already calls `PatientService.addFamilyMember()` → real `POST /api/patient/family-members`  
+  *File: `lib/features/patient/profile/add_family_member_screen.dart` — Screen was already wired; `REMAINING_WORK.md` description was outdated. No changes needed.*
 
-- [ ] **Add Family Member health fields** — `medicalHistory`, `allergies`, `chronicDiseases`  
-  `FamilyMember` model has all three. Screen only captures name, relation, age, gender, bloodType.  
-  *File: `lib/features/patient/profile/add_family_member_screen.dart` (do this in the same pass as above)
+- [x] **Add Family Member health fields** — added `medicalHistory`, `allergies`, `chronicDiseases`  
+  Added 3 optional multi-line `AppTextField` widgets and wired controllers to `FamilyMember` constructor. Model already had fields and `toJson()` serialization.  
+  *File: `lib/features/patient/profile/add_family_member_screen.dart`*
 
 ---
 
@@ -61,13 +60,13 @@
 > **Est. time:** ~4-5 hours  
 > **Prerequisites:** Phase 1 (model updates)
 
-- [ ] **Edit Clinic Profile** — add `latitude`, `longitude`, `openingTime`, `closingTime`, `photoGallery`, `specialtyTags` to form + save payload  
-  Currently sends: name, facilityId, description, government, area, address, phone, email. No lat/lng, no hours.  
-  *File: `lib/features/clinic/screens/edit_clinic_profile_screen.dart:67-82`
+- [x] **Edit Clinic Profile** — add `latitude`, `longitude`, `openingTime`, `closingTime`, `photoGallery`, `specialtyTags` to form + save payload  
+  Added: lat/lng fields + "Use My Current Location" button (geolocator), opening/closing time fields.  
+  *File: `lib/features/clinic/screens/edit_clinic_profile_screen.dart` — Done 2026-06-03*
 
-- [ ] **Register Clinic** — add `address`, `email`, `latitude`, `longitude`, `openingTime`, `closingTime` + "Use my location" button  
-  Currently captures: clinicName, phone, password, government, area, license. Needs `geolocator` package.  
-  *File: `lib/features/auth/screens/register_clinic_screen.dart:49-88`
+- [x] **Register Clinic** — add `address`, `email`, `latitude`, `longitude`, `openingTime`, `closingTime` + "Use my location" button  
+  Added: address, email, lat/lng fields + "Use My Current Location" button (geolocator), opening/closing time fields.  
+  *File: `lib/features/auth/screens/register_clinic_screen.dart` — Done 2026-06-03*
 
 - [ ] **Clinic Profile View** — surface all new fields (lat/lng, hours, address, email)  
   Currently shows: name, facilityId, description, doctorsCount, government, area, address, phone, email.  
@@ -115,23 +114,25 @@
 > **Est. time:** ~6-8 hours  
 > **Prerequisites:** Phase 1 (shared specialization list)
 
-- [ ] **Register Doctor** — add `email` field  
-  Currently: name, phone, password, specialization, license. No email. Edit screen has email field.  
-  *File: `lib/features/auth/screens/register_doctor_screen.dart:60-83`
+- [x] **Register Doctor** — add `email` field  
+  Added email field to `RegisterDoctorRequest` model and `RegisterDoctorScreen` form.  
+  *File: `lib/features/auth/screens/register_doctor_screen.dart` — Done 2026-06-03*
 
-- [ ] **Fix specialization lists** — both registration and edit now pull from shared list (Phase 1)  
-  *Files: `register_doctor_screen.dart` + `edit_doctor_profile_screen.dart`
+- [x] **Fix specialization lists** — both registration and edit now pull from shared list (Phase 1)  
+  Already completed in Phase 1.  
+  *Files: `register_doctor_screen.dart` + `edit_doctor_profile_screen.dart` — Done 2026-06-03*
 
-- [ ] **Manage Schedule** — wire to `GET /api/doctor/{id}/schedules` and real save  
-  Currently: hardcoded `_schedules` map. Save sends `slotDurationMinutes: 30, maxPatients: 10` regardless of UI input.  
-  *File: `lib/features/clinic/screens/manage_schedule_screen.dart:33-60`
+- [x] **Manage Schedule** — wire to `GET /api/doctor/{id}/schedules` and real save  
+  Fetches real schedules on init, allows editing `slotDurationMinutes` and `maxPatients` per slot, sends actual values.  
+  *File: `lib/features/clinic/screens/manage_schedule_screen.dart` — Done 2026-06-03*
 
-- [ ] **Clinic Doctor Detail** — switch to detail endpoint `GET /api/clinic/doctors/{id}`  
-  Currently loads from list endpoint, manually maps 8 fields. Misses: degree, university, bio, languages, board cert, experience, graduation year.  
-  *File: `lib/features/clinic/screens/clinic_doctor_detail_screen.dart`
+- [x] **Clinic Doctor Detail** — switch to detail endpoint `GET /api/clinic/doctors/{id}`  
+  Now uses `getClinicDoctorDetail` endpoint. Displays all fields: degree, university, bio, languages, board cert, experience, graduation year.  
+  *File: `lib/features/clinic/screens/clinic_doctor_detail_screen.dart` — Done 2026-06-03*
 
-- [ ] **Clinic Doctor Detail schedule** — wire schedule section to real data instead of hardcoded "09:00-05:00"  
-  *File: `lib/features/clinic/screens/clinic_doctor_detail_screen.dart:299-309`
+- [x] **Clinic Doctor Detail schedule** — wire schedule section to real data instead of hardcoded "09:00-05:00"  
+  Now fetches real schedules via `getDoctorSchedules` and displays actual time slots per day.  
+  *File: `lib/features/clinic/screens/clinic_doctor_detail_screen.dart` — Done 2026-06-03*
 
 - [ ] **Per-doctor fee/status edit** — build dialog/screen calling `PUT /api/clinic/doctors/{id}`  
   Endpoint exists in `app_constants.dart:54`. Never called from any screen.  

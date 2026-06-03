@@ -13,6 +13,8 @@ class ClinicProfile {
   final String? licenseImageUrl;
   final double? latitude;
   final double? longitude;
+  final String? openingTime;
+  final String? closingTime;
   final bool isActive;
   final int doctorsCount;
 
@@ -31,6 +33,8 @@ class ClinicProfile {
     this.licenseImageUrl,
     this.latitude,
     this.longitude,
+    this.openingTime,
+    this.closingTime,
     required this.isActive,
     required this.doctorsCount,
   });
@@ -51,6 +55,8 @@ class ClinicProfile {
       licenseImageUrl: json['licenseImageUrl'],
       latitude: json['latitude']?.toDouble(),
       longitude: json['longitude']?.toDouble(),
+      openingTime: json['openingTime'],
+      closingTime: json['closingTime'],
       isActive: json['isActive'] ?? false,
       doctorsCount: json['doctorsCount'] ?? 0,
     );
@@ -72,6 +78,8 @@ class ClinicProfile {
       'licenseImageUrl': licenseImageUrl,
       'latitude': latitude,
       'longitude': longitude,
+      'openingTime': openingTime,
+      'closingTime': closingTime,
       'isActive': isActive,
       'doctorsCount': doctorsCount,
     };

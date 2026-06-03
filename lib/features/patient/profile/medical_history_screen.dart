@@ -3,8 +3,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/models/shared_models.dart';
+import '../../../core/models/user_models.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../services/patient_medical_history_service.dart';
+import '../services/patient_profile_service.dart';
 
 class MedicalHistoryScreen extends StatefulWidget {
   const MedicalHistoryScreen({super.key});
@@ -16,6 +20,10 @@ class MedicalHistoryScreen extends StatefulWidget {
 class _MedicalHistoryScreenState extends State<MedicalHistoryScreen> {
   bool _loading = true;
   List<MedicalRecord> _records = [];
+  List<String> _chronicConditions = [];
+
+  final _medicalService = PatientMedicalHistoryService();
+  final _profileService = PatientProfileService();
 
   @override
   void initState() {
@@ -26,27 +34,35 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen> {
   Future<void> _loadData() async {
     setState(() => _loading = true);
     try {
-      // TODO: Replace with actual API call
-      await Future.delayed(const Duration(milliseconds: 500));
+      final patientId = await AuthService().getProfileId();
+      if (patientId == null) {
+        throw Exception('Patient ID not found');
+      }
+
+      final records = await _medicalService.getMedicalRecords(patientId);
+      final profile = await _profileService.getProfile();
+
       if (!mounted) return;
+
+      final chronicDiseases = profile.chronicDiseases;
       setState(() {
-        _records = [];
+        _records = records;
+        _chronicConditions = chronicDiseases != null && chronicDiseases.isNotEmpty
+            ? chronicDiseases.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList()
+            : [];
         _loading = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _records = [];
+        _chronicConditions = [];
         _loading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to load medical history: ${e.toString()}')),
       );
     }
-  }
-
-  List<String> get _chronicConditions {
-    return ['Hypertension', 'Asthma'];
   }
 
   List<Medication> get _allMedications {
@@ -84,35 +100,53 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen> {
                       // Chronic Conditions
                       Text('Chronic Conditions', style: AppTextStyles.heading3),
                       const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _chronicConditions.map((condition) {
-                          return Chip(
-                            label: Text(condition),
-                            backgroundColor: AppColors.errorBg,
-                            labelStyle: AppTextStyles.labelMedium.copyWith(color: AppColors.error),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              side: const BorderSide(color: AppColors.errorBg),
-                            ),
-                            padding: EdgeInsets.zero,
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          );
-                        }).toList(),
-                      ),
+                      if (_chronicConditions.isEmpty)
+                        Text(
+                          'No chronic conditions recorded',
+                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                        )
+                      else
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _chronicConditions.map((condition) {
+                            return Chip(
+                              label: Text(condition),
+                              backgroundColor: AppColors.errorBg,
+                              labelStyle: AppTextStyles.labelMedium.copyWith(color: AppColors.error),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                                side: const BorderSide(color: AppColors.errorBg),
+                              ),
+                              padding: EdgeInsets.zero,
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            );
+                          }).toList(),
+                        ),
                       const SizedBox(height: 24),
 
                       // Medications
                       Text('Current Medications', style: AppTextStyles.heading3),
                       const SizedBox(height: 10),
-                      ..._allMedications.map((med) => _MedicationCard(medication: med)),
+                      if (_allMedications.isEmpty)
+                        Text(
+                          'No medications recorded',
+                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                        )
+                      else
+                        ..._allMedications.map((med) => _MedicationCard(medication: med)),
                       const SizedBox(height: 24),
 
                       // Lab Tests / Visit History
                       Text('Visit History', style: AppTextStyles.heading3),
                       const SizedBox(height: 10),
-                      ..._records.map((record) => _VisitCard(record: record)),
+                      if (_records.isEmpty)
+                        Text(
+                          'No visit history recorded',
+                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                        )
+                      else
+                        ..._records.map((record) => _VisitCard(record: record)),
                     ],
                   ),
                 ),

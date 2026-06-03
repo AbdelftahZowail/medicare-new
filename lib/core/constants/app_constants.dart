@@ -22,6 +22,7 @@ class ApiEndpoints {
 
   // Patient
   static const String patientProfile = '$apiBase/patient/profile';
+  static const String patientFavorites = '$apiBase/patient/favorites';
   static String patientFavorite(int doctorId) => '$apiBase/patient/favorite/$doctorId';
   static const String patientFamilyMembers = '$apiBase/patient/family-members';
   static String deleteFamilyMember(int memberId) => '$apiBase/patient/family-members/$memberId';
@@ -149,6 +150,7 @@ class AppRoutes {
   static const String doctorQrCode = '/doctor/qr-code';
   static const String doctorCommunity = '/doctor/community';
   static const String doctorNotifications = '/doctor/notifications';
+  static const String doctorSchedule = '/doctor/schedule';
 
   // Clinic
   static const String clinicDashboard = '/clinic/dashboard';
@@ -228,6 +230,22 @@ class StorageKeys {
   static const String userName = 'user_name';
   static const String isFirstTime = 'is_first_time';
   static const String language = 'language';
+}
+
+class AppConstants {
+  static const List<String> specializations = [
+    'Cardiology',
+    'Dentistry',
+    'Dermatology',
+    'ENT',
+    'General Practice',
+    'Internal Medicine',
+    'Neurology',
+    'Ophthalmology',
+    'Orthopedics',
+    'Pediatrics',
+    'Psychiatry',
+  ];
 }
 
 class AppEnums {

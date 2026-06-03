@@ -172,6 +172,42 @@ class ClinicService {
     }
   }
 
+  Future<DoctorProfile> getClinicDoctorDetail(int doctorId) async {
+    final response = await _api.get(
+      ApiEndpoints.clinicDoctorDetail(doctorId),
+      fromJson: (data) => DoctorProfile.fromJson(data as Map<String, dynamic>),
+    );
+    if (response.isSuccess && response.data != null) {
+      return response.data!;
+    }
+    throw Exception(response.message);
+  }
+
+  Future<List<DoctorSchedule>> getDoctorSchedules(int doctorId) async {
+    final response = await _api.get(
+      ApiEndpoints.doctorSchedules(doctorId),
+      fromJson: (data) {
+        final list = data as List<dynamic>? ?? [];
+        return list.map((e) => DoctorSchedule.fromJson(e as Map<String, dynamic>)).toList();
+      },
+    );
+    if (response.isSuccess && response.data != null) {
+      return response.data!;
+    }
+    throw Exception(response.message);
+  }
+
+  Future<void> updateClinicDoctor(int doctorId, Map<String, dynamic> data) async {
+    final response = await _api.put(
+      ApiEndpoints.clinicDoctorUpdate(doctorId),
+      data: data,
+      fromJson: (data) => data,
+    );
+    if (!response.isSuccess) {
+      throw Exception(response.message);
+    }
+  }
+
   Future<void> updateDoctorSchedule(int doctorId, Map<String, dynamic> data) async {
     final response = await _api.post(
       ApiEndpoints.clinicAddSchedule(doctorId),

@@ -323,6 +323,13 @@ class AppRouter {
           path: AppRoutes.doctorNotifications,
           builder: (context, state) => const DoctorNotificationsScreen(),
         ),
+        GoRoute(
+          path: AppRoutes.doctorSchedule,
+          builder: (context, state) {
+            final doctorId = state.extra?['doctorId'] ?? 0;
+            return ManageScheduleScreen(doctorId: doctorId);
+          },
+        ),
 
         // Clinic Routes
         GoRoute(

@@ -27,22 +27,14 @@ class _RegisterDoctorScreenState extends State<RegisterDoctorScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
   String? _specialization;
   bool _obscure = true;
   bool _obscure2 = true;
 
-  final _specializations = const [
-    'Cardiology',
-    'Dentist',
-    'Orthopedics',
-    'Pediatrics',
-    'Neurology',
-    'Dermatology',
-    'Ophthalmology',
-    'ENT',
-  ];
+  final _specializations = AppConstants.specializations;
 
   String? _licenseFilePath;
   String? _licenseFileUrl;
@@ -52,6 +44,7 @@ class _RegisterDoctorScreenState extends State<RegisterDoctorScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
     super.dispose();
@@ -73,6 +66,9 @@ class _RegisterDoctorScreenState extends State<RegisterDoctorScreen> {
             RegisterDoctorRequest(
               name: _nameController.text.trim(),
               phone: _phoneController.text.trim(),
+              email: _emailController.text.trim().isNotEmpty
+                  ? _emailController.text.trim()
+                  : null,
               password: _passwordController.text,
               confirmPassword: _confirmController.text,
               specialization: _specialization ?? '',
@@ -189,6 +185,14 @@ class _RegisterDoctorScreenState extends State<RegisterDoctorScreen> {
                           if (value.length < 8) return 'Enter a valid phone number';
                           return null;
                         },
+                      ),
+                      const SizedBox(height: 14),
+                      AppTextField(
+                        label: 'Email',
+                        hint: 'Enter Your Email',
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 14),
                       AppTextField(

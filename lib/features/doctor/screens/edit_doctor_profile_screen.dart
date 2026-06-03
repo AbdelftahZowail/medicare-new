@@ -40,18 +40,7 @@ class _EditDoctorProfileScreenState extends State<EditDoctorProfileScreen> {
   bool _isUploading = false;
   String? _profileImageUrl;
 
-  final List<String> _specializations = [
-    'Cardiology',
-    'Dermatology',
-    'Neurology',
-    'Pediatrics',
-    'Orthopedics',
-    'Ophthalmology',
-    'ENT',
-    'General Practice',
-    'Internal Medicine',
-    'Psychiatry',
-  ];
+  final List<String> _specializations = AppConstants.specializations;
 
   @override
   void initState() {

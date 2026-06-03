@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/models/shared_models.dart';
+import '../../../core/services/patient_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
@@ -19,6 +21,9 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
   final _bloodTypeController = TextEditingController();
+  final _medicalHistoryController = TextEditingController();
+  final _allergiesController = TextEditingController();
+  final _chronicDiseasesController = TextEditingController();
 
   bool _saving = false;
   int? _selectedRelation;
@@ -37,6 +42,9 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
     _nameController.dispose();
     _ageController.dispose();
     _bloodTypeController.dispose();
+    _medicalHistoryController.dispose();
+    _allergiesController.dispose();
+    _chronicDiseasesController.dispose();
     super.dispose();
   }
 
@@ -51,14 +59,42 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
 
     setState(() => _saving = true);
 
-    // In a real app, this would call an API to add the family member
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      final member = FamilyMember(
+        id: 0,
+        patientId: 0,
+        name: _nameController.text.trim(),
+        relation: _selectedRelation!,
+        age: int.tryParse(_ageController.text.trim()),
+        gender: _selectedGender,
+        bloodType: _bloodTypeController.text.trim().isEmpty
+            ? null
+            : _bloodTypeController.text.trim(),
+        medicalHistory: _medicalHistoryController.text.trim().isEmpty
+            ? null
+            : _medicalHistoryController.text.trim(),
+        allergies: _allergiesController.text.trim().isEmpty
+            ? null
+            : _allergiesController.text.trim(),
+        chronicDiseases: _chronicDiseasesController.text.trim().isEmpty
+            ? null
+            : _chronicDiseasesController.text.trim(),
+      );
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Family member added successfully')),
-    );
-    context.pop();
+      await PatientService().addFamilyMember(member);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Family member added successfully')),
+      );
+      context.pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add family member: ${e.toString()}')),
+      );
+    }
   }
 
   @override
@@ -172,6 +208,30 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
                   label: 'Blood Type (Optional)',
                   controller: _bloodTypeController,
                   hint: 'e.g. O+, A-, B+',
+                ),
+                const SizedBox(height: 16),
+
+                AppTextField(
+                  label: 'Medical History (Optional)',
+                  controller: _medicalHistoryController,
+                  hint: 'e.g. Appendectomy, Fracture',
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+
+                AppTextField(
+                  label: 'Allergies (Optional)',
+                  controller: _allergiesController,
+                  hint: 'e.g. Penicillin, Peanuts',
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+
+                AppTextField(
+                  label: 'Chronic Diseases (Optional)',
+                  controller: _chronicDiseasesController,
+                  hint: 'e.g. Diabetes, Hypertension',
+                  maxLines: 2,
                 ),
                 const SizedBox(height: 24),
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -28,6 +29,10 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
+  final _latitudeController = TextEditingController();
+  final _longitudeController = TextEditingController();
+  final _openingTimeController = TextEditingController();
+  final _closingTimeController = TextEditingController();
 
   bool _isLoading = false;
   bool _isSaving = false;
@@ -52,6 +57,10 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
       _addressController.text = profile.address ?? '';
       _phoneController.text = profile.phoneNumber ?? '';
       _emailController.text = profile.email ?? '';
+      _latitudeController.text = profile.latitude?.toString() ?? '';
+      _longitudeController.text = profile.longitude?.toString() ?? '';
+      _openingTimeController.text = profile.openingTime ?? '';
+      _closingTimeController.text = profile.closingTime ?? '';
       _logoUrl = profile.logoUrl;
     } catch (e) {
       if (mounted) {
@@ -79,6 +88,10 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
         'address': _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
         'phoneNumber': _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
         'email': _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+        'latitude': _latitudeController.text.trim().isEmpty ? null : double.tryParse(_latitudeController.text.trim()),
+        'longitude': _longitudeController.text.trim().isEmpty ? null : double.tryParse(_longitudeController.text.trim()),
+        'openingTime': _openingTimeController.text.trim().isEmpty ? null : _openingTimeController.text.trim(),
+        'closingTime': _closingTimeController.text.trim().isEmpty ? null : _closingTimeController.text.trim(),
       };
 
       await _service.updateClinicProfile(data);
@@ -97,6 +110,46 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Location permission denied')),
+            );
+          }
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location permissions are permanently denied')),
+          );
+        }
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition();
+      if (mounted) {
+        setState(() {
+          _latitudeController.text = position.latitude.toString();
+          _longitudeController.text = position.longitude.toString();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to get location: ${e.toString()}')),
+        );
+      }
     }
   }
 
@@ -209,6 +262,37 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
                         controller: _addressController,
                         maxLines: 2,
                       ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: AppTextField(
+                              label: 'Latitude',
+                              hint: 'Enter latitude',
+                              controller: _latitudeController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: AppTextField(
+                              label: 'Longitude',
+                              hint: 'Enter longitude',
+                              controller: _longitudeController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _getCurrentLocation,
+                          icon: const Icon(Icons.my_location, size: 18),
+                          label: const Text('Use My Current Location'),
+                        ),
+                      ),
                       const SizedBox(height: 24),
                       Text('Contact', style: AppTextStyles.heading2),
                       const SizedBox(height: 16),
@@ -224,6 +308,28 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
                         hint: 'Enter email address',
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 24),
+                      Text('Operating Hours', style: AppTextStyles.heading2),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: AppTextField(
+                              label: 'Opening Time',
+                              hint: 'HH:mm:ss',
+                              controller: _openingTimeController,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: AppTextField(
+                              label: 'Closing Time',
+                              hint: 'HH:mm:ss',
+                              controller: _closingTimeController,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 32),
                       AppButton(

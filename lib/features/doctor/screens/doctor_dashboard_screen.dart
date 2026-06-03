@@ -100,6 +100,32 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                   _ScheduleButton(
                     onTap: () => context.go(AppRoutes.doctorAppointments),
                   ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 52,
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final profile = await DoctorService().getProfile();
+                          if (mounted) {
+                            context.push(
+                              AppRoutes.doctorSchedule,
+                              extra: {'doctorId': profile.id},
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to load schedule: $e')),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.edit_calendar, size: 18),
+                      label: const Text('Manage My Schedule'),
+                    ),
+                  ),
                   const SizedBox(height: 20),
                   Text(
                     'Queue Summary',

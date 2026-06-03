@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -26,9 +27,15 @@ class RegisterClinicScreen extends StatefulWidget {
 class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
   final _formKey = GlobalKey<FormState>();
   final _clinicNameController = TextEditingController();
+  final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
+  final _latitudeController = TextEditingController();
+  final _longitudeController = TextEditingController();
+  final _openingTimeController = TextEditingController();
+  final _closingTimeController = TextEditingController();
   String? _government;
   String? _area;
   bool _obscure = true;
@@ -55,10 +62,48 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
   @override
   void dispose() {
     _clinicNameController.dispose();
+    _addressController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
+    _openingTimeController.dispose();
+    _closingTimeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      final permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location permission denied')),
+          );
+        }
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: AndroidSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      setState(() {
+        _latitudeController.text = position.latitude.toString();
+        _longitudeController.text = position.longitude.toString();
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to get location: $e')),
+        );
+      }
+    }
   }
 
   void _submit() {
@@ -72,6 +117,15 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
       return;
     }
 
+    double? latitude;
+    double? longitude;
+    if (_latitudeController.text.isNotEmpty) {
+      latitude = double.tryParse(_latitudeController.text.trim());
+    }
+    if (_longitudeController.text.isNotEmpty) {
+      longitude = double.tryParse(_longitudeController.text.trim());
+    }
+
     context.read<AuthBloc>().add(
           AuthRegisterClinicRequested(
             RegisterClinicRequest(
@@ -81,6 +135,20 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
               confirmPassword: _confirmController.text,
               government: _government,
               area: _area,
+              address: _addressController.text.trim().isNotEmpty
+                  ? _addressController.text.trim()
+                  : null,
+              email: _emailController.text.trim().isNotEmpty
+                  ? _emailController.text.trim()
+                  : null,
+              latitude: latitude,
+              longitude: longitude,
+              openingTime: _openingTimeController.text.trim().isNotEmpty
+                  ? _openingTimeController.text.trim()
+                  : null,
+              closingTime: _closingTimeController.text.trim().isNotEmpty
+                  ? _closingTimeController.text.trim()
+                  : null,
               licenseFileUrl: _licenseFileUrl,
             ),
           ),
@@ -209,6 +277,44 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
                       ),
                       const SizedBox(height: 14),
                       AppTextField(
+                        label: 'Address',
+                        hint: 'Enter full address',
+                        controller: _addressController,
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: AppTextField(
+                              label: 'Latitude',
+                              hint: 'Enter latitude',
+                              controller: _latitudeController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: AppTextField(
+                              label: 'Longitude',
+                              hint: 'Enter longitude',
+                              controller: _longitudeController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _getCurrentLocation,
+                          icon: const Icon(Icons.my_location, size: 18),
+                          label: const Text('Use My Current Location'),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      AppTextField(
                         label: 'Phone',
                         hint: 'Enter Your Phone number',
                         controller: _phoneController,
@@ -220,6 +326,14 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
                           if (value.length < 8) return 'Enter a valid phone number';
                           return null;
                         },
+                      ),
+                      const SizedBox(height: 14),
+                      AppTextField(
+                        label: 'Email',
+                        hint: 'Enter email address',
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 14),
                       AppTextField(
@@ -262,6 +376,28 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
                             color: AppColors.textTertiary,
                           ),
                         ),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: AppTextField(
+                              label: 'Opening Time',
+                              hint: 'HH:mm:ss',
+                              controller: _openingTimeController,
+                              textInputAction: TextInputAction.next,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: AppTextField(
+                              label: 'Closing Time',
+                              hint: 'HH:mm:ss',
+                              controller: _closingTimeController,
+                              textInputAction: TextInputAction.next,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 14),
                       DashedUploadPlaceholder(

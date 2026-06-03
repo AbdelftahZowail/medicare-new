@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/services/review_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
@@ -41,14 +42,28 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
 
     setState(() => _submitting = true);
 
-    // In a real app, this would call the reviews API
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      await ReviewService().submitReview(
+        doctorId: widget.doctorId,
+        appointmentId: widget.appointmentId,
+        rating: _rating.toDouble(),
+        comment: _commentController.text.trim().isEmpty
+            ? null
+            : _commentController.text.trim(),
+      );
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Review submitted successfully')),
-    );
-    context.pop();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Review submitted successfully')),
+      );
+      context.pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to submit review: ${e.toString()}')),
+      );
+    }
   }
 
   @override

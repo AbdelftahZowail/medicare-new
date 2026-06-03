@@ -110,16 +110,18 @@ class PatientService {
   }
 
   Future<List<DoctorListItem>> getFavorites() async {
-    if (!useMockDataFallback) {
-      throw UnsupportedError(
-        'getFavorites endpoint not implemented yet. Enable useMockDataFallback to use mock data.',
-      );
-    }
     try {
-      // This endpoint may vary; for now return mock favorites
-      return _mockFavorites;
+      final res = await _api.getList<DoctorListItem>(
+        ApiEndpoints.patientFavorites,
+        fromJson: (data) {
+          final list = (data as List).cast<Map<String, dynamic>>();
+          return list.map(DoctorListItem.fromJson).toList();
+        },
+      );
+      if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
       if (kDebugMode) debugPrint('getFavorites failed: $e');
+      if (!useMockDataFallback) rethrow;
     }
     return _mockFavorites;
   }

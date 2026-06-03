@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/models/doctor_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
@@ -17,7 +18,8 @@ class ClinicDoctorDetailScreen extends StatefulWidget {
 
 class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
   final _service = ClinicService();
-  Map<String, dynamic>? _doctorData;
+  DoctorProfile? _doctor;
+  List<DoctorSchedule> _schedules = [];
   bool _isLoading = true;
   String? _error;
 
@@ -33,31 +35,13 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
         _isLoading = true;
         _error = null;
       });
-      // Using scan endpoint as a proxy for doctor detail, or we could use public doctor detail
-      // For now, we'll simulate with the doctors list or use a direct endpoint
-      final doctors = await _service.getClinicDoctors();
-      final index = doctors.indexWhere((d) => d.id == widget.doctorId);
-      if (index != -1) {
-        final doctor = doctors[index];
-        setState(() {
-          _doctorData = {
-            'id': doctor.id,
-            'fullName': doctor.fullName,
-            'specialization': doctor.specialization,
-            'profileImageUrl': doctor.profileImageUrl,
-            'consultationFee': doctor.consultationFee,
-            'averageRating': doctor.averageRating,
-            'totalReviews': doctor.totalReviews,
-            'isAvailable': doctor.isAvailable,
-          };
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _error = 'Doctor not found';
-          _isLoading = false;
-        });
-      }
+      final doctor = await _service.getClinicDoctorDetail(widget.doctorId);
+      final schedules = await _service.getDoctorSchedules(widget.doctorId);
+      setState(() {
+        _doctor = doctor;
+        _schedules = schedules;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -66,12 +50,92 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
     }
   }
 
+  Future<void> _showEditFeeStatusDialog() async {
+    final feeController = TextEditingController(
+      text: (_doctor?.consultationFee ?? 0.0).toString(),
+    );
+    bool isAvailable = _doctor?.isAvailable ?? false;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit Fee & Status'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: feeController,
+                decoration: const InputDecoration(
+                  labelText: 'Consultation Fee',
+                  prefixText: '\$',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Text('Status:'),
+                  const SizedBox(width: 12),
+                  ChoiceChip(
+                    label: const Text('Available'),
+                    selected: isAvailable,
+                    onSelected: (v) => setDialogState(() => isAvailable = true),
+                  ),
+                  const SizedBox(width: 8),
+                  ChoiceChip(
+                    label: const Text('Unavailable'),
+                    selected: !isAvailable,
+                    onSelected: (v) => setDialogState(() => isAvailable = false),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final fee = double.tryParse(feeController.text.trim()) ?? _doctor?.consultationFee ?? 0.0;
+
+    try {
+      await _service.updateClinicDoctor(widget.doctorId, {
+        'consultationFee': fee,
+        'isAvailable': isAvailable,
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Doctor updated successfully')),
+        );
+        _loadDoctor();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _removeDoctor() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Remove Doctor'),
-        content: Text('Are you sure you want to remove ${_doctorData?['fullName'] ?? 'this doctor'} from your clinic?'),
+        content: Text('Are you sure you want to remove ${_doctor?.fullName ?? 'this doctor'} from your clinic?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -203,11 +267,12 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
   }
 
   Widget _buildDoctorHeader() {
-    final name = _doctorData?['fullName'] ?? '';
-    final specialization = _doctorData?['specialization'] ?? '';
-    final imageUrl = _doctorData?['profileImageUrl'] as String?;
-    final rating = (_doctorData?['averageRating'] as num?)?.toDouble() ?? 0.0;
-    final reviews = _doctorData?['totalReviews'] ?? 0;
+    final name = _doctor?.fullName ?? '';
+    final specialization = _doctor?.specialization ?? '';
+    final imageUrl = _doctor?.profileImageUrl;
+    final rating = _doctor?.averageRating ?? 0.0;
+    final reviews = _doctor?.totalReviews ?? 0;
+    final experience = _doctor?.yearsOfExperience;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
@@ -242,6 +307,13 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
             specialization,
             style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
           ),
+          if (experience != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              '$experience years of experience',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textTertiary),
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -265,8 +337,14 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
   }
 
   Widget _buildInfoCard() {
-    final fee = (_doctorData?['consultationFee'] as num?)?.toDouble() ?? 0.0;
-    final isAvailable = _doctorData?['isAvailable'] ?? false;
+    final fee = _doctor?.consultationFee ?? 0.0;
+    final isAvailable = _doctor?.isAvailable ?? false;
+    final degree = _doctor?.degree;
+    final university = _doctor?.university;
+    final graduationYear = _doctor?.graduationYear;
+    final boardCert = _doctor?.boardCertification;
+    final bio = _doctor?.bio;
+    final languages = _doctor?.languages ?? [];
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -291,22 +369,78 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
             valueColor: isAvailable ? AppColors.success : AppColors.error,
             iconColor: AppColors.warning,
           ),
+          if (degree != null && degree.isNotEmpty) ...[
+            const Divider(height: 24),
+            _InfoRow(
+              icon: Icons.school,
+              label: 'Degree',
+              value: degree,
+              iconColor: AppColors.primary,
+            ),
+          ],
+          if (university != null && university.isNotEmpty) ...[
+            const Divider(height: 24),
+            _InfoRow(
+              icon: Icons.account_balance,
+              label: 'University',
+              value: university,
+              iconColor: AppColors.primary,
+            ),
+          ],
+          if (graduationYear != null) ...[
+            const Divider(height: 24),
+            _InfoRow(
+              icon: Icons.calendar_today,
+              label: 'Graduation Year',
+              value: graduationYear.toString(),
+              iconColor: AppColors.primary,
+            ),
+          ],
+          if (boardCert != null && boardCert.isNotEmpty) ...[
+            const Divider(height: 24),
+            _InfoRow(
+              icon: Icons.verified,
+              label: 'Board Certification',
+              value: boardCert,
+              iconColor: AppColors.success,
+            ),
+          ],
+          if (languages.isNotEmpty) ...[
+            const Divider(height: 24),
+            _InfoRow(
+              icon: Icons.language,
+              label: 'Languages',
+              value: languages.join(', '),
+              iconColor: AppColors.info,
+            ),
+          ],
+          if (bio != null && bio.isNotEmpty) ...[
+            const Divider(height: 24),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 4, 0, 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('About', style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+                  const SizedBox(height: 6),
+                  Text(bio, style: AppTextStyles.bodyMedium),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildScheduleSection() {
-    // Mock schedule data - in real app would come from API
-    final schedule = [
-      {'day': 'Saturday', 'time': '09:00 AM - 05:00 PM', 'isActive': true},
-      {'day': 'Sunday', 'time': '09:00 AM - 05:00 PM', 'isActive': true},
-      {'day': 'Monday', 'time': '09:00 AM - 05:00 PM', 'isActive': true},
-      {'day': 'Tuesday', 'time': '09:00 AM - 05:00 PM', 'isActive': true},
-      {'day': 'Wednesday', 'time': '09:00 AM - 05:00 PM', 'isActive': true},
-      {'day': 'Thursday', 'time': '09:00 AM - 05:00 PM', 'isActive': true},
-      {'day': 'Friday', 'time': 'Closed', 'isActive': false},
-    ];
+    final dayNames = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+    // Group schedules by day and merge time ranges
+    final daySchedules = <int, List<DoctorSchedule>>{};
+    for (final s in _schedules) {
+      daySchedules.putIfAbsent(s.dayOfWeek, () => []).add(s);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,8 +455,13 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
             border: Border.all(color: AppColors.borderLight),
           ),
           child: Column(
-            children: schedule.map((s) {
-              final isActive = s['isActive'] as bool;
+            children: List.generate(7, (dayIndex) {
+              final slots = daySchedules[dayIndex] ?? [];
+              final isActive = slots.isNotEmpty;
+              final timeText = isActive
+                  ? slots.map((s) => '${s.startTime} - ${s.endTime}').join(', ')
+                  : 'Closed';
+
               return Padding(
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
                 child: Row(
@@ -346,12 +485,12 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            s['day'] as String,
+                            dayNames[dayIndex],
                             style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            s['time'] as String,
+                            timeText,
                             style: AppTextStyles.bodySmall,
                           ),
                         ],
@@ -360,7 +499,7 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ),
         ),
       ],
