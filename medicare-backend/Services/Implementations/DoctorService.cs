@@ -27,8 +27,8 @@ namespace MedicalApp.API.Services.Implementations
         }
 
         public async Task<ApiResponse<List<DoctorListItemDto>>> GetAllDoctorsAsync(
-            string? specialization = null, 
-            string? search = null, 
+            string? specialization = null,
+            string? search = null,
             string? government = null,
             string? area = null,
             string? appointmentDay = null,
@@ -36,9 +36,11 @@ namespace MedicalApp.API.Services.Implementations
             decimal? minFee = null,
             decimal? maxFee = null,
             double? minRating = null,
-            int? currentPatientUserId = null)
+            int? currentPatientUserId = null,
+            double? userLat = null,
+            double? userLng = null)
         {
-            var patient = currentPatientUserId.HasValue 
+            var patient = currentPatientUserId.HasValue
                 ? await _unitOfWork.Patients.Query().FirstOrDefaultAsync(p => p.UserId == currentPatientUserId.Value)
                 : null;
 
@@ -102,8 +104,14 @@ namespace MedicalApp.API.Services.Implementations
             }
 
             var doctors = await query.ToListAsync();
-            
-            var result = doctors.Select(d => 
+
+            var hasUserCoords = userLat.HasValue && userLng.HasValue
+                && !double.IsNaN(userLat.Value) && !double.IsNaN(userLng.Value)
+                && !double.IsInfinity(userLat.Value) && !double.IsInfinity(userLng.Value)
+                && userLat.Value >= -90 && userLat.Value <= 90
+                && userLng.Value >= -180 && userLng.Value <= 180;
+
+            var result = doctors.Select(d =>
             {
                 var dto = _mapper.Map<DoctorListItemDto>(d);
                 dto.FullName = d.User.FullName;
@@ -111,22 +119,31 @@ namespace MedicalApp.API.Services.Implementations
                 dto.ClinicName = string.Join(", ", d.DoctorClinics.Where(dc => dc.IsActive).Select(dc => dc.Clinic.Name));
                 dto.ClinicArea = string.Join(", ", d.DoctorClinics.Where(dc => dc.IsActive).Select(dc => dc.Clinic.Area));
                 dto.IsFavorited = favoriteDoctorIds.Contains(d.Id);
-                
+
                 var activeClinic = d.DoctorClinics.FirstOrDefault(dc => dc.IsActive)?.Clinic;
                 if (activeClinic != null)
                 {
                     dto.Latitude = activeClinic.Latitude;
                     dto.Longitude = activeClinic.Longitude;
+                    if (hasUserCoords && activeClinic.Latitude.HasValue && activeClinic.Longitude.HasValue)
+                    {
+                        dto.DistanceKm = GeoUtils.HaversineKm(
+                            userLat!.Value, userLng!.Value,
+                            activeClinic.Latitude.Value, activeClinic.Longitude.Value);
+                    }
                 }
                 return dto;
             }).ToList();
 
+            if (hasUserCoords)
+                result = result.OrderBy(d => d.DistanceKm ?? double.MaxValue).ToList();
+
             return ApiResponse<List<DoctorListItemDto>>.Success(result);
         }
 
-        public async Task<ApiResponse<List<DoctorListItemDto>>> GetPopularDoctorsAsync(int? currentPatientUserId = null)
+        public async Task<ApiResponse<List<DoctorListItemDto>>> GetPopularDoctorsAsync(int? currentPatientUserId = null, double? userLat = null, double? userLng = null)
         {
-            var patient = currentPatientUserId.HasValue 
+            var patient = currentPatientUserId.HasValue
                 ? await _unitOfWork.Patients.Query().FirstOrDefaultAsync(p => p.UserId == currentPatientUserId.Value)
                 : null;
 
@@ -149,8 +166,14 @@ namespace MedicalApp.API.Services.Implementations
                 .Take(10); // Get top 10 doctors based on actual rating
 
             var doctors = await query.ToListAsync();
-            
-            var result = doctors.Select(d => 
+
+            var hasUserCoords = userLat.HasValue && userLng.HasValue
+                && !double.IsNaN(userLat.Value) && !double.IsNaN(userLng.Value)
+                && !double.IsInfinity(userLat.Value) && !double.IsInfinity(userLng.Value)
+                && userLat.Value >= -90 && userLat.Value <= 90
+                && userLng.Value >= -180 && userLng.Value <= 180;
+
+            var result = doctors.Select(d =>
             {
                 var dto = _mapper.Map<DoctorListItemDto>(d);
                 dto.FullName = d.User.FullName;
@@ -158,17 +181,96 @@ namespace MedicalApp.API.Services.Implementations
                 dto.ClinicName = string.Join(", ", d.DoctorClinics.Where(dc => dc.IsActive).Select(dc => dc.Clinic.Name));
                 dto.ClinicArea = string.Join(", ", d.DoctorClinics.Where(dc => dc.IsActive).Select(dc => dc.Clinic.Area));
                 dto.IsFavorited = favoriteDoctorIds.Contains(d.Id);
-                
+
                 var activeClinic = d.DoctorClinics.FirstOrDefault(dc => dc.IsActive)?.Clinic;
                 if (activeClinic != null)
                 {
                     dto.Latitude = activeClinic.Latitude;
                     dto.Longitude = activeClinic.Longitude;
+                    if (hasUserCoords && activeClinic.Latitude.HasValue && activeClinic.Longitude.HasValue)
+                    {
+                        dto.DistanceKm = GeoUtils.HaversineKm(
+                            userLat!.Value, userLng!.Value,
+                            activeClinic.Latitude.Value, activeClinic.Longitude.Value);
+                    }
                 }
                 return dto;
             }).ToList();
 
             return ApiResponse<List<DoctorListItemDto>>.Success(result);
+        }
+
+        public async Task<ApiResponse<List<NearbyDoctorDto>>> GetNearbyDoctorsAsync(
+            double lat,
+            double lng,
+            double radiusKm = 5,
+            string? specialization = null,
+            string? search = null)
+        {
+            if (double.IsNaN(lat) || double.IsNaN(lng) ||
+                double.IsInfinity(lat) || double.IsInfinity(lng) ||
+                lat < -90 || lat > 90 || lng < -180 || lng > 180)
+            {
+                return ApiResponse<List<NearbyDoctorDto>>.Success(new List<NearbyDoctorDto>());
+            }
+
+            var query = _unitOfWork.Doctors.Query()
+                .Include(d => d.User)
+                .Include(d => d.DoctorClinics)
+                    .ThenInclude(dc => dc.Clinic)
+                .Where(d => d.User.IsActive
+                    && d.DoctorClinics.Any(dc => dc.IsActive
+                        && dc.Clinic.Latitude != null
+                        && dc.Clinic.Longitude != null));
+
+            if (!string.IsNullOrEmpty(specialization))
+                query = query.Where(d => d.Specialization == specialization);
+
+            if (!string.IsNullOrEmpty(search))
+                query = query.Where(d => d.User.FullName.Contains(search) || d.Specialization.Contains(search));
+
+            var doctors = await query.ToListAsync();
+
+            var result = new List<NearbyDoctorDto>();
+
+            foreach (var d in doctors)
+            {
+                var locationClinic = d.DoctorClinics
+                    .Where(dc => dc.IsActive
+                        && dc.Clinic.Latitude.HasValue
+                        && dc.Clinic.Longitude.HasValue)
+                    .OrderBy(dc => dc.Id)
+                    .Select(dc => dc.Clinic)
+                    .FirstOrDefault();
+
+                if (locationClinic == null) continue;
+
+                var distance = GeoUtils.HaversineKm(lat, lng, locationClinic.Latitude!.Value, locationClinic.Longitude!.Value);
+                if (distance > radiusKm) continue;
+
+                var dto = new NearbyDoctorDto
+                {
+                    Id = d.Id,
+                    FullName = d.User.FullName,
+                    Specialization = d.Specialization,
+                    ProfileImageUrl = d.User.ProfileImageUrl,
+                    ConsultationFee = d.ConsultationFee,
+                    AverageRating = d.AverageRating,
+                    TotalReviews = d.TotalReviews,
+                    IsAvailable = d.IsAvailable,
+                    ClinicName = string.Join(", ", d.DoctorClinics.Where(dc => dc.IsActive).Select(dc => dc.Clinic.Name)),
+                    ClinicArea = string.Join(", ", d.DoctorClinics.Where(dc => dc.IsActive).Select(dc => dc.Clinic.Area)),
+                    IsFavorited = false,
+                    Latitude = locationClinic.Latitude,
+                    Longitude = locationClinic.Longitude,
+                    DistanceKm = distance,
+                    ClinicIdForLocation = locationClinic.Id
+                };
+                result.Add(dto);
+            }
+
+            return ApiResponse<List<NearbyDoctorDto>>.Success(
+                result.OrderBy(r => r.DistanceKm).ToList());
         }
 
         public async Task<ApiResponse<DoctorProfileDto>> GetDoctorByIdAsync(int doctorId)
@@ -180,7 +282,7 @@ namespace MedicalApp.API.Services.Implementations
                 .FirstOrDefaultAsync(d => d.Id == doctorId);
 
             if (doctor == null)
-                return ApiResponse<DoctorProfileDto>.Failure("الطبيب غير موجود", 404);
+                return ApiResponse<DoctorProfileDto>.Failure("Doctor not found", 404);
 
             var dto = _mapper.Map<DoctorProfileDto>(doctor);
             dto.FullName = doctor.User.FullName;
@@ -202,13 +304,23 @@ namespace MedicalApp.API.Services.Implementations
                 .Where(dc => dc.IsActive)
                 .Select(dc => dc.Clinic.Name)
                 .ToList();
-            
+
             var activeClinic = doctor.DoctorClinics.FirstOrDefault(dc => dc.IsActive)?.Clinic;
             if (activeClinic != null)
             {
                 dto.ClinicId = activeClinic.Id;
                 dto.ClinicName = activeClinic.Name;
+                dto.ClinicLatitude = activeClinic.Latitude;
+                dto.ClinicLongitude = activeClinic.Longitude;
             }
+
+            dto.TotalPatients = await _unitOfWork.Appointments.Query()
+                .Where(a => a.DoctorId == doctor.Id
+                         && a.PatientId != null
+                         && a.Status != AppointmentStatus.Cancelled)
+                .Select(a => a.PatientId!.Value)
+                .Distinct()
+                .CountAsync();
 
             return ApiResponse<DoctorProfileDto>.Success(dto);
         }
@@ -222,7 +334,7 @@ namespace MedicalApp.API.Services.Implementations
                 .FirstOrDefaultAsync(d => d.UserId == userId);
 
             if (doctor == null)
-                return ApiResponse<DoctorProfileDto>.Failure("الملف الشخصي غير موجود", 404);
+                return ApiResponse<DoctorProfileDto>.Failure("Profile not found", 404);
 
             var dto = _mapper.Map<DoctorProfileDto>(doctor);
             dto.FullName = doctor.User.FullName;
@@ -250,7 +362,17 @@ namespace MedicalApp.API.Services.Implementations
             {
                 dto.ClinicId = activeClinic.Id;
                 dto.ClinicName = activeClinic.Name;
+                dto.ClinicLatitude = activeClinic.Latitude;
+                dto.ClinicLongitude = activeClinic.Longitude;
             }
+
+            dto.TotalPatients = await _unitOfWork.Appointments.Query()
+                .Where(a => a.DoctorId == doctor.Id
+                         && a.PatientId != null
+                         && a.Status != AppointmentStatus.Cancelled)
+                .Select(a => a.PatientId!.Value)
+                .Distinct()
+                .CountAsync();
 
             return ApiResponse<DoctorProfileDto>.Success(dto);
         }
@@ -262,7 +384,7 @@ namespace MedicalApp.API.Services.Implementations
                 .FirstOrDefaultAsync(d => d.UserId == userId);
 
             if (doctor == null)
-                return ApiResponse<DoctorProfileDto>.Failure("الملف الشخصي غير موجود", 404);
+                return ApiResponse<DoctorProfileDto>.Failure("Profile not found", 404);
 
             if (!string.IsNullOrEmpty(dto.FullName)) doctor.User.FullName = dto.FullName;
             if (!string.IsNullOrEmpty(dto.PhoneNumber)) doctor.User.PhoneNumber = dto.PhoneNumber;
@@ -313,20 +435,20 @@ namespace MedicalApp.API.Services.Implementations
             var admin = await _unitOfWork.ClinicAdmins.Query()
                 .FirstOrDefaultAsync(ca => ca.UserId == clinicAdminUserId);
             if (admin == null)
-                return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Failure("غير مصرح لك بإجراء هذه العملية كمدير عيادة", 403);
+                return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Failure("You are not authorized to perform this operation as a clinic admin", 403);
 
             int clinicId = admin.ClinicId;
 
             // 2. Validate Clinic exists and check its opening/closing times
             var clinic = await _unitOfWork.Clinics.GetByIdAsync(clinicId);
             if (clinic == null)
-                return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Failure("العيادة غير موجودة", 404);
+                return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Failure("Clinic not found", 404);
 
             if (clinic.OpeningTime.HasValue && clinic.ClosingTime.HasValue)
             {
                 if (dto.StartTime < clinic.OpeningTime.Value || dto.EndTime > clinic.ClosingTime.Value)
                 {
-                    return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Failure($"مواعيد العمل في العيادة هي من {clinic.OpeningTime.Value:hh\\:mm} إلى {clinic.ClosingTime.Value:hh\\:mm}. لا يمكن تسجيل جدول خارج هذه الأوقات.", 400);
+                    return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Failure($"Clinic operating hours are from {clinic.OpeningTime.Value:hh\\:mm} to {clinic.ClosingTime.Value:hh\\:mm}. Schedules outside these times cannot be registered.", 400);
                 }
             }
 
@@ -336,27 +458,27 @@ namespace MedicalApp.API.Services.Implementations
                 .FirstOrDefaultAsync(d => d.Id == doctorId);
 
             if (doctor == null)
-                return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Failure("الطبيب غير موجود", 404);
+                return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Failure("Doctor not found", 404);
 
             if (!doctor.DoctorClinics.Any(dc => dc.ClinicId == clinicId && dc.IsActive))
             {
-                return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Failure("هذا الطبيب غير مسجل في هذه العيادة", 400);
+                return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Failure("This doctor is not registered in this clinic", 400);
             }
 
             // 4. Validate StartTime < EndTime
             if (dto.StartTime >= dto.EndTime)
-                return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Failure("وقت البدء يجب أن يكون قبل وقت الانتهاء");
+                return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Failure("Start time must be before end time");
 
             // 5. Validate Doctor Overlap globally across ALL clinics
-            var hasOverlap = await _unitOfWork.DoctorSchedules.AnyAsync(s => 
-                s.DoctorId == doctorId && 
-                s.DayOfWeek == dto.DayOfWeek && 
-                s.IsActive && 
-                s.StartTime < dto.EndTime && 
+            var hasOverlap = await _unitOfWork.DoctorSchedules.AnyAsync(s =>
+                s.DoctorId == doctorId &&
+                s.DayOfWeek == dto.DayOfWeek &&
+                s.IsActive &&
+                s.StartTime < dto.EndTime &&
                 s.EndTime > dto.StartTime);
 
             if (hasOverlap)
-                return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Failure("الطبيب لديه تعارض مع جدول آخر مسجل في نفس اليوم والوقت (في هذه العيادة أو في عيادة أخرى)", 409);
+                return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Failure("Doctor has a conflicting schedule on the same day and time (in this clinic or another)", 409);
 
             // 6. Create Schedule
             var schedule = new DoctorSchedule
@@ -376,7 +498,7 @@ namespace MedicalApp.API.Services.Implementations
             var resultDto = _mapper.Map<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>(schedule);
             resultDto.DayName = dto.DayOfWeek.ToString();
 
-            return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Success(resultDto, "تم إضافة جدول المواعيد بنجاح", 201);
+            return ApiResponse<MedicalApp.API.DTOs.Schedule.DoctorScheduleDto>.Success(resultDto, "Schedule added successfully", 201);
         }
 
         public async Task<ApiResponse<List<AvailableSlotDto>>> GetAvailableSlotsAsync(int doctorId, DateTime date)
@@ -386,7 +508,7 @@ namespace MedicalApp.API.Services.Implementations
                 .ToListAsync();
 
             if (!schedules.Any())
-                return ApiResponse<List<AvailableSlotDto>>.Success(new List<AvailableSlotDto>(), "لا يوجد مواعيد متاحة");
+                return ApiResponse<List<AvailableSlotDto>>.Success(new List<AvailableSlotDto>(), "No available slots");
 
             var existingAppointments = await _unitOfWork.Appointments.Query()
                 .Where(a => a.DoctorId == doctorId && a.AppointmentDate.Date == date.Date
@@ -420,7 +542,7 @@ namespace MedicalApp.API.Services.Implementations
                 .Distinct()
                 .ToListAsync();
 
-            return ApiResponse<List<string>>.Success(specializations, "تم استرجاع التخصصات الطبية بنجاح");
+            return ApiResponse<List<string>>.Success(specializations, "Specializations retrieved successfully");
         }
 
         // ===== Doctor Dashboard =====
@@ -428,7 +550,7 @@ namespace MedicalApp.API.Services.Implementations
         {
             var doctor = await _unitOfWork.Doctors.Query().FirstOrDefaultAsync(d => d.UserId == doctorUserId);
             if (doctor == null)
-                return ApiResponse<DoctorDashboardDto>.Failure("ملف الطبيب غير موجود", 404);
+                return ApiResponse<DoctorDashboardDto>.Failure("Doctor profile not found", 404);
 
             var today = DateTime.Today;
             var appointments = await _unitOfWork.Appointments.Query()
@@ -500,7 +622,7 @@ namespace MedicalApp.API.Services.Implementations
                 CompletedCount = appointments.Count(a => a.QueueStatus == QueueStatus.Completed || a.Status == AppointmentStatus.Completed)
             };
 
-            return ApiResponse<DoctorDashboardDto>.Success(dto, "تم استرجاع إحصائيات لوحة التحكم بنجاح");
+            return ApiResponse<DoctorDashboardDto>.Success(dto, "Dashboard statistics retrieved successfully");
         }
 
         // ===== Doctor Live Queue =====
@@ -508,7 +630,7 @@ namespace MedicalApp.API.Services.Implementations
         {
             var doctor = await _unitOfWork.Doctors.Query().FirstOrDefaultAsync(d => d.UserId == doctorUserId);
             if (doctor == null)
-                return ApiResponse<List<AppointmentDto>>.Failure("ملف الطبيب غير موجود", 404);
+                return ApiResponse<List<AppointmentDto>>.Failure("Doctor profile not found", 404);
 
             var today = DateTime.Today;
             var query = _unitOfWork.Appointments.Query()
@@ -547,7 +669,7 @@ namespace MedicalApp.API.Services.Implementations
                 }
             }
 
-            return ApiResponse<List<AppointmentDto>>.Success(sortedAppointments, "تم استرجاع قائمة الطابور بنجاح");
+            return ApiResponse<List<AppointmentDto>>.Success(sortedAppointments, "Queue retrieved successfully");
         }
 
         // ===== Doctor Medical History =====
@@ -555,20 +677,20 @@ namespace MedicalApp.API.Services.Implementations
         {
             var doctor = await _unitOfWork.Doctors.Query().FirstOrDefaultAsync(d => d.UserId == doctorUserId);
             if (doctor == null)
-                return ApiResponse<PatientHistoryDto>.Failure("ملف الطبيب غير موجود", 404);
+                return ApiResponse<PatientHistoryDto>.Failure("Doctor profile not found", 404);
 
             var patient = await _unitOfWork.Patients.Query()
                 .Include(p => p.User)
                 .FirstOrDefaultAsync(p => p.Id == patientId);
 
             if (patient == null)
-                return ApiResponse<PatientHistoryDto>.Failure("المريض غير موجود", 404);
+                return ApiResponse<PatientHistoryDto>.Failure("Patient not found", 404);
 
             var hasTreated = await _unitOfWork.Appointments.Query()
                 .AnyAsync(a => a.DoctorId == doctor.Id && a.PatientId == patientId);
-            
+
             if (!hasTreated)
-                return ApiResponse<PatientHistoryDto>.Failure("غير مصرح لك باستعراض بيانات مريض لم تقم بمعالجته", 403);
+                return ApiResponse<PatientHistoryDto>.Failure("You are not authorized to view a patient you have not treated", 403);
 
             var records = await _unitOfWork.MedicalRecords.Query()
                 .Include(r => r.Patient).ThenInclude(p => p!.User)
@@ -621,7 +743,7 @@ namespace MedicalApp.API.Services.Implementations
                 PastRecords = recordDtos
             };
 
-            return ApiResponse<PatientHistoryDto>.Success(dto, "تم جلب التاريخ الطبي للمريض بنجاح");
+            return ApiResponse<PatientHistoryDto>.Success(dto, "Patient medical history retrieved successfully");
         }
 
         // ===== Doctor QR Code Key =====
@@ -629,7 +751,7 @@ namespace MedicalApp.API.Services.Implementations
         {
             var doctor = await _unitOfWork.Doctors.Query().FirstOrDefaultAsync(d => d.UserId == doctorUserId);
             if (doctor == null)
-                return ApiResponse<string>.Failure("ملف الطبيب غير موجود", 404);
+                return ApiResponse<string>.Failure("Doctor profile not found", 404);
 
             if (string.IsNullOrEmpty(doctor.QrCodeKey))
             {
@@ -639,7 +761,7 @@ namespace MedicalApp.API.Services.Implementations
                 await _unitOfWork.CompleteAsync();
             }
 
-            return ApiResponse<string>.Success(doctor.QrCodeKey, "تم جلب مفتاح رمز الاستجابة السريعة بنجاح");
+            return ApiResponse<string>.Success(doctor.QrCodeKey, "QR code key retrieved successfully");
         }
 
         // ===== Submit Consultation Checkup Session =====
@@ -647,17 +769,17 @@ namespace MedicalApp.API.Services.Implementations
         {
             var doctor = await _unitOfWork.Doctors.Query().FirstOrDefaultAsync(d => d.UserId == doctorUserId);
             if (doctor == null)
-                return ApiResponse<MedicalRecordDto>.Failure("ملف الطبيب غير موجود", 404);
+                return ApiResponse<MedicalRecordDto>.Failure("Doctor profile not found", 404);
 
             var appointment = await _unitOfWork.Appointments.Query()
                 .Include(a => a.Patient)
                 .FirstOrDefaultAsync(a => a.Id == appointmentId && a.DoctorId == doctor.Id);
 
             if (appointment == null)
-                return ApiResponse<MedicalRecordDto>.Failure("الحجز غير موجود أو لا يخص هذا الطبيب", 404);
+                return ApiResponse<MedicalRecordDto>.Failure("Appointment not found or does not belong to this doctor", 404);
 
             if (appointment.Status == AppointmentStatus.Completed || appointment.Status == AppointmentStatus.Cancelled)
-                return ApiResponse<MedicalRecordDto>.Failure("هذا الحجز مكتمل أو ملغي بالفعل", 400);
+                return ApiResponse<MedicalRecordDto>.Failure("This appointment is already completed or cancelled", 400);
 
             int patientId;
             if (appointment.PatientId.HasValue)
@@ -696,7 +818,7 @@ namespace MedicalApp.API.Services.Implementations
                 {
                     var tempUser = new User
                     {
-                        FullName = appointment.OfflinePatientName ?? "مريض خارجي",
+                        FullName = appointment.OfflinePatientName ?? "Walk-in patient",
                         PhoneNumber = phone,
                         Role = UserRole.Patient,
                         IsActive = true
@@ -747,9 +869,9 @@ namespace MedicalApp.API.Services.Implementations
             {
                 Id = app.Id,
                 PatientId = app.PatientId,
-                PatientName = app.PatientId.HasValue 
-                    ? (app.Patient?.User?.FullName ?? string.Empty) 
-                    : (app.OfflinePatientName ?? "مريض غير مسجل"),
+                PatientName = app.PatientId.HasValue
+                    ? (app.Patient?.User?.FullName ?? string.Empty)
+                    : (app.OfflinePatientName ?? "Unregistered patient"),
                 OfflinePatientPhone = app.OfflinePatientPhone,
                 DoctorId = app.DoctorId,
                 DoctorName = app.Doctor?.User?.FullName ?? string.Empty,
@@ -768,7 +890,7 @@ namespace MedicalApp.API.Services.Implementations
                 DoctorProfileImageUrl = app.Doctor?.User?.ProfileImageUrl,
                 ClinicId = clinic?.Id,
                 ClinicName = clinic?.Name,
-                ClinicAddress = clinic != null ? $"{clinic.Area}، {clinic.Government}" : null,
+                ClinicAddress = clinic != null ? $"{clinic.Area}, {clinic.Government}" : null,
                 IsEmergency = app.IsEmergency,
                 ChiefComplaint = app.ChiefComplaint,
                 IsPaid = app.IsPaid,
