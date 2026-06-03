@@ -28,4 +28,14 @@ class PatientNotificationsService {
       fromJson: (_) => null,
     );
   }
+
+  Future<void> deleteNotification(int notificationId) async {
+    final response = await _api.delete<dynamic>(
+      ApiEndpoints.deleteNotification(notificationId),
+      fromJson: (_) => null,
+    );
+    if (!response.isSuccess) {
+      throw Exception(response.message.isNotEmpty ? response.message : 'Failed to delete notification');
+    }
+  }
 }

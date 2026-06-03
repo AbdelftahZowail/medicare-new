@@ -324,6 +324,10 @@ class AppRouter {
           builder: (context, state) => const DoctorCommunityScreen(),
         ),
         GoRoute(
+          path: AppRoutes.doctorCreatePost,
+          builder: (context, state) => const CreatePostScreen(),
+        ),
+        GoRoute(
           path: AppRoutes.doctorNotifications,
           builder: (context, state) => const DoctorNotificationsScreen(),
         ),

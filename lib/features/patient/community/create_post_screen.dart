@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/models/community_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -21,17 +22,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   bool _posting = false;
   String? _selectedSpecialization;
 
-  final List<String> _specializations = [
-    'General',
-    'Cardiology',
-    'Dermatology',
-    'Pediatrics',
-    'Orthopedics',
-    'Neurology',
-    'Dentistry',
-    'Ophthalmology',
-    'ENT',
-  ];
+  final List<String> _specializations = AppConstants.specializations;
 
   @override
   void dispose() {

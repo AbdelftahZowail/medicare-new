@@ -125,6 +125,14 @@ class PatientService {
     }
     return _mockFavorites;
   }
+
+  Future<void> favoriteToggle(int doctorId) async {
+    await _api.post<dynamic>(
+      ApiEndpoints.patientFavorite(doctorId),
+      data: {},
+      fromJson: (_) => null,
+    );
+  }
 }
 
 final _mockProfile = PatientProfile(

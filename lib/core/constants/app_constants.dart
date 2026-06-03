@@ -98,6 +98,7 @@ class ApiEndpoints {
   static const String notifications = '$apiBase/notification';
   static const String notificationUnreadCount = '$apiBase/notification/unread-count';
   static String markNotificationRead(int id) => '$apiBase/notification/$id/read';
+  static String deleteNotification(int id) => '$apiBase/notification/$id';
 
   // Upload
   static const String uploadLicense = '$apiBase/upload/license';
@@ -149,6 +150,7 @@ class AppRoutes {
   static const String doctorEditProfile = '/doctor/edit-profile';
   static const String doctorQrCode = '/doctor/qr-code';
   static const String doctorCommunity = '/doctor/community';
+  static const String doctorCreatePost = '/doctor/create-post';
   static const String doctorNotifications = '/doctor/notifications';
   static const String doctorSchedule = '/doctor/schedule';
 

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/doctor_models.dart';
+import '../../../core/services/patient_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/doctor_card.dart';
@@ -17,6 +18,7 @@ class BrowseDoctorsScreen extends StatefulWidget {
 
 class _BrowseDoctorsScreenState extends State<BrowseDoctorsScreen> {
   final DoctorService _service = DoctorService();
+  final PatientService _patientService = PatientService();
   final TextEditingController _controller = TextEditingController();
 
   bool _loading = true;
@@ -131,7 +133,22 @@ class _BrowseDoctorsScreenState extends State<BrowseDoctorsScreen> {
                       location: '${d.clinicArea ?? ''}${(d.clinicArea != null && d.clinicName != null) ? ', ' : ''}${d.clinicName ?? ''}',
                       isFavorite: d.isFavorited,
                       onTap: () => context.go('${AppRoutes.patientDoctorProfile}/${d.id}'),
-                      onFavoriteToggle: () {},
+                      onFavoriteToggle: () async {
+                        await _patientService.favoriteToggle(d.id);
+                        setState(() => _items[i] = DoctorListItem(
+                          id: d.id,
+                          fullName: d.fullName,
+                          specialization: d.specialization,
+                          profileImageUrl: d.profileImageUrl,
+                          consultationFee: d.consultationFee,
+                          averageRating: d.averageRating,
+                          totalReviews: d.totalReviews,
+                          isAvailable: d.isAvailable,
+                          clinicName: d.clinicName,
+                          clinicArea: d.clinicArea,
+                          isFavorited: !d.isFavorited,
+                        ));
+                      },
                     );
                   },
                 ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/models/shared_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -87,6 +88,52 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
   }
 
+  void _onNotificationTap(NotificationItem notification) {
+    _markAsRead(notification);
+
+    // Deep-link based on notification type
+    if (notification.relatedId == null) return;
+
+    switch (notification.type) {
+      case 'appointment':
+        context.push('${AppRoutes.patientAppointmentDetail}/${notification.relatedId}');
+      case 'queue':
+        context.push('${AppRoutes.patientQueueTracker}/${notification.relatedId}');
+      case 'community':
+        context.push('${AppRoutes.patientPostDetail}/${notification.relatedId}');
+      default:
+        break;
+    }
+  }
+
+  Future<void> _deleteNotification(NotificationItem notification) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Notification'),
+        content: const Text('Are you sure you want to delete this notification?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await _service.deleteNotification(notification.id);
+      if (!mounted) return;
+      setState(() => _notifications.removeWhere((n) => n.id == notification.id));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete notification: ${e.toString()}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,7 +169,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           final notification = _notifications[index];
                           return _NotificationCard(
                             notification: notification,
-                            onTap: () => _markAsRead(notification),
+                            onTap: () => _onNotificationTap(notification),
+                            onDelete: () => _deleteNotification(notification),
                           );
                         },
                       ),
@@ -135,10 +183,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 class _NotificationCard extends StatelessWidget {
   final NotificationItem notification;
   final VoidCallback onTap;
+  final VoidCallback? onDelete;
 
   const _NotificationCard({
     required this.notification,
     required this.onTap,
+    this.onDelete,
   });
 
   @override
@@ -181,6 +231,14 @@ class _NotificationCard extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (onDelete != null)
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 16, color: AppColors.textTertiary),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          onPressed: onDelete,
+                        ),
                       if (!notification.isRead)
                         Container(
                           height: 8,

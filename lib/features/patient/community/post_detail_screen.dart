@@ -99,6 +99,34 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
   }
 
+  Future<void> _deleteComment(CommunityComment comment) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Comment'),
+        content: const Text('Are you sure you want to delete this comment?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await _service.deleteComment(comment.id);
+      if (!mounted) return;
+      setState(() => _comments.removeWhere((c) => c.id == comment.id));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete comment: ${e.toString()}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -227,7 +255,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           const SizedBox(height: 12),
 
                           // Comments List
-                          ..._comments.map((comment) => _CommentItem(comment: comment)),
+                          ..._comments.map((comment) => _CommentItem(
+                            comment: comment,
+                            onDelete: () => _deleteComment(comment),
+                          )),
                         ],
                       ),
                     ),
@@ -308,8 +339,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
 class _CommentItem extends StatelessWidget {
   final CommunityComment comment;
+  final VoidCallback? onDelete;
 
-  const _CommentItem({required this.comment});
+  const _CommentItem({required this.comment, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -360,7 +392,14 @@ class _CommentItem extends StatelessWidget {
                         style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary),
                       ),
                     ),
-                    const Spacer(),
+                    if (onDelete != null)
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 16, color: AppColors.textTertiary),
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        onPressed: onDelete,
+                      ),
                     Text(
                       DateFormat('MMM d, HH:mm').format(comment.createdAt),
                       style: AppTextStyles.caption,

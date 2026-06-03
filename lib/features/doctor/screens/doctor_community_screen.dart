@@ -48,7 +48,7 @@ class _DoctorCommunityScreenState extends State<DoctorCommunityScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
-              context.push(AppRoutes.patientCreatePost);
+              context.push(AppRoutes.doctorCreatePost);
             },
           ),
         ],

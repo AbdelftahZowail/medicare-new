@@ -91,10 +91,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           fee: doctor.consultationFee,
                           location: doctor.clinicArea,
                           isFavorite: true,
-                          onFavoriteToggle: () {
-                            setState(() {
-                              _favorites.removeAt(index);
-                            });
+                          onFavoriteToggle: () async {
+                            try {
+                              await _service.favoriteToggle(doctor.id);
+                              if (!mounted) return;
+                              setState(() {
+                                _favorites.removeAt(index);
+                              });
+                            } catch (e) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Failed to unfavorite: ${e.toString()}')),
+                              );
+                            }
                           },
                           onTap: () => context.push('${AppRoutes.patientDoctorProfile}/${doctor.id}'),
                         );

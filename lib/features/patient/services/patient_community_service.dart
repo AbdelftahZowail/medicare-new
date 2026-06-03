@@ -58,4 +58,24 @@ class PatientCommunityService {
     }
     throw Exception(response.message);
   }
+
+  Future<void> deletePost(int postId) async {
+    final response = await _api.delete<dynamic>(
+      ApiEndpoints.deleteCommunityPost(postId),
+      fromJson: (_) => null,
+    );
+    if (!response.isSuccess) {
+      throw Exception(response.message.isNotEmpty ? response.message : 'Failed to delete post');
+    }
+  }
+
+  Future<void> deleteComment(int commentId) async {
+    final response = await _api.delete<dynamic>(
+      ApiEndpoints.deleteCommunityComment(commentId),
+      fromJson: (_) => null,
+    );
+    if (!response.isSuccess) {
+      throw Exception(response.message.isNotEmpty ? response.message : 'Failed to delete comment');
+    }
+  }
 }

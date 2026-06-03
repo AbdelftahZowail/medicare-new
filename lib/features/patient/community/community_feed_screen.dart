@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
@@ -19,6 +21,7 @@ class CommunityFeedScreen extends StatefulWidget {
 class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
   final _service = PatientCommunityService();
   final _searchController = TextEditingController();
+  Timer? _debounce;
 
   bool _loading = true;
   List<CommunityPost> _posts = [];
@@ -26,24 +29,66 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
 
   final List<String> _specializations = [
     'All',
-    'Cardiology',
-    'Dermatology',
-    'Pediatrics',
-    'Orthopedics',
-    'Neurology',
-    'General',
+    ...AppConstants.specializations,
   ];
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _loadPosts();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      _loadPosts();
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _loadPosts();
+  }
+
+  Future<void> _deletePost(CommunityPost post) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Post'),
+        content: const Text('Are you sure you want to delete this post?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await _service.deletePost(post.id);
+      if (!mounted) return;
+      setState(() => _posts.removeWhere((p) => p.id == post.id));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post deleted')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete post: ${e.toString()}')),
+      );
+    }
   }
 
   Future<void> _loadPosts() async {
@@ -115,11 +160,18 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
               child: TextField(
                 controller: _searchController,
                 textInputAction: TextInputAction.search,
+                onChanged: _onSearchChanged,
                 onSubmitted: (_) => _loadPosts(),
                 decoration: InputDecoration(
                   hintText: 'Search posts...',
                   hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
                   prefixIcon: const Icon(Icons.search, color: AppColors.textTertiary),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: _clearSearch,
+                        )
+                      : null,
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                 ),
@@ -180,6 +232,7 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
                               return _PostCard(
                                 post: post,
                                 onTap: () => context.push('${AppRoutes.patientPostDetail}/${post.id}'),
+                                onDelete: () => _deletePost(post),
                               );
                             },
                           ),
@@ -202,8 +255,9 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
 class _PostCard extends StatelessWidget {
   final CommunityPost post;
   final VoidCallback? onTap;
+  final VoidCallback? onDelete;
 
-  const _PostCard({required this.post, this.onTap});
+  const _PostCard({required this.post, this.onTap, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -307,7 +361,15 @@ class _PostCard extends StatelessWidget {
                   '${post.commentsCount} comments',
                   style: AppTextStyles.bodySmall,
                 ),
-                const Spacer(),
+                if (onDelete != null)
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.textTertiary),
+                    tooltip: 'Delete post',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    onPressed: onDelete,
+                  ),
                 IconButton(
                   icon: const Icon(Icons.ios_share, size: 18, color: AppColors.textTertiary),
                   tooltip: 'Share post',

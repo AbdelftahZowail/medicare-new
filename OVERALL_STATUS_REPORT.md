@@ -41,6 +41,15 @@
 | 24 | Family Members edit — added edit button on cards, made AddFamilyMemberScreen reusable for editing | Flutter 2026-06-03 |
 | 25 | Per-doctor fee/status edit — wired UI trigger to existing `updateClinicDoctor()` via PopupMenuButton | Flutter 2026-06-03 |
 | 26 | Doctor "My Schedule" screen — added navigation entry point on dashboard & profile; `ManageScheduleScreen` already functional | Flutter 2026-06-03 |
+| 27 | Favorite toggle on Browse Doctors — wired via `PatientService.favoriteToggle()` → `POST /api/patient/favorite/{doctorId}` | Flutter 2026-06-03 |
+| 28 | Favorites screen unfavorite — replaced local-only `removeAt` with real API call + error handling | Flutter 2026-06-03 |
+| 29 | Community post delete — added `deletePost()` to `PatientCommunityService` + delete button + confirmation dialog on post cards | Flutter 2026-06-03 |
+| 30 | Community comment delete — added `deleteComment()` to `PatientCommunityService` + delete button on comment items | Flutter 2026-06-03 |
+| 31 | Doctor "Add post" routing — added `doctorCreatePost` route; doctor community now uses it instead of `patientCreatePost` | Flutter 2026-06-03 |
+| 32 | Community feed live search — added `onChanged` handler with 400ms debounce + clear button | Flutter 2026-06-03 |
+| 33 | Dynamic specializations — replaced hardcoded lists with `AppConstants.specializations` (11 values) in community feed & create post | Flutter 2026-06-03 |
+| 34 | Notification delete — added `deleteNotification` endpoint + service method + delete button on each notification card | Flutter 2026-06-03 |
+| 35 | Notification deep-link — wired `type`/`relatedId` to route to appointment detail, queue tracker, or post detail | Flutter 2026-06-03 |
 
 **Out of scope** (explicitly deferred — no work planned)
 
@@ -58,8 +67,8 @@
 
 **Open — backend complete, Flutter work pending**
 
-- Nearby / Map screen (§6.2 #2)
-- Doctor Profile rich UI rebuild (§6.2 #3) — patients count, calendar, slots, experience stats
+- Nearby / Map screen (§6.2 #2) — Phase 7A
+- Doctor Profile rich UI rebuild (§6.2 #3) — Phase 7B
 
 **Open — backend complete, Flutter work pending (small)**
 
@@ -81,19 +90,19 @@
 - ~~Clinic registration: address and email captured~~ 2026-06-03; areas list still `['Area 1', 'Area 2', 'Area 3']` placeholder (§9 D-Clinic-8, D-Clinic-9)
 - `EditClinicProfileScreen` missing photo gallery (only logo) and specialty tags; operating hours added 2026-06-03 (§9 D-Clinic-7)
 
-**Open — Backend supported but UI doesn't expose it (Flutter wiring only)**
+**Closed — Flutter wiring completed 2026-06-03**
 
-- Favorite toggle on doctor cards (`browse_doctors_screen.dart:134`, `favorites_screen.dart:94`) — `onFavoriteToggle: () {}`. Backend has `POST /api/patient/favorite/{doctorId}`. (§9 A-3, A-4)
-- Community post delete — `DELETE /api/community/posts/{id}` exists in `app_constants.dart:88` but no service method or UI button calls it. (§9 C-4)
-- Community comment delete — same pattern. (§9 C-5)
-- Notification delete — no backend endpoint AND no UI; this is a backend gap. (§9 C-6)
+- ~~Favorite toggle on doctor cards (`browse_doctors_screen.dart:134`, `favorites_screen.dart:94`)~~ ✅ `PatientService.favoriteToggle()` wired → `POST /api/patient/favorite/{doctorId}`. Optimistic UI toggle.
+- ~~Community post delete~~ ✅ `PatientCommunityService.deletePost()` + UI delete button + confirmation dialog.
+- ~~Community comment delete~~ ✅ `PatientCommunityService.deleteComment()` + UI delete button on comment items.
+- ~~Notification delete~~ ✅ `PatientNotificationsService.deleteNotification()` + `DELETE /api/notification/{id}` endpoint wired + UI delete button.
 
-**Open — UX polish**
+**Closed — UX polish 2026-06-03**
 
-- Community search only filters on Enter, no live search, no clear button (§9 E-1)
-- Community specializations list is hardcoded; duplicates what `getSpecializations()` should fetch (§9 E-2)
-- Doctor Community "Add post" routes to `patientCreatePost` (wrong role context) (§9 E-3)
-- Notification tap marks as read but does not deep-link to related entity (§9 E-4)
+- ~~Community search only filters on Enter, no live search, no clear button~~ ✅ Live search via 400ms debounce `onChanged` + clear button.
+- ~~Community specializations list is hardcoded~~ ✅ Replaced with `AppConstants.specializations` in feed & create post screens.
+- ~~Doctor Community "Add post" routes to `patientCreatePost`~~ ✅ Added `doctorCreatePost` route; doctor community uses it.
+- ~~Notification tap marks as read but does not deep-link~~ ✅ `_onNotificationTap` reads `type`/`relatedId` and routes accordingly.
 - Silent mock-fallback pattern in 19+ service code paths (`useMockDataFallback = false` by default) makes debugging API failures hard (§9 E-5)
 - ~~Family members: no edit screen (workaround: delete + re-add) (§9 E-6)~~ ✅ **Closed 2026-06-03** — edit button added to each family member card; `AddFamilyMemberScreen` accepts `FamilyMember` for pre-populated editing.
 - Reviews: no edit/delete after submission (§9 E-7)

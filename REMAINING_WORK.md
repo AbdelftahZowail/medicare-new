@@ -129,29 +129,30 @@
 > **Goal:** Wire social interactions that share the same mental model (toggle, API call, refresh).  
 > **Est. time:** ~3 hours  
 > **Prerequisites:** Phase 1 (getFavorites fix)  
-> **Can be one-shotted:** ✅ Yes — all in patient-facing social content domain.
+> **Status:** ✅ Completed 2026-06-03
 
-- [ ] **Wire favorite toggle on Browse Doctors** — call `POST /api/patient/favorite/{doctorId}` instead of `() {}`  
-  *File: `lib/features/patient/browse_doctors/browse_doctors_screen.dart:134`
+- [x] **Wire favorite toggle on Browse Doctors** — calls `POST /api/patient/favorite/{doctorId}` via `PatientService.favoriteToggle()`  
+  Added `favoriteToggle(int doctorId)` to `PatientService`. Wired `onFavoriteToggle` callback to call it and optimistically update `isFavorited` state locally.  
+  *Files: `lib/core/services/patient_service.dart` + `lib/features/patient/browse_doctors/browse_doctors_screen.dart`
 
-- [ ] **Wire Favorites screen** — call `GET /api/patient/favorites` instead of local `removeAt(i)`  
-  *File: `lib/features/patient/profile/favorites_screen.dart:94`
+- [x] **Wire Favorites screen** — calls `PatientService.favoriteToggle()` on unfavorite, removes from local list only on success  
+  Replaced local-only `_favorites.removeAt(index)` with async API call + error snackbar.  
+  *File: `lib/features/patient/profile/favorites_screen.dart`
 
-- [ ] **Community post delete** — add delete button calling `DELETE /api/community/posts/{id}`  
-  Endpoint exists in constants, no service method or UI calls it.  
-  *Files: `lib/core/services/community_service.dart` + `community_feed_screen.dart`
+- [x] **Community post delete** — added `deletePost(int)` to `PatientCommunityService`, added delete `IconButton` + confirmation dialog on `_PostCard` calling `DELETE /api/community/posts/{id}`  
+  *Files: `lib/features/patient/services/patient_community_service.dart` + `community_feed_screen.dart`
 
-- [ ] **Community comment delete** — add delete button calling `DELETE /api/community/comments/{id}`  
-  *Files: `lib/core/services/community_service.dart` + `post_detail_screen.dart`
+- [x] **Community comment delete** — added `deleteComment(int)` to `PatientCommunityService`, added delete `IconButton` + confirmation dialog on `_CommentItem` calling `DELETE /api/community/comments/{id}`  
+  *Files: `lib/features/patient/services/patient_community_service.dart` + `post_detail_screen.dart`
 
-- [ ] **Fix doctor "Add post" routing** — routes to `patientCreatePost` instead of doctor context  
-  *File: `lib/features/doctor/screens/doctor_community_screen.dart`
+- [x] **Fix doctor "Add post" routing** — added `AppRoutes.doctorCreatePost` route pointing to `CreatePostScreen`; doctor community now uses `doctorCreatePost` instead of `patientCreatePost`  
+  *Files: `lib/core/constants/app_constants.dart` + `lib/core/navigation/app_router.dart` + `doctor_community_screen.dart`
 
-- [ ] **Add live search + clear button on community feed** — currently only filters on Enter  
+- [x] **Add live search + clear button on community feed** — added `onChanged` handler with 400ms debounce timer; added clear (X) `IconButton` as suffixIcon when text is non-empty; TextField listener triggers `setState` for reactive clear button visibility  
   *File: `lib/features/patient/community/community_feed_screen.dart`
 
-- [ ] **Fetch specializations dynamically** — currently hardcoded 7 items  
-  *File: `lib/features/patient/community/community_feed_screen.dart:27-35`
+- [x] **Fetch specializations dynamically** — replaced hardcoded 7-item list with `AppConstants.specializations` (11 values) in both `community_feed_screen.dart` and `create_post_screen.dart`  
+  *Files: `lib/features/patient/community/community_feed_screen.dart` + `create_post_screen.dart`
 
 ---
 
@@ -160,15 +161,13 @@
 > **Goal:** Notification-specific features. Separate from 6A because they touch routing infrastructure, not social content APIs.  
 > **Est. time:** ~1 hour  
 > **Prerequisites:** None  
-> **Can be one-shotted:** ✅ Yes — 1–2 files only.
+> **Status:** ✅ Completed 2026-06-03
 
-- [ ] **Notification delete UI** — add swipe/button calling `DELETE /api/notification/{id}`  
-  Backend endpoint shipped 2026-06-03.  
-  *File: `lib/features/patient/notifications/notifications_screen.dart`
+- [x] **Notification delete UI** — added `deleteNotification` endpoint to `ApiEndpoints`, `deleteNotification(int)` to `PatientNotificationsService`, delete `IconButton` (X icon) + confirmation dialog on each `_NotificationCard` calling `DELETE /api/notification/{id}`  
+  *Files: `lib/core/constants/app_constants.dart` + `lib/features/patient/services/patient_notifications_service.dart` + `notifications_screen.dart`
 
-- [ ] **Notification deep-link** — wire `type`/`relatedId` to route to related entity on tap  
-  Model has both fields, onTap handler never reads them.  
-  *Files: `lib/core/models/shared_models.dart:7-8` + `notifications_screen.dart`
+- [x] **Notification deep-link** — replaced `_markAsRead`-only onTap with `_onNotificationTap` that reads `type`/`relatedId` and routes to appointment detail, queue tracker, or post detail as appropriate  
+  *File: `lib/features/patient/profile/notifications_screen.dart`
 
 ---
 
@@ -247,6 +246,8 @@
 | **7B** | Design polish pass | 4 | ~4-6 hrs | ✅ | None |
 | **Cross** | Opportunistic | 6 | — | ✅ | Any |
 | **Total** | | **41** | **~27-34 hrs** (~3.5-4.5 dev days) | | |
+
+**Progress through phases:** ✅ Phase 1 | ✅ Phase 2 | ✅ Phase 3 | ✅ Phase 4+5 | ✅ Phase 6A | ✅ Phase 6B | ⬜ Phase 7A | ⬜ Phase 7B
 
 **Key principle:** Each phase minimizes context switching. Open a file once, fix every issue in it, move on.  
 **Batching rule:** If all items in a phase touch ≤5 files and share the same mental model (e.g., all API wiring, all visual polish), one-shot it. If a phase mixes a major new feature with visual tweaks, split them.
