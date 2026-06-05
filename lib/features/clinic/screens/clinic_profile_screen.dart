@@ -5,7 +5,6 @@ import '../../../core/bloc/auth_bloc.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/debug_account_switcher.dart';
 import '../../clinic/clinic_service.dart';
 
@@ -44,23 +43,6 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
         _error = e.toString();
         _isLoading = false;
       });
-    }
-  }
-
-  void _onNavTap(int index) {
-    switch (index) {
-      case 0:
-        context.go(AppRoutes.clinicDashboard);
-        break;
-      case 1:
-        context.go(AppRoutes.clinicDoctors);
-        break;
-      case 2:
-        context.go(AppRoutes.clinicPayments);
-        break;
-      case 3:
-        context.go(AppRoutes.clinicProfile);
-        break;
     }
   }
 
@@ -219,11 +201,6 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
                       ),
                     ),
                   ),
-      ),
-      bottomNavigationBar: AppBottomNav(
-        currentIndex: 3,
-        items: ClinicNavItems.items,
-        onTap: _onNavTap,
       ),
     );
   }

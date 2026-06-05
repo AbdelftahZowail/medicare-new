@@ -6,6 +6,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../doctor/services/doctor_service.dart';
@@ -69,7 +70,7 @@ class _EditDoctorProfileScreenState extends State<EditDoctorProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load profile: ${e.toString()}')),
+          SnackBar(content: Text('Failed to load profile: ${errorMessage(e)}')),
         );
       }
     }
@@ -151,7 +152,7 @@ class _EditDoctorProfileScreenState extends State<EditDoctorProfileScreen> {
       setState(() => _isUploading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload error: $e')),
+          SnackBar(content: Text('Upload error: ${errorMessage(e)}')),
         );
       }
     }

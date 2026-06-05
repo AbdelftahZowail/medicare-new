@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -82,18 +83,19 @@ class _WalkInBookingScreenState extends State<WalkInBookingScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final timeStr = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
+      final timeStr = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}:00';
 
       final data = {
         'doctorId': _selectedDoctorId,
         'appointmentDate': _selectedDate.toIso8601String().split('T')[0],
         'startTime': timeStr,
-        'patientName': _nameController.text.trim(),
-        'patientPhone': _phoneController.text.trim(),
-        'patientAge': int.tryParse(_ageController.text) ?? 0,
-        'patientGender': _selectedGender ?? 0,
+        'offlinePatientName': _nameController.text.trim(),
+        'offlinePatientPhone': _phoneController.text.trim(),
+        'offlinePatientAge': int.tryParse(_ageController.text) ?? 0,
+        'offlinePatientGender': _selectedGender ?? 0,
         'isEmergency': _isEmergency,
-        'isWalkIn': true,
+        'isPaid': false,
+        'paymentMethod': 0,
       };
 
       await _service.bookWalkInAppointment(data);
@@ -107,7 +109,7 @@ class _WalkInBookingScreenState extends State<WalkInBookingScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text(errorMessage(e))),
         );
       }
     } finally {

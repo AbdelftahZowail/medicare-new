@@ -5,7 +5,6 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/models/appointment_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
 import '../../doctor/services/doctor_service.dart';
 
 class DoctorAppointmentsScreen extends StatefulWidget {
@@ -19,26 +18,6 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
   final _service = DoctorService();
   DateTime _selectedDate = DateTime.now();
   int _statusFilter = -1; // -1 = all
-  int _navIndex = 1;
-
-  void _onNavTap(int index) {
-    setState(() => _navIndex = index);
-    switch (index) {
-      case 0:
-        context.go(AppRoutes.doctorDashboard);
-        break;
-      case 1:
-        context.go(AppRoutes.doctorAppointments);
-        break;
-      case 2:
-        context.go(AppRoutes.doctorCommunity);
-        break;
-      case 3:
-        context.go(AppRoutes.doctorProfile);
-        break;
-    }
-  }
-
   List<DateTime> _getWeekDays() {
     final now = DateTime.now();
     final start = now.subtract(const Duration(days: 3));
@@ -244,11 +223,6 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: AppBottomNav(
-        currentIndex: _navIndex,
-        items: DoctorNavItems.items,
-        onTap: _onNavTap,
       ),
     );
   }

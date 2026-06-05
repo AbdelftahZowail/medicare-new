@@ -6,6 +6,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/utils/error_utils.dart';
+
 import '../../../core/bloc/auth_bloc.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/auth_models.dart';
@@ -113,7 +115,7 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to get location: $e')),
+          SnackBar(content: Text('Failed to get location: ${errorMessage(e)}')),
         );
       }
     }
@@ -234,7 +236,7 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
       setState(() => _isUploading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload error: $e')),
+          SnackBar(content: Text('Upload error: ${errorMessage(e)}')),
         );
       }
     }

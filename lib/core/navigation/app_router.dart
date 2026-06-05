@@ -11,6 +11,9 @@ import '../models/shared_models.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_button.dart';
+import 'clinic_shell_screen.dart';
+import 'doctor_shell_screen.dart';
+import 'patient_shell_screen.dart';
 
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/onboarding_screen.dart';
@@ -168,9 +171,52 @@ class AppRouter {
         ),
 
         // Patient Routes
-        GoRoute(
-          path: AppRoutes.patientHome,
-          builder: (context, state) => const PatientHomeScreen(),
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) {
+            return PatientShellScreen(navigationShell: navigationShell);
+          },
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.patientHome,
+                  builder: (context, state) => const PatientHomeScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.patientAppointments,
+                  builder: (context, state) => const MyAppointmentsScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.patientCommunity,
+                  builder: (context, state) => const CommunityFeedScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.patientNearby,
+                  builder: (context, state) => const NearbyScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.patientProfile,
+                  builder: (context, state) => const PatientProfileScreen(),
+                ),
+              ],
+            ),
+          ],
         ),
         GoRoute(
           path: AppRoutes.patientSpecializations,
@@ -179,10 +225,6 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.patientBrowseDoctors,
           builder: (context, state) => const BrowseDoctorsScreen(),
-        ),
-        GoRoute(
-          path: AppRoutes.patientNearby,
-          builder: (context, state) => const NearbyScreen(),
         ),
         GoRoute(
           path: '${AppRoutes.patientDoctorProfile}/:id',
@@ -211,10 +253,6 @@ class AppRouter {
           },
         ),
         GoRoute(
-          path: AppRoutes.patientAppointments,
-          builder: (context, state) => const MyAppointmentsScreen(),
-        ),
-        GoRoute(
           path: '${AppRoutes.patientAppointmentDetail}/:id',
           builder: (context, state) {
             final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
@@ -229,10 +267,6 @@ class AppRouter {
           },
         ),
         GoRoute(
-          path: AppRoutes.patientCommunity,
-          builder: (context, state) => const CommunityFeedScreen(),
-        ),
-        GoRoute(
           path: AppRoutes.patientCreatePost,
           builder: (context, state) => const CreatePostScreen(),
         ),
@@ -242,10 +276,6 @@ class AppRouter {
             final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             return PostDetailScreen(postId: id);
           },
-        ),
-        GoRoute(
-          path: AppRoutes.patientProfile,
-          builder: (context, state) => const PatientProfileScreen(),
         ),
         GoRoute(
           path: AppRoutes.patientEditProfile,
@@ -286,13 +316,44 @@ class AppRouter {
         ),
 
         // Doctor Routes
-        GoRoute(
-          path: AppRoutes.doctorDashboard,
-          builder: (context, state) => const DoctorDashboardScreen(),
-        ),
-        GoRoute(
-          path: AppRoutes.doctorAppointments,
-          builder: (context, state) => const DoctorAppointmentsScreen(),
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) {
+            return DoctorShellScreen(navigationShell: navigationShell);
+          },
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.doctorDashboard,
+                  builder: (context, state) => const DoctorDashboardScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.doctorAppointments,
+                  builder: (context, state) => const DoctorAppointmentsScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.doctorCommunity,
+                  builder: (context, state) => const DoctorCommunityScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.doctorProfile,
+                  builder: (context, state) => const doctor_screens.DoctorProfileScreen(),
+                ),
+              ],
+            ),
+          ],
         ),
         GoRoute(
           path: AppRoutes.doctorQueue,
@@ -313,20 +374,12 @@ class AppRouter {
           },
         ),
         GoRoute(
-          path: AppRoutes.doctorProfile,
-          builder: (context, state) => const doctor_screens.DoctorProfileScreen(),
-        ),
-        GoRoute(
           path: AppRoutes.doctorEditProfile,
           builder: (context, state) => const EditDoctorProfileScreen(),
         ),
         GoRoute(
           path: AppRoutes.doctorQrCode,
           builder: (context, state) => const DoctorQrCodeScreen(),
-        ),
-        GoRoute(
-          path: AppRoutes.doctorCommunity,
-          builder: (context, state) => const DoctorCommunityScreen(),
         ),
         GoRoute(
           path: AppRoutes.doctorCreatePost,
@@ -346,17 +399,51 @@ class AppRouter {
         ),
 
         // Clinic Routes
-        GoRoute(
-          path: AppRoutes.clinicDashboard,
-          builder: (context, state) => const ClinicDashboardScreen(),
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) {
+            return ClinicShellScreen(navigationShell: navigationShell);
+          },
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.clinicDashboard,
+                  builder: (context, state) => const ClinicDashboardScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.clinicDoctors,
+                  builder: (context, state) => const ClinicDoctorsScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.clinicPayments,
+                  builder: (context, state) => const ClinicPaymentsScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.clinicProfile,
+                  builder: (context, state) => const ClinicProfileScreen(),
+                ),
+              ],
+            ),
+          ],
         ),
         GoRoute(
           path: AppRoutes.clinicQueue,
-          builder: (context, state) => const ClinicQueueScreen(),
-        ),
-        GoRoute(
-          path: AppRoutes.clinicDoctors,
-          builder: (context, state) => const ClinicDoctorsScreen(),
+          builder: (context, state) {
+            final doctorId = int.tryParse(state.uri.queryParameters['doctorId'] ?? '') ?? 0;
+            return ClinicQueueScreen(doctorId: doctorId);
+          },
         ),
         GoRoute(
           path: '${AppRoutes.clinicDoctorDetail}/:id',
@@ -381,16 +468,8 @@ class AppRouter {
           },
         ),
         GoRoute(
-          path: AppRoutes.clinicPayments,
-          builder: (context, state) => const ClinicPaymentsScreen(),
-        ),
-        GoRoute(
           path: AppRoutes.clinicWalkInBooking,
           builder: (context, state) => const WalkInBookingScreen(),
-        ),
-        GoRoute(
-          path: AppRoutes.clinicProfile,
-          builder: (context, state) => const ClinicProfileScreen(),
         ),
         GoRoute(
           path: AppRoutes.clinicEditProfile,

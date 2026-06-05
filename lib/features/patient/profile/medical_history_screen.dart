@@ -6,6 +6,7 @@ import '../../../core/models/shared_models.dart';
 import '../../../core/models/user_models.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../services/patient_medical_history_service.dart';
 import '../services/patient_profile_service.dart';
@@ -60,7 +61,7 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen> {
         _loading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load medical history: ${e.toString()}')),
+        SnackBar(content: Text('Failed to load medical history: ${errorMessage(e)}')),
       );
     }
   }

@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../doctor/services/doctor_service.dart';
 
 class DoctorDashboardScreen extends StatefulWidget {
@@ -16,26 +16,6 @@ class DoctorDashboardScreen extends StatefulWidget {
 
 class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   final _service = DoctorService();
-  int _navIndex = 0;
-
-  void _onNavTap(int index) {
-    setState(() => _navIndex = index);
-    switch (index) {
-      case 0:
-        context.go(AppRoutes.doctorDashboard);
-        break;
-      case 1:
-        context.go(AppRoutes.doctorAppointments);
-        break;
-      case 2:
-        context.go(AppRoutes.doctorCommunity);
-        break;
-      case 3:
-        context.go(AppRoutes.doctorProfile);
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -117,7 +97,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                         } catch (e) {
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Failed to load schedule: $e')),
+                              SnackBar(content: Text('Failed to load schedule: ${errorMessage(e)}')),
                             );
                           }
                         }
@@ -144,11 +124,6 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
             );
           },
         ),
-      ),
-      bottomNavigationBar: AppBottomNav(
-        currentIndex: _navIndex,
-        items: DoctorNavItems.items,
-        onTap: _onNavTap,
       ),
     );
   }

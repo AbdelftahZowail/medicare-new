@@ -6,6 +6,7 @@ import '../../../core/models/shared_models.dart';
 import '../../../core/services/patient_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 
@@ -118,7 +119,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save family member: ${e.toString()}')),
+        SnackBar(content: Text('Failed to save family member: ${errorMessage(e)}')),
       );
     }
   }

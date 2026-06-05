@@ -65,6 +65,7 @@ class ApiEndpoints {
   static String clinicDoctorScan(String qrCodeKey) => '$apiBase/clinic/doctors/scan/$qrCodeKey';
   static const String clinicDoctorRegister = '$apiBase/clinic/doctors/register';
   static String clinicAddSchedule(int doctorId) => '$apiBase/doctor/$doctorId/schedules';
+  static String clinicDeleteSchedule(int scheduleId) => '$apiBase/doctor/schedules/$scheduleId';
 
   // Appointment
   static const String appointments = '$apiBase/appointment';

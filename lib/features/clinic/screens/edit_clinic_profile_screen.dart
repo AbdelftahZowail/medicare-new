@@ -3,6 +3,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/utils/error_utils.dart';
+
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_colors.dart';
@@ -65,7 +67,7 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading profile: $e')),
+          SnackBar(content: Text('Error loading profile: ${errorMessage(e)}')),
         );
       }
     } finally {
@@ -133,7 +135,7 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text(errorMessage(e))),
         );
       }
     } finally {
@@ -175,7 +177,7 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to get location: ${e.toString()}')),
+          SnackBar(content: Text('Failed to get location: ${errorMessage(e)}')),
         );
       }
     }
@@ -216,7 +218,7 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
       setState(() => _isUploading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload error: $e')),
+          SnackBar(content: Text('Upload error: ${errorMessage(e)}')),
         );
       }
     }

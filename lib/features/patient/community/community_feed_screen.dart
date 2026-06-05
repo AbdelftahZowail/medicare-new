@@ -8,6 +8,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/models/community_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/app_button.dart';
 import '../services/patient_community_service.dart';
 
@@ -86,7 +87,7 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete post: ${e.toString()}')),
+        SnackBar(content: Text('Failed to delete post: ${errorMessage(e)}')),
       );
     }
   }
@@ -108,28 +109,8 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
         _loading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load posts: ${e.toString()}')),
+        SnackBar(content: Text('Failed to load posts: ${errorMessage(e)}')),
       );
-    }
-  }
-
-  void _onNavTap(int index) {
-    switch (index) {
-      case 0:
-        context.go(AppRoutes.patientHome);
-        break;
-      case 1:
-        context.go(AppRoutes.patientAppointments);
-        break;
-      case 2:
-        // Already on community
-        break;
-      case 3:
-        context.go(AppRoutes.patientBrowseDoctors);
-        break;
-      case 4:
-        context.go(AppRoutes.patientProfile);
-        break;
     }
   }
 
@@ -243,10 +224,6 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push(AppRoutes.patientCreatePost),
         child: const Icon(Icons.add),
-      ),
-      bottomNavigationBar: _CommunityBottomNav(
-        currentIndex: 2,
-        onTap: _onNavTap,
       ),
     );
   }
@@ -462,77 +439,3 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _CommunityBottomNav extends StatelessWidget {
-  final int currentIndex;
-  final Function(int) onTap;
-
-  const _CommunityBottomNav({
-    required this.currentIndex,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const items = [
-      _NavItemData(icon: Icons.home_outlined, selectedIcon: Icons.home, label: 'Home'),
-      _NavItemData(icon: Icons.calendar_today_outlined, selectedIcon: Icons.calendar_today, label: 'Appointments'),
-      _NavItemData(icon: Icons.chat_bubble_outline, selectedIcon: Icons.chat_bubble, label: 'AI Bot'),
-      _NavItemData(icon: Icons.location_on_outlined, selectedIcon: Icons.location_on, label: 'Nearby'),
-      _NavItemData(icon: Icons.person_outline, selectedIcon: Icons.person, label: 'Profile'),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, -2)),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(items.length, (index) {
-              final item = items[index];
-              final isSelected = index == currentIndex;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => onTap(index),
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isSelected ? item.selectedIcon : item.icon,
-                        color: isSelected ? AppColors.primary : AppColors.textTertiary,
-                        size: 24,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.label,
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: isSelected ? AppColors.primary : AppColors.textTertiary,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItemData {
-  final IconData icon;
-  final IconData selectedIcon;
-  final String label;
-  const _NavItemData({required this.icon, required this.selectedIcon, required this.label});
-}

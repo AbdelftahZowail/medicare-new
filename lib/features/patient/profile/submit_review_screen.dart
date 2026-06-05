@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/services/review_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/app_button.dart';
 
 class SubmitReviewScreen extends StatefulWidget {
@@ -61,7 +62,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
       if (!mounted) return;
       setState(() => _submitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to submit review: ${e.toString()}')),
+        SnackBar(content: Text('Failed to submit review: ${errorMessage(e)}')),
       );
     }
   }

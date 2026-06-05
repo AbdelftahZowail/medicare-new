@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/models/community_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../services/patient_community_service.dart';
 
 class PostDetailScreen extends StatefulWidget {
@@ -67,7 +68,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         _loading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load post: ${e.toString()}')),
+        SnackBar(content: Text('Failed to load post: ${errorMessage(e)}')),
       );
     }
   }
@@ -92,7 +93,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add comment: ${e.toString()}')),
+        SnackBar(content: Text('Failed to add comment: ${errorMessage(e)}')),
       );
     } finally {
       if (mounted) setState(() => _postingComment = false);
@@ -122,7 +123,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete comment: ${e.toString()}')),
+        SnackBar(content: Text('Failed to delete comment: ${errorMessage(e)}')),
       );
     }
   }

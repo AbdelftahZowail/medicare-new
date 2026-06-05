@@ -5,6 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/models/doctor_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/doctor_card.dart';
 import '../../../core/services/patient_service.dart';
 
@@ -38,7 +39,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load favorites: ${e.toString()}')),
+        SnackBar(content: Text('Failed to load favorites: ${errorMessage(e)}')),
       );
       setState(() {
         _favorites = [];
@@ -101,7 +102,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                             } catch (e) {
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Failed to unfavorite: ${e.toString()}')),
+                                SnackBar(content: Text('Failed to unfavorite: ${errorMessage(e)}')),
                               );
                             }
                           },

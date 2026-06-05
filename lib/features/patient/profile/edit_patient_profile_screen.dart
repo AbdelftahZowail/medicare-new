@@ -6,6 +6,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/models/user_models.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -75,7 +76,7 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load profile: $e')),
+        SnackBar(content: Text('Failed to load profile: ${errorMessage(e)}')),
       );
     }
   }
@@ -130,7 +131,7 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
       setState(() => _isUploading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload error: $e')),
+          SnackBar(content: Text('Upload error: ${errorMessage(e)}')),
         );
       }
     }
@@ -150,6 +151,17 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
     }
   }
 
+  int? _computeAge(DateTime? dateOfBirth) {
+    if (dateOfBirth == null) return null;
+    final now = DateTime.now();
+    var age = now.year - dateOfBirth.year;
+    if (now.month < dateOfBirth.month ||
+        (now.month == dateOfBirth.month && now.day < dateOfBirth.day)) {
+      age--;
+    }
+    return age;
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -162,6 +174,7 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
       phoneNumber: _phoneController.text.trim(),
       email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
       gender: _selectedGender,
+      age: _computeAge(_dateOfBirth),
       dateOfBirth: _dateOfBirth,
       address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
       bloodType: _bloodTypeController.text.trim().isEmpty ? null : _bloodTypeController.text.trim(),

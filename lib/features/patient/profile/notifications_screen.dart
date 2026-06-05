@@ -6,6 +6,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/models/shared_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../services/patient_notifications_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -129,7 +130,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete notification: ${e.toString()}')),
+        SnackBar(content: Text('Failed to delete notification: ${errorMessage(e)}')),
       );
     }
   }

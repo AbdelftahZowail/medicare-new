@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/models/doctor_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
 import '../../clinic/clinic_service.dart';
 
 class ClinicPaymentsScreen extends StatefulWidget {
@@ -16,23 +16,54 @@ class ClinicPaymentsScreen extends StatefulWidget {
 class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
   final _service = ClinicService();
   Map<String, dynamic>? _paymentsData;
+  List<DoctorListItem> _doctors = [];
+  int? _selectedDoctorId;
   bool _isLoading = true;
+  bool _isLoadingDoctors = true;
   String? _error;
   String _timeframe = 'today'; // today, week, month
 
   @override
   void initState() {
     super.initState();
-    _loadPayments();
+    _loadDoctors();
+  }
+
+  Future<void> _loadDoctors() async {
+    try {
+      setState(() => _isLoadingDoctors = true);
+      final doctors = await _service.getClinicDoctors();
+      setState(() {
+        _doctors = doctors;
+        _isLoadingDoctors = false;
+        if (doctors.isNotEmpty) {
+          _selectedDoctorId = doctors.first.id;
+          _loadPayments();
+        } else {
+          _isLoading = false;
+          _error = 'No doctors registered in this clinic';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingDoctors = false;
+        _isLoading = false;
+        _error = e.toString();
+      });
+    }
   }
 
   Future<void> _loadPayments() async {
+    if (_selectedDoctorId == null) return;
     try {
       setState(() {
         _isLoading = true;
         _error = null;
       });
-      final data = await _service.getClinicPayments(_timeframe);
+      final data = await _service.getClinicPayments(
+        doctorId: _selectedDoctorId!,
+        timeframe: _timeframe,
+      );
       setState(() {
         _paymentsData = data;
         _isLoading = false;
@@ -45,26 +76,14 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
     }
   }
 
-  void _onTimeframeChanged(String timeframe) {
-    setState(() => _timeframe = timeframe);
+  void _onDoctorChanged(int doctorId) {
+    setState(() => _selectedDoctorId = doctorId);
     _loadPayments();
   }
 
-  void _onNavTap(int index) {
-    switch (index) {
-      case 0:
-        context.go(AppRoutes.clinicDashboard);
-        break;
-      case 1:
-        context.go(AppRoutes.clinicDoctors);
-        break;
-      case 2:
-        context.go(AppRoutes.clinicPayments);
-        break;
-      case 3:
-        context.go(AppRoutes.clinicProfile);
-        break;
-    }
+  void _onTimeframeChanged(String timeframe) {
+    setState(() => _timeframe = timeframe);
+    _loadPayments();
   }
 
   @override
@@ -89,48 +108,129 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
         ],
       ),
       body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? _buildError()
-                : RefreshIndicator(
-                    onRefresh: _loadPayments,
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildTimeframeSelector(),
-                          const SizedBox(height: 20),
-                          _buildRevenueCard(totalRevenue),
-                          const SizedBox(height: 20),
-                          _buildBreakdownCards(cashRevenue, onlineRevenue, refunds),
-                          const SizedBox(height: 24),
-                          Text('Recent Transactions', style: AppTextStyles.heading2),
-                          const SizedBox(height: 12),
-                          if (transactions.isEmpty)
-                            _buildEmptyTransactions()
-                          else
-                            ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: transactions.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 10),
-                              itemBuilder: (context, index) {
-                                final tx = transactions[index] as Map<String, dynamic>;
-                                return _TransactionCard(transaction: tx);
-                              },
+        child: Column(
+          children: [
+            _buildDoctorSelector(),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? _buildError()
+                      : RefreshIndicator(
+                          onRefresh: _loadPayments,
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildTimeframeSelector(),
+                                const SizedBox(height: 20),
+                                _buildRevenueCard(totalRevenue),
+                                const SizedBox(height: 20),
+                                _buildBreakdownCards(cashRevenue, onlineRevenue, refunds),
+                                const SizedBox(height: 24),
+                                Text('Recent Transactions', style: AppTextStyles.heading2),
+                                const SizedBox(height: 12),
+                                if (transactions.isEmpty)
+                                  _buildEmptyTransactions()
+                                else
+                                  ListView.separated(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemCount: transactions.length,
+                                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                                    itemBuilder: (context, index) {
+                                      final tx = transactions[index] as Map<String, dynamic>;
+                                      return _TransactionCard(transaction: tx);
+                                    },
+                                  ),
+                              ],
                             ),
-                        ],
-                      ),
-                    ),
-                  ),
+                          ),
+                        ),
+            ),
+          ],
+        ),
       ),
-      bottomNavigationBar: AppBottomNav(
-        currentIndex: 2,
-        items: ClinicNavItems.items,
-        onTap: _onNavTap,
+    );
+  }
+
+  Widget _buildDoctorSelector() {
+    if (_isLoadingDoctors) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_doctors.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.borderLight),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.warning_amber, color: AppColors.warning, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'No doctors registered. Scan a doctor QR to add one.',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: _selectedDoctorId,
+          isExpanded: true,
+          icon: Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+          items: _doctors.map((doctor) {
+            return DropdownMenuItem<int>(
+              value: doctor.id,
+              child: Row(
+                children: [
+                  Icon(Icons.person, color: AppColors.primary, size: 20),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        doctor.fullName,
+                        style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        doctor.specialization,
+                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            if (value != null) _onDoctorChanged(value);
+          },
+        ),
       ),
     );
   }

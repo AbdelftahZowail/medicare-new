@@ -5,7 +5,6 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/models/shared_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
 import '../../doctor/services/doctor_service.dart';
 
 class DoctorNotificationsScreen extends StatefulWidget {
@@ -17,26 +16,6 @@ class DoctorNotificationsScreen extends StatefulWidget {
 
 class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> {
   final _service = DoctorService();
-  int _navIndex = 0;
-
-  void _onNavTap(int index) {
-    setState(() => _navIndex = index);
-    switch (index) {
-      case 0:
-        context.go(AppRoutes.doctorDashboard);
-        break;
-      case 1:
-        context.go(AppRoutes.doctorAppointments);
-        break;
-      case 2:
-        context.go(AppRoutes.doctorCommunity);
-        break;
-      case 3:
-        context.go(AppRoutes.doctorProfile);
-        break;
-    }
-  }
-
   IconData _getNotificationIcon(String? type) {
     switch (type?.toLowerCase()) {
       case 'appointment':
@@ -142,11 +121,6 @@ class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> {
             );
           },
         ),
-      ),
-      bottomNavigationBar: AppBottomNav(
-        currentIndex: _navIndex,
-        items: DoctorNavItems.items,
-        onTap: _onNavTap,
       ),
     );
   }

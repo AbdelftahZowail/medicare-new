@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/error_utils.dart';
+
 import '../../../core/bloc/auth_bloc.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/doctor_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/debug_account_switcher.dart';
 import '../../doctor/services/doctor_service.dart';
 
@@ -20,26 +21,6 @@ class DoctorProfileScreen extends StatefulWidget {
 
 class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   final _service = DoctorService();
-  int _navIndex = 3;
-
-  void _onNavTap(int index) {
-    setState(() => _navIndex = index);
-    switch (index) {
-      case 0:
-        context.go(AppRoutes.doctorDashboard);
-        break;
-      case 1:
-        context.go(AppRoutes.doctorAppointments);
-        break;
-      case 2:
-        context.go(AppRoutes.doctorCommunity);
-        break;
-      case 3:
-        context.go(AppRoutes.doctorProfile);
-        break;
-    }
-  }
-
   Future<void> _showLogoutDialog(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -176,7 +157,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         } catch (e) {
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
+                              SnackBar(content: Text(errorMessage(e))),
                             );
                           }
                         }
@@ -218,11 +199,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
             );
           },
         ),
-      ),
-      bottomNavigationBar: AppBottomNav(
-        currentIndex: _navIndex,
-        items: DoctorNavItems.items,
-        onTap: _onNavTap,
       ),
     );
   }

@@ -51,26 +51,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     }
   }
 
-  void _onNavTap(int index) {
-    switch (index) {
-      case 0:
-        context.go(AppRoutes.patientHome);
-        break;
-      case 1:
-        context.go(AppRoutes.patientAppointments);
-        break;
-      case 2:
-        context.go(AppRoutes.patientCommunity);
-        break;
-      case 3:
-        context.go(AppRoutes.patientBrowseDoctors);
-        break;
-      case 4:
-        // Already on profile
-        break;
-    }
-  }
-
   Future<void> _showLogoutDialog() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -157,6 +137,32 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                         _profile?.phoneNumber ?? '',
                         style: AppTextStyles.bodySmall,
                       ),
+                      const SizedBox(height: 20),
+                      // Personal Details Section
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text('Personal Details', style: AppTextStyles.heading3),
+                      ),
+                      const SizedBox(height: 12),
+                      if (_profile?.dateOfBirth != null)
+                        _HealthCard(
+                          icon: Icons.calendar_today,
+                          title: 'Date of Birth',
+                          value: '${_profile!.dateOfBirth!.day}/${_profile!.dateOfBirth!.month}/${_profile!.dateOfBirth!.year}',
+                        ),
+                      if (_profile?.age != null)
+                        _HealthCard(
+                          icon: Icons.cake,
+                          title: 'Age',
+                          value: '${_profile!.age} years',
+                        ),
+                      if (_profile?.gender != null)
+                        _HealthCard(
+                          icon: Icons.person,
+                          title: 'Gender',
+                          value: _profile!.gender == 0 ? 'Male' : 'Female',
+                        ),
+                      const SizedBox(height: 20),
                       // Health Info Section
                       if (_profile?.bloodType != null ||
                           _profile?.allergies != null ||
@@ -251,10 +257,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                   ),
                 ),
               ),
-      ),
-      bottomNavigationBar: _ProfileBottomNav(
-        currentIndex: 4,
-        onTap: _onNavTap,
       ),
     );
   }
@@ -353,77 +355,3 @@ class _HealthCard extends StatelessWidget {
   }
 }
 
-class _ProfileBottomNav extends StatelessWidget {
-  final int currentIndex;
-  final Function(int) onTap;
-
-  const _ProfileBottomNav({
-    required this.currentIndex,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const items = [
-      _NavItemData(icon: Icons.home_outlined, selectedIcon: Icons.home, label: 'Home'),
-      _NavItemData(icon: Icons.calendar_today_outlined, selectedIcon: Icons.calendar_today, label: 'Appointments'),
-      _NavItemData(icon: Icons.chat_bubble_outline, selectedIcon: Icons.chat_bubble, label: 'AI Bot'),
-      _NavItemData(icon: Icons.location_on_outlined, selectedIcon: Icons.location_on, label: 'Nearby'),
-      _NavItemData(icon: Icons.person_outline, selectedIcon: Icons.person, label: 'Profile'),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, -2)),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(items.length, (index) {
-              final item = items[index];
-              final isSelected = index == currentIndex;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => onTap(index),
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isSelected ? item.selectedIcon : item.icon,
-                        color: isSelected ? AppColors.primary : AppColors.textTertiary,
-                        size: 24,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.label,
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: isSelected ? AppColors.primary : AppColors.textTertiary,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItemData {
-  final IconData icon;
-  final IconData selectedIcon;
-  final String label;
-  const _NavItemData({required this.icon, required this.selectedIcon, required this.label});
-}

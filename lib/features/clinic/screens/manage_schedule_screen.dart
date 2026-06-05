@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/models/clinic_models.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/models/doctor_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -33,11 +34,14 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
 
   int _selectedDayIndex = 0;
 
-  /// Schedule data per day: start, end, slotDurationMinutes, maxPatients
+  /// Schedule data per day: id (null for new), start, end, slotDurationMinutes, maxPatients
   final Map<int, List<Map<String, dynamic>>> _schedules = {};
 
-  /// Tracks which day indices have newly added slots (not yet saved to backend)
+  /// Tracks which day indices have changes (new or deleted slots)
   final Set<int> _dirtyDays = {};
+
+  /// Tracks schedule IDs that were removed and need to be deleted from backend
+  final Set<int> _deletedScheduleIds = {};
 
   String? _clinicOpeningTime;
   String? _clinicClosingTime;
@@ -60,6 +64,7 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
       final grouped = <int, List<Map<String, dynamic>>>{};
       for (final s in schedules) {
         grouped.putIfAbsent(s.dayOfWeek, () => []).add({
+          'id': s.id,
           'start': s.startTime,
           'end': s.endTime,
           'slotDurationMinutes': s.slotDurationMinutes,
@@ -79,7 +84,7 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load data: $e')),
+          SnackBar(content: Text('Failed to load data: ${errorMessage(e)}')),
         );
       }
       for (int i = 0; i < 7; i++) {
@@ -94,33 +99,34 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final scheduleData = <Map<String, dynamic>>[];
-      // Only send schedules for days that have new slots
+      // Delete removed schedules first
+      for (final scheduleId in _deletedScheduleIds) {
+        await _service.deleteSchedule(scheduleId);
+      }
+
+      // Collect new schedules (those without an ID)
+      final newScheduleData = <Map<String, dynamic>>[];
       for (final dayIndex in _dirtyDays) {
         for (final slot in _schedules[dayIndex] ?? []) {
-          scheduleData.add({
-            'dayOfWeek': dayIndex,
-            'startTime': slot['start'] as String,
-            'endTime': slot['end'] as String,
-            'slotDurationMinutes': slot['slotDurationMinutes'] as int? ?? 30,
-            'maxPatients': slot['maxPatients'] as int? ?? 10,
-          });
+          if (slot['id'] == null) {
+            newScheduleData.add({
+              'dayOfWeek': dayIndex,
+              'startTime': slot['start'] as String,
+              'endTime': slot['end'] as String,
+              'slotDurationMinutes': slot['slotDurationMinutes'] as int? ?? 30,
+              'maxPatients': slot['maxPatients'] as int? ?? 10,
+            });
+          }
         }
       }
 
-      if (scheduleData.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No new schedules to save')),
-          );
-        }
-        return;
+      if (newScheduleData.isNotEmpty) {
+        await _service.updateDoctorSchedule(widget.doctorId, newScheduleData);
       }
-
-      await _service.updateDoctorSchedule(widget.doctorId, scheduleData);
 
       if (mounted) {
         _dirtyDays.clear();
+        _deletedScheduleIds.clear();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Schedule saved successfully')),
         );
@@ -129,7 +135,7 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text(errorMessage(e))),
         );
       }
     } finally {
@@ -338,7 +344,12 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
 
   void _removeTimeSlot(int index) {
     setState(() {
+      final slot = _schedules[_selectedDayIndex]?[index];
+      if (slot != null && slot['id'] != null) {
+        _deletedScheduleIds.add(slot['id'] as int);
+      }
       _schedules[_selectedDayIndex]?.removeAt(index);
+      _dirtyDays.add(_selectedDayIndex);
     });
   }
 

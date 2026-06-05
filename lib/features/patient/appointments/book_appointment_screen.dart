@@ -8,6 +8,7 @@ import '../../../core/models/doctor_models.dart';
 import '../../../core/models/shared_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/app_button.dart';
 import '../data/doctor_service.dart';
 import '../services/patient_appointments_service.dart';
@@ -59,7 +60,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load data: ${e.toString()}')),
+        SnackBar(content: Text('Failed to load data: ${errorMessage(e)}')),
       );
     }
   }

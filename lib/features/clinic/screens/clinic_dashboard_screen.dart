@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/models/doctor_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
 import '../../clinic/clinic_service.dart';
 
 class ClinicDashboardScreen extends StatefulWidget {
@@ -16,22 +16,50 @@ class ClinicDashboardScreen extends StatefulWidget {
 class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
   final _service = ClinicService();
   Map<String, dynamic>? _dashboardData;
+  List<DoctorListItem> _doctors = [];
+  int? _selectedDoctorId;
   bool _isLoading = true;
+  bool _isLoadingDoctors = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadDashboard();
+    _loadDoctors();
+  }
+
+  Future<void> _loadDoctors() async {
+    try {
+      setState(() => _isLoadingDoctors = true);
+      final doctors = await _service.getClinicDoctors();
+      setState(() {
+        _doctors = doctors;
+        _isLoadingDoctors = false;
+        if (doctors.isNotEmpty) {
+          _selectedDoctorId = doctors.first.id;
+          _loadDashboard();
+        } else {
+          _isLoading = false;
+          _error = 'No doctors registered in this clinic';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingDoctors = false;
+        _isLoading = false;
+        _error = e.toString();
+      });
+    }
   }
 
   Future<void> _loadDashboard() async {
+    if (_selectedDoctorId == null) return;
     try {
       setState(() {
         _isLoading = true;
         _error = null;
       });
-      final data = await _service.getClinicDashboard();
+      final data = await _service.getClinicDashboard(doctorId: _selectedDoctorId!);
       setState(() {
         _dashboardData = data;
         _isLoading = false;
@@ -44,21 +72,9 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
     }
   }
 
-  void _onNavTap(int index) {
-    switch (index) {
-      case 0:
-        context.go(AppRoutes.clinicDashboard);
-        break;
-      case 1:
-        context.go(AppRoutes.clinicDoctors);
-        break;
-      case 2:
-        context.go(AppRoutes.clinicPayments);
-        break;
-      case 3:
-        context.go(AppRoutes.clinicProfile);
-        break;
-    }
+  void _onDoctorChanged(int doctorId) {
+    setState(() => _selectedDoctorId = doctorId);
+    _loadDashboard();
   }
 
   @override
@@ -79,25 +95,34 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+                _buildDoctorSelector(),
+                const SizedBox(height: 16),
                 _buildDateSelector(),
                 const SizedBox(height: 20),
-                _buildStatsCards(todayStats),
-                const SizedBox(height: 24),
-                _buildQuickActions(),
-                const SizedBox(height: 24),
-                _buildQueueSummary(queueSummary),
-                const SizedBox(height: 24),
-                _buildRecentAppointments(recentAppointments),
+                _isLoading
+                    ? const SizedBox(
+                        height: 200,
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    : _error != null
+                        ? _buildError()
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildStatsCards(todayStats),
+                              const SizedBox(height: 24),
+                              _buildQuickActions(),
+                              const SizedBox(height: 24),
+                              _buildQueueSummary(queueSummary),
+                              const SizedBox(height: 24),
+                              _buildRecentAppointments(recentAppointments),
+                            ],
+                          ),
               ],
             ),
           ),
         ),
-      ),
-      bottomNavigationBar: AppBottomNav(
-        currentIndex: 0,
-        items: ClinicNavItems.items,
-        onTap: _onNavTap,
       ),
     );
   }
@@ -141,6 +166,86 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDoctorSelector() {
+    if (_isLoadingDoctors) {
+      return const SizedBox(
+        height: 56,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_doctors.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.warning_amber, color: AppColors.warning, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'No doctors registered. Scan a doctor QR to add one.',
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final selectedDoctor = _doctors.firstWhere(
+      (d) => d.id == _selectedDoctorId,
+      orElse: () => _doctors.first,
+    );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: _selectedDoctorId,
+          isExpanded: true,
+          icon: Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+          items: _doctors.map((doctor) {
+            return DropdownMenuItem<int>(
+              value: doctor.id,
+              child: Row(
+                children: [
+                  Icon(Icons.person, color: AppColors.primary, size: 20),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        doctor.fullName,
+                        style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        doctor.specialization,
+                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            if (value != null) _onDoctorChanged(value);
+          },
+        ),
+      ),
     );
   }
 
@@ -188,6 +293,35 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildError() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 32, 16, 32),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.error_outline, size: 48, color: AppColors.error.withOpacity(0.5)),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load dashboard',
+              style: AppTextStyles.heading3.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error ?? 'Unknown error',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _loadDashboard,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -254,7 +388,9 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
                 icon: Icons.queue_play_next,
                 label: 'View Queue',
                 color: AppColors.success,
-                onTap: () => context.push(AppRoutes.clinicQueue),
+                onTap: () => context.push(
+                  '${AppRoutes.clinicQueue}?doctorId=$_selectedDoctorId',
+                ),
               ),
             ),
           ],
@@ -283,7 +419,9 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
             children: [
               Text('Queue Summary', style: AppTextStyles.heading2),
               TextButton(
-                onPressed: () => context.push(AppRoutes.clinicQueue),
+                onPressed: () => context.push(
+                  '${AppRoutes.clinicQueue}?doctorId=$_selectedDoctorId',
+                ),
                 child: const Text('See All'),
               ),
             ],
@@ -325,22 +463,7 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
       children: [
         Text('Recent Appointments', style: AppTextStyles.heading2),
         const SizedBox(height: 12),
-        if (_isLoading)
-          const SizedBox(
-            height: 120,
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else if (_error != null)
-          Center(
-            child: Column(
-              children: [
-                Text('Error: $_error', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error)),
-                const SizedBox(height: 8),
-                TextButton(onPressed: _loadDashboard, child: const Text('Retry')),
-              ],
-            ),
-          )
-        else if (appointments.isEmpty)
+        if (appointments.isEmpty)
           Container(
             padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
             decoration: BoxDecoration(

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
 import '../../clinic/clinic_service.dart';
 
 class ClinicQueueScreen extends StatefulWidget {
-  const ClinicQueueScreen({super.key});
+  final int doctorId;
+
+  const ClinicQueueScreen({super.key, required this.doctorId});
 
   @override
   State<ClinicQueueScreen> createState() => _ClinicQueueScreenState();
@@ -15,10 +17,9 @@ class ClinicQueueScreen extends StatefulWidget {
 
 class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
   final _service = ClinicService();
-  Map<String, dynamic>? _queueData;
+  List<dynamic> _patients = [];
   bool _isLoading = true;
   String? _error;
-  int _selectedDoctorIndex = 0;
 
   @override
   void initState() {
@@ -32,9 +33,9 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
         _isLoading = true;
         _error = null;
       });
-      final data = await _service.getClinicQueue();
+      final data = await _service.getClinicQueue(doctorId: widget.doctorId);
       setState(() {
-        _queueData = data;
+        _patients = data;
         _isLoading = false;
       });
     } catch (e) {
@@ -43,40 +44,6 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
         _isLoading = false;
       });
     }
-  }
-
-  void _onNavTap(int index) {
-    switch (index) {
-      case 0:
-        context.go(AppRoutes.clinicDashboard);
-        break;
-      case 1:
-        context.go(AppRoutes.clinicDoctors);
-        break;
-      case 2:
-        context.go(AppRoutes.clinicPayments);
-        break;
-      case 3:
-        context.go(AppRoutes.clinicProfile);
-        break;
-    }
-  }
-
-  List<dynamic> get _doctorQueues {
-    final queues = _queueData?['doctorQueues'] as List<dynamic>? ?? [];
-    return queues;
-  }
-
-  Map<String, dynamic>? get _selectedDoctorQueue {
-    if (_doctorQueues.isEmpty) return null;
-    if (_selectedDoctorIndex >= _doctorQueues.length) return null;
-    return _doctorQueues[_selectedDoctorIndex] as Map<String, dynamic>?;
-  }
-
-  List<dynamic> get _selectedPatients {
-    final doctorQueue = _selectedDoctorQueue;
-    if (doctorQueue == null) return [];
-    return (doctorQueue['patients'] as List<dynamic>?) ?? [];
   }
 
   @override
@@ -97,36 +64,23 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
             ? const Center(child: CircularProgressIndicator())
             : _error != null
                 ? _buildError()
-                : Column(
-                    children: [
-                      _buildDoctorSelector(),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: RefreshIndicator(
-                          onRefresh: _loadQueue,
-                          child: _selectedPatients.isEmpty
-                              ? _buildEmptyState()
-                              : ListView.separated(
-                                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                                  itemCount: _selectedPatients.length,
-                                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                                  itemBuilder: (context, index) {
-                                    final patient = _selectedPatients[index] as Map<String, dynamic>;
-                                    return _PatientQueueCard(
-                                      patient: patient,
-                                      onStartCheckup: () => _startCheckup(patient),
-                                    );
-                                  },
-                                ),
-                        ),
-                      ),
-                    ],
+                : RefreshIndicator(
+                    onRefresh: _loadQueue,
+                    child: _patients.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                            itemCount: _patients.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final patient = _patients[index] as Map<String, dynamic>;
+                              return _PatientQueueCard(
+                                patient: patient,
+                                onStartCheckup: () => _startCheckup(patient),
+                              );
+                            },
+                          ),
                   ),
-      ),
-      bottomNavigationBar: AppBottomNav(
-        currentIndex: 0,
-        items: ClinicNavItems.items,
-        onTap: _onNavTap,
       ),
     );
   }
@@ -157,55 +111,6 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDoctorSelector() {
-    if (_doctorQueues.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      height: 72,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: _doctorQueues.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          final doctor = _doctorQueues[index] as Map<String, dynamic>;
-          final name = doctor['doctorName'] ?? '';
-          final isSelected = index == _selectedDoctorIndex;
-
-          return GestureDetector(
-            onTap: () => setState(() => _selectedDoctorIndex = index),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : AppColors.surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.borderLight,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.person,
-                    color: isSelected ? AppColors.textOnPrimary : AppColors.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    name,
-                    style: AppTextStyles.labelLarge.copyWith(
-                      color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
       ),
     );
   }
@@ -251,7 +156,7 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text(errorMessage(e))),
         );
       }
     }

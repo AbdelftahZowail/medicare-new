@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/bloc/auth_bloc.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/auth_models.dart';
 import '../../../core/services/api_service.dart';
@@ -116,7 +117,7 @@ class _RegisterDoctorScreenState extends State<RegisterDoctorScreen> {
       setState(() => _isUploading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload error: $e')),
+          SnackBar(content: Text('Upload error: ${errorMessage(e)}')),
         );
       }
     }

@@ -18,7 +18,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   final _doctorService = DoctorService();
   final _searchController = TextEditingController();
 
-  int _navIndex = 0;
   final Set<int> _favoritedDoctorIds = <int>{};
 
   @override
@@ -36,28 +35,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       },
     );
     context.push(uri.toString());
-  }
-
-  void _onNavTap(int index) {
-    setState(() => _navIndex = index);
-
-    switch (index) {
-      case 0:
-        context.go(AppRoutes.patientHome);
-        break;
-      case 1:
-        context.go(AppRoutes.patientAppointments);
-        break;
-      case 2:
-        context.go(AppRoutes.patientCommunity);
-        break;
-      case 3:
-        context.go(AppRoutes.patientNearby);
-        break;
-      case 4:
-        context.go(AppRoutes.patientProfile);
-        break;
-    }
   }
 
   @override
@@ -152,10 +129,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             ],
           ),
         ),
-      ),
-      bottomNavigationBar: _PatientBottomNavBar(
-        currentIndex: _navIndex,
-        onTap: _onNavTap,
       ),
     );
   }
@@ -320,160 +293,3 @@ class _CommunityCard extends StatelessWidget {
   }
 }
 
-class _PatientBottomNavBar extends StatelessWidget {
-  const _PatientBottomNavBar({
-    required this.currentIndex,
-    required this.onTap,
-  });
-
-  final int currentIndex;
-  final ValueChanged<int> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    const barHeight = 86.0;
-    const fabSize = 62.0;
-
-    return SizedBox(
-      height: barHeight + 14,
-      child: Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          Container(
-            margin: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            decoration: BoxDecoration(
-              color: AppColors.primary100,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                _NavItem(
-                  label: 'Home',
-                  icon: Icons.home_outlined,
-                  selectedIcon: Icons.home,
-                  isSelected: currentIndex == 0,
-                  onTap: () => onTap(0),
-                ),
-                _NavItem(
-                  label: 'Appointments',
-                  icon: Icons.calendar_today_outlined,
-                  selectedIcon: Icons.calendar_today,
-                  isSelected: currentIndex == 1,
-                  onTap: () => onTap(1),
-                ),
-                const SizedBox(width: fabSize),
-                _NavItem(
-                  label: 'Nearby',
-                  icon: Icons.location_on_outlined,
-                  selectedIcon: Icons.location_on,
-                  isSelected: currentIndex == 3,
-                  onTap: () => onTap(3),
-                ),
-                _NavItem(
-                  label: 'Profile',
-                  icon: Icons.person_outline,
-                  selectedIcon: Icons.person,
-                  isSelected: currentIndex == 4,
-                  onTap: () => onTap(4),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            bottom: 22,
-            child: GestureDetector(
-              onTap: () => onTap(2),
-              child: Container(
-                height: fabSize,
-                width: fabSize,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.shadow,
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: Container(
-                  height: 46,
-                  width: 46,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.smart_toy_outlined, color: AppColors.textOnPrimary, size: 26),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.label,
-    required this.icon,
-    required this.selectedIcon,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final IconData selectedIcon;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final fg = isSelected ? AppColors.primary : AppColors.textSecondary;
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              height: 38,
-              width: double.infinity,
-              alignment: Alignment.center,
-              decoration: isSelected
-                  ? BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                    )
-                  : null,
-              child: Icon(isSelected ? selectedIcon : icon, color: fg, size: 22),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: fg,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

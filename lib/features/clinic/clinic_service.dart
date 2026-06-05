@@ -8,9 +8,10 @@ import '../../../core/services/api_service.dart';
 class ClinicService {
   final _api = ApiService();
 
-  Future<Map<String, dynamic>> getClinicDashboard() async {
+  Future<Map<String, dynamic>> getClinicDashboard({required int doctorId}) async {
     final response = await _api.get(
       ApiEndpoints.appointmentClinicDashboard,
+      queryParameters: {'doctorId': doctorId},
       fromJson: (data) => data as Map<String, dynamic>,
     );
     if (response.isSuccess && response.data != null) {
@@ -19,10 +20,11 @@ class ClinicService {
     throw Exception(response.message);
   }
 
-  Future<Map<String, dynamic>> getClinicQueue() async {
-    final response = await _api.get(
+  Future<List<dynamic>> getClinicQueue({required int doctorId}) async {
+    final response = await _api.getList(
       ApiEndpoints.appointmentClinicQueue,
-      fromJson: (data) => data as Map<String, dynamic>,
+      queryParameters: {'doctorId': doctorId},
+      fromJson: (data) => data as List<dynamic>,
     );
     if (response.isSuccess && response.data != null) {
       return response.data!;
@@ -89,10 +91,10 @@ class ClinicService {
     throw Exception(response.message);
   }
 
-  Future<Map<String, dynamic>> getClinicPayments(String timeframe) async {
+  Future<Map<String, dynamic>> getClinicPayments({required int doctorId, required String timeframe}) async {
     final response = await _api.get(
       ApiEndpoints.appointmentClinicPayments,
-      queryParameters: {'timeframe': timeframe},
+      queryParameters: {'doctorId': doctorId, 'timeframe': timeframe},
       fromJson: (data) => data as Map<String, dynamic>,
     );
     if (response.isSuccess && response.data != null) {
@@ -229,6 +231,16 @@ class ClinicService {
       if (!response.isSuccess) {
         throw Exception(response.message);
       }
+    }
+  }
+
+  Future<void> deleteSchedule(int scheduleId) async {
+    final response = await _api.delete(
+      ApiEndpoints.clinicDeleteSchedule(scheduleId),
+      fromJson: (data) => data,
+    );
+    if (!response.isSuccess) {
+      throw Exception(response.message);
     }
   }
 }

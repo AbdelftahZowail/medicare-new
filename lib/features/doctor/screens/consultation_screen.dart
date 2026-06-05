@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/models/shared_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../doctor/services/doctor_service.dart';
@@ -111,7 +112,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
       setState(() => _isSaving = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
+          SnackBar(content: Text('Error: ${errorMessage(e)}')),
         );
       }
     }
