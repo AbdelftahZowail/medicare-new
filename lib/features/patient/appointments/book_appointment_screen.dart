@@ -90,8 +90,16 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      String message = 'Booking failed. Please try again.';
+      if (e.toString().contains('409') || e.toString().contains('already booked')) {
+        message = 'This slot is already booked. Please choose another time.';
+        _loadSlots(_selectedDate!); // Refresh available slots
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Booking failed: ${e.toString()}')),
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 3),
+        ),
       );
     } finally {
       if (mounted) setState(() => _booking = false);

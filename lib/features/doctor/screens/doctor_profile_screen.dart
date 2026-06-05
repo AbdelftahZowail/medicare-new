@@ -8,6 +8,7 @@ import '../../../core/models/doctor_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/debug_account_switcher.dart';
 import '../../doctor/services/doctor_service.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
@@ -208,6 +209,10 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       ),
                     ),
                   ),
+                  if (kEnableDebugTools) ...[
+                    const DebugAccountSwitcher(),
+                    const SizedBox(height: 12),
+                  ],
                 ],
               ),
             );

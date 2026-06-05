@@ -3,6 +3,10 @@
 /// Set to `false` (default) to let exceptions propagate.
 bool useMockDataFallback = false;
 
+/// Debug tools toggle. When `true`, shows debug utilities like account switching.
+/// Set to `false` before production builds.
+const bool kEnableDebugTools = true;
+
 class ApiEndpoints {
   static const String baseUrl = 'https://medicare.shortformfunnels.com';
   static const String apiBase = '$baseUrl/api';

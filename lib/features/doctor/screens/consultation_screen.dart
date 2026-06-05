@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -69,31 +71,49 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
     setState(() => _isSaving = true);
 
     final data = {
-      'subjective': _subjectiveController.text,
-      'objective': _objectiveController.text,
-      'assessment': _assessmentController.text,
-      'plan': _planController.text,
-      'bloodPressure': _bloodPressureController.text,
-      'heartRate': int.tryParse(_heartRateController.text),
-      'weight': double.tryParse(_weightController.text),
-      'diagnosis': _diagnosisController.text,
-      'notes': _notesController.text,
-      'medications': _medications.map((m) => m.toJson()).toList(),
+      'PatientId': 0, // Backend gets actual patientId from appointment
+      'AppointmentId': widget.appointmentId,
+      'Subjective': _subjectiveController.text,
+      'Objective': _objectiveController.text,
+      'Assessment': _assessmentController.text,
+      'Plan': _planController.text,
+      'BloodPressure': _bloodPressureController.text,
+      'HeartRate': _heartRateController.text,
+      'Weight': double.tryParse(_weightController.text),
+      'Diagnosis': _diagnosisController.text,
+      'Notes': _notesController.text,
+      'Medications': _medications.map((m) => m.toJson()).toList(),
     };
 
-    final success = await _service.saveConsultation(widget.appointmentId, data);
+    developer.log('Saving consultation for appointment: ${widget.appointmentId}');
+    developer.log('Consultation data: $data');
 
-    setState(() => _isSaving = false);
+    try {
+      final success = await _service.saveConsultation(widget.appointmentId, data);
+      developer.log('Save consultation result: $success');
 
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Consultation saved successfully')),
-      );
-      context.pop();
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to save consultation')),
-      );
+      setState(() => _isSaving = false);
+
+      if (success && mounted) {
+        developer.log('Consultation saved successfully');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Consultation saved successfully')),
+        );
+        context.pop();
+      } else if (mounted) {
+        developer.log('Failed to save consultation - success=false');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save consultation')),
+        );
+      }
+    } catch (e, stackTrace) {
+      developer.log('Error saving consultation', error: e, stackTrace: stackTrace);
+      setState(() => _isSaving = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
     }
   }
 

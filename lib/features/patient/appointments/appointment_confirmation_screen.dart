@@ -29,105 +29,114 @@ class AppointmentConfirmationScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Spacer(),
-              Container(
-                height: 100,
-                width: 100,
-                decoration: BoxDecoration(
-                  color: AppColors.successBg,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.success, width: 3),
-                ),
-                child: const Icon(
-                  Icons.check,
-                  color: AppColors.success,
-                  size: 56,
-                ),
-              ),
-              const SizedBox(height: 28),
-              Text(
-                'Appointment Booked!',
-                style: AppTextStyles.heading1.copyWith(color: AppColors.success),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Your appointment has been successfully scheduled. You will receive a confirmation shortly.',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.borderLight),
-                ),
-                child: Column(
-                  children: [
-                    _InfoRow(
-                      icon: Icons.calendar_today,
-                      label: 'Date',
-                      value: dateLabel,
-                    ),
-                    const Divider(height: 24),
-                    _InfoRow(
-                      icon: Icons.access_time,
-                      label: 'Time',
-                      value: timeLabel,
-                    ),
-                    const Divider(height: 24),
-                    _InfoRow(
-                      icon: Icons.person,
-                      label: 'Doctor',
-                      value: doctorName,
-                      subtitle: appointment.specialization,
-                    ),
-                    const Divider(height: 24),
-                    _InfoRow(
-                      icon: Icons.local_hospital,
-                      label: 'Clinic',
-                      value: clinicName,
-                      subtitle: clinicAddress,
-                    ),
-                    const Divider(height: 24),
-                    _InfoRow(
-                      icon: Icons.confirmation_number,
-                      label: 'Queue No',
-                      value: queueLabel,
-                    ),
-                    if (bookerLabel.isNotEmpty) ...[
-                      const Divider(height: 24),
-                      _InfoRow(
-                        icon: Icons.person_outline,
-                        label: 'For',
-                        value: bookerLabel,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight - 64),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Spacer(),
+                      Container(
+                        height: 100,
+                        width: 100,
+                        decoration: BoxDecoration(
+                          color: AppColors.successBg,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.success, width: 3),
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          color: AppColors.success,
+                          size: 56,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      Text(
+                        'Appointment Booked!',
+                        style: AppTextStyles.heading1.copyWith(color: AppColors.success),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Your appointment has been successfully scheduled. You will receive a confirmation shortly.',
+                        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 32),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.borderLight),
+                        ),
+                        child: Column(
+                          children: [
+                            _InfoRow(
+                              icon: Icons.calendar_today,
+                              label: 'Date',
+                              value: dateLabel,
+                            ),
+                            const Divider(height: 24),
+                            _InfoRow(
+                              icon: Icons.access_time,
+                              label: 'Time',
+                              value: timeLabel,
+                            ),
+                            const Divider(height: 24),
+                            _InfoRow(
+                              icon: Icons.person,
+                              label: 'Doctor',
+                              value: doctorName,
+                              subtitle: appointment.specialization,
+                            ),
+                            const Divider(height: 24),
+                            _InfoRow(
+                              icon: Icons.local_hospital,
+                              label: 'Clinic',
+                              value: clinicName,
+                              subtitle: clinicAddress,
+                            ),
+                            const Divider(height: 24),
+                            _InfoRow(
+                              icon: Icons.confirmation_number,
+                              label: 'Queue No',
+                              value: queueLabel,
+                            ),
+                            if (bookerLabel.isNotEmpty) ...[
+                              const Divider(height: 24),
+                              _InfoRow(
+                                icon: Icons.person_outline,
+                                label: 'For',
+                                value: bookerLabel,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      const SizedBox(height: 16),
+                      AppButton(
+                        text: 'My Appointments',
+                        onPressed: () => context.go(AppRoutes.patientAppointments),
+                      ),
+                      const SizedBox(height: 12),
+                      AppButton(
+                        text: 'Back to Home',
+                        isOutlined: true,
+                        onPressed: () => context.go(AppRoutes.patientHome),
                       ),
                     ],
-                  ],
+                  ),
                 ),
               ),
-              const Spacer(),
-              const SizedBox(height: 16),
-              AppButton(
-                text: 'My Appointments',
-                onPressed: () => context.go(AppRoutes.patientAppointments),
-              ),
-              const SizedBox(height: 12),
-              AppButton(
-                text: 'Back to Home',
-                isOutlined: true,
-                onPressed: () => context.go(AppRoutes.patientHome),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/clinic_models.dart';
 import '../../../core/models/doctor_models.dart';
@@ -43,10 +44,10 @@ class ClinicService {
     throw Exception(response.message);
   }
 
-  Future<DoctorProfile> scanDoctorQr(String qrCodeKey) async {
+  Future<Map<String, dynamic>> scanDoctorQr(String qrCodeKey) async {
     final response = await _api.get(
       ApiEndpoints.clinicDoctorScan(qrCodeKey),
-      fromJson: (data) => DoctorProfile.fromJson(data as Map<String, dynamic>),
+      fromJson: (data) => data as Map<String, dynamic>,
     );
     if (response.isSuccess && response.data != null) {
       return response.data!;
@@ -208,14 +209,26 @@ class ClinicService {
     }
   }
 
-  Future<void> updateDoctorSchedule(int doctorId, Map<String, dynamic> data) async {
-    final response = await _api.post(
-      ApiEndpoints.clinicAddSchedule(doctorId),
-      data: data,
-      fromJson: (data) => data,
-    );
-    if (!response.isSuccess) {
-      throw Exception(response.message);
+  Future<void> updateDoctorSchedule(int doctorId, List<Map<String, dynamic>> schedules) async {
+    for (final schedule in schedules) {
+      if (kDebugMode) {
+        print('--- Sending schedule ---');
+        print('Schedule data: $schedule');
+      }
+      final response = await _api.post(
+        ApiEndpoints.clinicAddSchedule(doctorId),
+        data: {
+          ...schedule,
+          'doctorId': doctorId,
+        },
+        fromJson: (data) => data,
+      );
+      if (kDebugMode) {
+        print('Schedule response: isSuccess=${response.isSuccess} message="${response.message}" errors=${response.errors}');
+      }
+      if (!response.isSuccess) {
+        throw Exception(response.message);
+      }
     }
   }
 }

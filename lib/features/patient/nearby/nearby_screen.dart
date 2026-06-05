@@ -54,8 +54,10 @@ class _NearbyScreenState extends State<NearbyScreen> {
   Future<void> _initLocation() async {
     try {
       LocationPermission permission = await Geolocator.checkPermission();
+      debugPrint('=== NEARBY: checkPermission => $permission ===');
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
+        debugPrint('=== NEARBY: requestPermission => $permission ===');
         if (permission == LocationPermission.denied) {
           setState(() {
             _locationError = 'Location permission denied';
@@ -75,6 +77,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
       }
 
       final position = await Geolocator.getCurrentPosition();
+      debugPrint('=== NEARBY: position = (${position.latitude}, ${position.longitude}) ===');
       if (!mounted) return;
 
       setState(() {
@@ -82,9 +85,17 @@ class _NearbyScreenState extends State<NearbyScreen> {
         _loadingLocation = false;
       });
 
-      _mapController.move(_userLocation!, 14);
+      // Load nearby data regardless of map controller state
       await _loadNearby();
+
+      // Defer map controller move until after FlutterMap widget renders
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _mapController.move(_userLocation!, 14);
+        }
+      });
     } catch (e) {
+      debugPrint('=== NEARBY: location error = $e ===');
       if (!mounted) return;
       setState(() {
         _locationError = 'Failed to get location: $e';
@@ -102,16 +113,20 @@ class _NearbyScreenState extends State<NearbyScreen> {
       final lat = _userLocation!.latitude;
       final lng = _userLocation!.longitude;
 
-      final clinicsFuture = _service.getNearbyClinics(lat: lat, lng: lng);
+      debugPrint('=== NEARBY: user location = ($lat, $lng) ===');
+
+      final clinicsFuture = _service.getNearbyClinics(lat: lat, lng: lng, radiusKm: 50);
       final doctorsFuture = _service.getNearbyDoctors(
         lat: lat,
         lng: lng,
+        radiusKm: 50,
         specialization: _specialization,
       );
 
       final results = await Future.wait([clinicsFuture, doctorsFuture]);
 
       if (!mounted) return;
+      debugPrint('=== NEARBY: ${(results[0] as List).length} clinics, ${(results[1] as List).length} doctors ===');
       setState(() {
         _clinics = results[0] as List<ClinicProfile>;
         _doctors = results[1] as List<DoctorListItem>;
@@ -120,6 +135,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loadingData = false);
+      debugPrint('=== NEARBY error: $e ===');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to load nearby: $e')),
       );
@@ -133,6 +149,26 @@ class _NearbyScreenState extends State<NearbyScreen> {
   void _onSpecializationSelected(String? spec) {
     setState(() => _specialization = spec);
     _loadNearby();
+  }
+
+  void _onNavTap(int index) {
+    switch (index) {
+      case 0:
+        context.go(AppRoutes.patientHome);
+        break;
+      case 1:
+        context.go(AppRoutes.patientAppointments);
+        break;
+      case 2:
+        context.go(AppRoutes.patientCommunity);
+        break;
+      case 3:
+        // Already on nearby
+        break;
+      case 4:
+        context.go(AppRoutes.patientProfile);
+        break;
+    }
   }
 
   void _onMarkerTap(int id, bool isClinic) {
@@ -311,6 +347,10 @@ class _NearbyScreenState extends State<NearbyScreen> {
               ),
             ),
         ],
+      ),
+      bottomNavigationBar: _NearbyBottomNav(
+        currentIndex: 3,
+        onTap: _onNavTap,
       ),
     );
   }
@@ -673,4 +713,76 @@ class _ClinicListCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _NearbyBottomNav extends StatelessWidget {
+  const _NearbyBottomNav({required this.currentIndex, required this.onTap});
+
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <_NavItemData>[
+      _NavItemData(icon: Icons.home_outlined, selectedIcon: Icons.home, label: 'Home'),
+      _NavItemData(icon: Icons.calendar_today_outlined, selectedIcon: Icons.calendar_today, label: 'Appointments'),
+      _NavItemData(icon: Icons.chat_bubble_outline, selectedIcon: Icons.chat_bubble, label: 'AI Bot'),
+      _NavItemData(icon: Icons.location_on_outlined, selectedIcon: Icons.location_on, label: 'Nearby'),
+      _NavItemData(icon: Icons.person_outline, selectedIcon: Icons.person, label: 'Profile'),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        boxShadow: [
+          BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, -2)),
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(items.length, (index) {
+              final item = items[index];
+              final isSelected = index == currentIndex;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onTap(index),
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isSelected ? item.selectedIcon : item.icon,
+                        color: isSelected ? AppColors.primary : AppColors.textTertiary,
+                        size: 24,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.label,
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: isSelected ? AppColors.primary : AppColors.textTertiary,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItemData {
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  const _NavItemData({required this.icon, required this.selectedIcon, required this.label});
 }

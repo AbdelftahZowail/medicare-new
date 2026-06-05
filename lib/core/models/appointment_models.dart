@@ -72,10 +72,10 @@ class Appointment {
       appointmentDate: DateTime.parse(json['appointmentDate'] ?? DateTime.now().toIso8601String()),
       startTime: json['startTime'] ?? '',
       endTime: json['endTime'],
-      status: json['status'] ?? 0,
+      status: _parseStatus(json['status']),
       statusText: json['statusText'] ?? '',
       queueNumber: json['queueNumber'],
-      queueStatus: json['queueStatus'],
+      queueStatus: _parseQueueStatus(json['queueStatus']),
       refundStatusText: json['refundStatusText'] ?? '',
       notes: json['notes'],
       cancellationReason: json['cancellationReason'],
@@ -90,6 +90,43 @@ class Appointment {
       paymentMethodText: json['paymentMethodText'] ?? '',
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
     );
+  }
+
+  static int _parseStatus(dynamic value) {
+    if (value is int) return value;
+    if (value is String) {
+      switch (value.toLowerCase()) {
+        case 'pending': return 0;
+        case 'confirmed': return 1;
+        case 'inprogress':
+        case 'in_progress':
+        case 'in progress': return 2;
+        case 'completed': return 3;
+        case 'cancelled': return 4;
+        case 'noshow':
+        case 'no_show':
+        case 'no show': return 5;
+        default: return 0;
+      }
+    }
+    return 0;
+  }
+
+  static int? _parseQueueStatus(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      switch (value.toLowerCase()) {
+        case 'waiting': return 0;
+        case 'inconsultation':
+        case 'in_consultation':
+        case 'in consultation': return 1;
+        case 'completed': return 2;
+        case 'refunded': return 3;
+        default: return null;
+      }
+    }
+    return null;
   }
 }
 
@@ -149,7 +186,7 @@ class LiveQueueTracker {
       currentServingNumber: json['currentServingNumber'] ?? 0,
       patientsAheadOfMe: json['patientsAheadOfMe'] ?? 0,
       estimatedWaitTimeMinutes: json['estimatedWaitTimeMinutes'] ?? 0,
-      myQueueStatus: json['myQueueStatus'],
+      myQueueStatus: Appointment._parseQueueStatus(json['myQueueStatus']),
       doctorName: json['doctorName'] ?? '',
     );
   }

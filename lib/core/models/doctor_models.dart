@@ -142,31 +142,60 @@ class DoctorSchedule {
   final int id;
   final int doctorId;
   final int dayOfWeek;
+  final String dayName;
   final String startTime;
   final String endTime;
   final int slotDurationMinutes;
   final int maxPatients;
+  final bool isActive;
 
   DoctorSchedule({
     required this.id,
     required this.doctorId,
     required this.dayOfWeek,
+    required this.dayName,
     required this.startTime,
     required this.endTime,
     required this.slotDurationMinutes,
     required this.maxPatients,
+    required this.isActive,
   });
 
   factory DoctorSchedule.fromJson(Map<String, dynamic> json) {
+    final dayOfWeekValue = _parseDayOfWeek(json['dayOfWeek']);
     return DoctorSchedule(
       id: json['id'] ?? 0,
       doctorId: json['doctorId'] ?? 0,
-      dayOfWeek: json['dayOfWeek'] ?? 0,
+      dayOfWeek: dayOfWeekValue,
+      dayName: json['dayName'] ?? _dayOfWeekToString(dayOfWeekValue),
       startTime: json['startTime'] ?? '',
       endTime: json['endTime'] ?? '',
       slotDurationMinutes: json['slotDurationMinutes'] ?? 0,
       maxPatients: json['maxPatients'] ?? 0,
+      isActive: json['isActive'] ?? true,
     );
+  }
+
+  static int _parseDayOfWeek(dynamic value) {
+    if (value is int) return value;
+    if (value is String) {
+      switch (value.toLowerCase()) {
+        case 'sunday': return 0;
+        case 'monday': return 1;
+        case 'tuesday': return 2;
+        case 'wednesday': return 3;
+        case 'thursday': return 4;
+        case 'friday': return 5;
+        case 'saturday': return 6;
+        default: return 0;
+      }
+    }
+    return 0;
+  }
+
+  static String _dayOfWeekToString(int day) {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return day >= 0 && day < days.length ? days[day] : 'Unknown';
   }
 }
 

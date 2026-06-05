@@ -185,7 +185,7 @@ class AppRouter {
           builder: (context, state) => const NearbyScreen(),
         ),
         GoRoute(
-          path: AppRoutes.patientDoctorProfile,
+          path: '${AppRoutes.patientDoctorProfile}/:id',
           builder: (context, state) {
             final doctorId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             return DoctorProfileScreen(doctorId: doctorId);
@@ -215,14 +215,14 @@ class AppRouter {
           builder: (context, state) => const MyAppointmentsScreen(),
         ),
         GoRoute(
-          path: AppRoutes.patientAppointmentDetail,
+          path: '${AppRoutes.patientAppointmentDetail}/:id',
           builder: (context, state) {
             final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             return AppointmentDetailScreen(appointmentId: id);
           },
         ),
         GoRoute(
-          path: AppRoutes.patientQueueTracker,
+          path: '${AppRoutes.patientQueueTracker}/:id',
           builder: (context, state) {
             final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             return QueueTrackerScreen(appointmentId: id);
@@ -237,7 +237,7 @@ class AppRouter {
           builder: (context, state) => const CreatePostScreen(),
         ),
         GoRoute(
-          path: AppRoutes.patientPostDetail,
+          path: '${AppRoutes.patientPostDetail}/:id',
           builder: (context, state) {
             final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             return PostDetailScreen(postId: id);
@@ -299,14 +299,14 @@ class AppRouter {
           builder: (context, state) => const DoctorQueueScreen(),
         ),
         GoRoute(
-          path: AppRoutes.doctorPatientHistory,
+          path: '${AppRoutes.doctorPatientHistory}/:id',
           builder: (context, state) {
             final patientId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             return DoctorPatientHistoryScreen(patientId: patientId);
           },
         ),
         GoRoute(
-          path: AppRoutes.doctorConsultation,
+          path: '${AppRoutes.doctorConsultation}/:id',
           builder: (context, state) {
             final appointmentId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             return ConsultationScreen(appointmentId: appointmentId);
@@ -359,7 +359,7 @@ class AppRouter {
           builder: (context, state) => const ClinicDoctorsScreen(),
         ),
         GoRoute(
-          path: AppRoutes.clinicDoctorDetail,
+          path: '${AppRoutes.clinicDoctorDetail}/:id',
           builder: (context, state) {
             final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             return ClinicDoctorDetailScreen(doctorId: id);
@@ -374,7 +374,7 @@ class AppRouter {
           builder: (context, state) => const RegisterDoctorToClinicScreen(),
         ),
         GoRoute(
-          path: AppRoutes.clinicManageSchedule,
+          path: '${AppRoutes.clinicManageSchedule}/:id',
           builder: (context, state) {
             final doctorId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             return ManageScheduleScreen(doctorId: doctorId);

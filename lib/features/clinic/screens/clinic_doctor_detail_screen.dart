@@ -446,7 +446,7 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
   }
 
   Widget _buildScheduleSection() {
-    final dayNames = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    final dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     // Group schedules by day and merge time ranges
     final daySchedules = <int, List<DoctorSchedule>>{};

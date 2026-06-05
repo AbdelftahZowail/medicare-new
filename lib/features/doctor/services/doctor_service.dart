@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/appointment_models.dart';
 import '../../../core/models/community_models.dart';
@@ -106,11 +108,21 @@ class DoctorService {
     int appointmentId,
     Map<String, dynamic> data,
   ) async {
+    developer.log('saveConsultation called for appointmentId: $appointmentId');
+    developer.log('saveConsultation request data: $data');
+    
     final response = await _api.post(
       ApiEndpoints.doctorSession(appointmentId),
       data: data,
       fromJson: (data) => data,
     );
+    
+    developer.log('saveConsultation response - isSuccess: ${response.isSuccess}');
+    developer.log('saveConsultation response - message: ${response.message}');
+    if (response.data != null) {
+      developer.log('saveConsultation response - data: ${response.data}');
+    }
+    
     return response.isSuccess;
   }
 

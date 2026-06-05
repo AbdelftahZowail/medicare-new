@@ -51,6 +51,9 @@ class ApiService {
         onError: (error, handler) async {
           if (kDebugMode) {
             print('ERROR: ${error.response?.statusCode} ${error.message}');
+            print('RESPONSE BODY: ${error.response?.data}');
+            print('REQUEST URL: ${error.requestOptions.uri}');
+            print('REQUEST DATA: ${error.requestOptions.data}');
           }
 
           // Handle 401 - Token expired

@@ -456,7 +456,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                     AppButton(
                       text: 'Book Appointment',
                       onPressed: () {
-                        context.go(
+                        context.push(
                           AppRoutes.patientBookAppointment,
                           extra: {
                             'doctorId': widget.doctorId,

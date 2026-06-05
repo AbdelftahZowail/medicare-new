@@ -73,6 +73,34 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
     }
   }
 
+  Future<void> _pickOpeningTime() async {
+    final parts = _openingTimeController.text.split(':');
+    final initialHour = parts.length >= 1 ? int.tryParse(parts[0]) ?? 9 : 9;
+    final initialMinute = parts.length >= 2 ? int.tryParse(parts[1]) ?? 0 : 0;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: initialHour, minute: initialMinute),
+    );
+    if (picked != null) {
+      _openingTimeController.text =
+          '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}:00';
+    }
+  }
+
+  Future<void> _pickClosingTime() async {
+    final parts = _closingTimeController.text.split(':');
+    final initialHour = parts.length >= 1 ? int.tryParse(parts[0]) ?? 17 : 17;
+    final initialMinute = parts.length >= 2 ? int.tryParse(parts[1]) ?? 0 : 0;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: initialHour, minute: initialMinute),
+    );
+    if (picked != null) {
+      _closingTimeController.text =
+          '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}:00';
+    }
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -315,18 +343,70 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: AppTextField(
-                              label: 'Opening Time',
-                              hint: 'HH:mm:ss',
-                              controller: _openingTimeController,
+                            child: InkWell(
+                              onTap: _pickOpeningTime,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.border),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Opening Time', style: AppTextStyles.labelLarge),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.access_time, color: AppColors.primary, size: 18),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _openingTimeController.text.isNotEmpty
+                                              ? _openingTimeController.text
+                                              : 'Set time',
+                                          style: AppTextStyles.bodyLarge,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: AppTextField(
-                              label: 'Closing Time',
-                              hint: 'HH:mm:ss',
-                              controller: _closingTimeController,
+                            child: InkWell(
+                              onTap: _pickClosingTime,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.border),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Closing Time', style: AppTextStyles.labelLarge),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.access_time, color: AppColors.primary, size: 18),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _closingTimeController.text.isNotEmpty
+                                              ? _closingTimeController.text
+                                              : 'Set time',
+                                          style: AppTextStyles.bodyLarge,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ],

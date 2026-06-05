@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/models/clinic_models.dart';
+import '../../../core/models/doctor_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
@@ -20,13 +22,13 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
   bool _isFetching = true;
 
   final List<String> _days = [
-    'Saturday',
-    'Sunday',
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
+    'Sunday',    // 0
+    'Monday',    // 1
+    'Tuesday',   // 2
+    'Wednesday', // 3
+    'Thursday',  // 4
+    'Friday',    // 5
+    'Saturday',  // 6
   ];
 
   int _selectedDayIndex = 0;
@@ -34,16 +36,27 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
   /// Schedule data per day: start, end, slotDurationMinutes, maxPatients
   final Map<int, List<Map<String, dynamic>>> _schedules = {};
 
+  /// Tracks which day indices have newly added slots (not yet saved to backend)
+  final Set<int> _dirtyDays = {};
+
+  String? _clinicOpeningTime;
+  String? _clinicClosingTime;
+
   @override
   void initState() {
     super.initState();
-    _fetchSchedules();
+    _fetchData();
   }
 
-  Future<void> _fetchSchedules() async {
+  Future<void> _fetchData() async {
     setState(() => _isFetching = true);
     try {
-      final schedules = await _service.getDoctorSchedules(widget.doctorId);
+      final profileFuture = _service.getClinicProfile();
+      final schedulesFuture = _service.getDoctorSchedules(widget.doctorId);
+      final results = await Future.wait([profileFuture, schedulesFuture]);
+      final profile = results[0] as ClinicProfile;
+      final schedules = results[1] as List<DoctorSchedule>;
+      
       final grouped = <int, List<Map<String, dynamic>>>{};
       for (final s in schedules) {
         grouped.putIfAbsent(s.dayOfWeek, () => []).add({
@@ -56,10 +69,17 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
       for (int i = 0; i < 7; i++) {
         _schedules[i] = grouped[i] ?? [];
       }
+      
+      if (mounted) {
+        setState(() {
+          _clinicOpeningTime = profile.openingTime;
+          _clinicClosingTime = profile.closingTime;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load schedules: $e')),
+          SnackBar(content: Text('Failed to load data: $e')),
         );
       }
       for (int i = 0; i < 7; i++) {
@@ -75,10 +95,11 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
 
     try {
       final scheduleData = <Map<String, dynamic>>[];
-      for (int i = 0; i < 7; i++) {
-        for (final slot in _schedules[i] ?? []) {
+      // Only send schedules for days that have new slots
+      for (final dayIndex in _dirtyDays) {
+        for (final slot in _schedules[dayIndex] ?? []) {
           scheduleData.add({
-            'dayOfWeek': i,
+            'dayOfWeek': dayIndex,
             'startTime': slot['start'] as String,
             'endTime': slot['end'] as String,
             'slotDurationMinutes': slot['slotDurationMinutes'] as int? ?? 30,
@@ -87,11 +108,19 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
         }
       }
 
-      await _service.updateDoctorSchedule(widget.doctorId, {
-        'schedules': scheduleData,
-      });
+      if (scheduleData.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No new schedules to save')),
+          );
+        }
+        return;
+      }
+
+      await _service.updateDoctorSchedule(widget.doctorId, scheduleData);
 
       if (mounted) {
+        _dirtyDays.clear();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Schedule saved successfully')),
         );
@@ -109,76 +138,175 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
   }
 
   Future<void> _addTimeSlot() async {
-    final startController = TextEditingController();
-    final endController = TextEditingController();
+    TimeOfDay? startTime;
+    TimeOfDay? endTime;
     final durationController = TextEditingController(text: '30');
     final maxPatientsController = TextEditingController(text: '10');
 
+    final clinicOpen = _parseTime(_clinicOpeningTime) ?? const TimeOfDay(hour: 10, minute: 0);
+    final clinicClose = _parseTime(_clinicClosingTime) ?? const TimeOfDay(hour: 20, minute: 0);
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Time Slot'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: startController,
-                decoration: const InputDecoration(
-                  labelText: 'Start Time (HH:MM)',
-                  hintText: '09:00',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add Time Slot'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary100,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: AppColors.primary, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Clinic hours: ${_formatTimeOfDay(clinicOpen)} - ${_formatTimeOfDay(clinicClose)}',
+                        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
+                      ),
+                    ],
+                  ),
                 ),
-                keyboardType: TextInputType.datetime,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: endController,
-                decoration: const InputDecoration(
-                  labelText: 'End Time (HH:MM)',
-                  hintText: '12:00',
+                const SizedBox(height: 16),
+                InkWell(
+                  onTap: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: startTime ?? clinicOpen,
+                    );
+                    if (picked != null) {
+                      setDialogState(() => startTime = picked);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.access_time, color: AppColors.primary, size: 20),
+                        const SizedBox(width: 12),
+                        Text(
+                          startTime != null
+                              ? _formatTimeOfDay(startTime!)
+                              : 'Select start time',
+                          style: AppTextStyles.bodyLarge,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                keyboardType: TextInputType.datetime,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: durationController,
-                decoration: const InputDecoration(
-                  labelText: 'Slot Duration (minutes)',
-                  hintText: '30',
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: endTime ?? clinicClose,
+                    );
+                    if (picked != null) {
+                      setDialogState(() => endTime = picked);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.access_time, color: AppColors.primary, size: 20),
+                        const SizedBox(width: 12),
+                        Text(
+                          endTime != null
+                              ? _formatTimeOfDay(endTime!)
+                              : 'Select end time',
+                          style: AppTextStyles.bodyLarge,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: maxPatientsController,
-                decoration: const InputDecoration(
-                  labelText: 'Max Patients',
-                  hintText: '10',
+                const SizedBox(height: 12),
+                TextField(
+                  controller: durationController,
+                  decoration: const InputDecoration(
+                    labelText: 'Slot Duration (minutes)',
+                    hintText: '30',
+                  ),
+                  keyboardType: TextInputType.number,
                 ),
-                keyboardType: TextInputType.number,
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: maxPatientsController,
+                  decoration: const InputDecoration(
+                    labelText: 'Max Patients',
+                    hintText: '10',
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (startController.text.isNotEmpty && endController.text.isNotEmpty) {
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (startTime == null || endTime == null) return;
+                
+                final startMinutes = startTime!.hour * 60 + startTime!.minute;
+                final endMinutes = endTime!.hour * 60 + endTime!.minute;
+                final clinicOpenMinutes = clinicOpen.hour * 60 + clinicOpen.minute;
+                final clinicCloseMinutes = clinicClose.hour * 60 + clinicClose.minute;
+
+                if (startMinutes < clinicOpenMinutes || endMinutes > clinicCloseMinutes) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Times must be within clinic hours (${_formatTimeOfDay(clinicOpen)} - ${_formatTimeOfDay(clinicClose)})',
+                      ),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                  return;
+                }
+
+                if (endMinutes <= startMinutes) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('End time must be after start time'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                  return;
+                }
+
                 Navigator.pop(context, {
-                  'start': startController.text,
-                  'end': endController.text,
+                  'start': '${startTime!.hour.toString().padLeft(2, '0')}:${startTime!.minute.toString().padLeft(2, '0')}:00',
+                  'end': '${endTime!.hour.toString().padLeft(2, '0')}:${endTime!.minute.toString().padLeft(2, '0')}:00',
                   'slotDurationMinutes': int.tryParse(durationController.text.trim()) ?? 30,
                   'maxPatients': int.tryParse(maxPatientsController.text.trim()) ?? 10,
                 });
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        ),
       ),
     );
 
@@ -186,8 +314,26 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
       setState(() {
         _schedules[_selectedDayIndex] ??= [];
         _schedules[_selectedDayIndex]!.add(result);
+        _dirtyDays.add(_selectedDayIndex);
       });
     }
+  }
+
+  TimeOfDay? _parseTime(String? timeStr) {
+    if (timeStr == null || timeStr.isEmpty) return null;
+    final parts = timeStr.split(':');
+    if (parts.length >= 2) {
+      final hour = int.tryParse(parts[0]);
+      final minute = int.tryParse(parts[1]);
+      if (hour != null && minute != null) {
+        return TimeOfDay(hour: hour, minute: minute);
+      }
+    }
+    return null;
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   void _removeTimeSlot(int index) {
@@ -214,6 +360,28 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
+                  if (_clinicOpeningTime != null && _clinicClosingTime != null)
+                    Container(
+                      margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.access_time_filled, color: AppColors.primary, size: 20),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Clinic Hours: $_clinicOpeningTime - $_clinicClosingTime',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   _buildDaySelector(),
                   const SizedBox(height: 8),
                   Expanded(

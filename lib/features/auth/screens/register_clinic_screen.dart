@@ -76,12 +76,25 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
 
   Future<void> _getCurrentLocation() async {
     try {
-      final permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Location permission denied')),
+            );
+          }
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location permission denied')),
+            const SnackBar(
+              content: Text('Location permission permanently denied. Please enable it in settings.'),
+            ),
           );
         }
         return;
@@ -103,6 +116,34 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
           SnackBar(content: Text('Failed to get location: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _pickOpeningTime() async {
+    final parts = _openingTimeController.text.split(':');
+    final initialHour = parts.length >= 1 ? int.tryParse(parts[0]) ?? 9 : 9;
+    final initialMinute = parts.length >= 2 ? int.tryParse(parts[1]) ?? 0 : 0;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: initialHour, minute: initialMinute),
+    );
+    if (picked != null) {
+      _openingTimeController.text =
+          '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}:00';
+    }
+  }
+
+  Future<void> _pickClosingTime() async {
+    final parts = _closingTimeController.text.split(':');
+    final initialHour = parts.length >= 1 ? int.tryParse(parts[0]) ?? 17 : 17;
+    final initialMinute = parts.length >= 2 ? int.tryParse(parts[1]) ?? 0 : 0;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: initialHour, minute: initialMinute),
+    );
+    if (picked != null) {
+      _closingTimeController.text =
+          '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}:00';
     }
   }
 
@@ -381,20 +422,70 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: AppTextField(
-                              label: 'Opening Time',
-                              hint: 'HH:mm:ss',
-                              controller: _openingTimeController,
-                              textInputAction: TextInputAction.next,
+                            child: InkWell(
+                              onTap: _pickOpeningTime,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.border),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Opening Time', style: AppTextStyles.labelLarge),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.access_time, color: AppColors.primary, size: 18),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _openingTimeController.text.isNotEmpty
+                                              ? _openingTimeController.text
+                                              : 'Set time',
+                                          style: AppTextStyles.bodyLarge,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: AppTextField(
-                              label: 'Closing Time',
-                              hint: 'HH:mm:ss',
-                              controller: _closingTimeController,
-                              textInputAction: TextInputAction.next,
+                            child: InkWell(
+                              onTap: _pickClosingTime,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.border),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Closing Time', style: AppTextStyles.labelLarge),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.access_time, color: AppColors.primary, size: 18),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _closingTimeController.text.isNotEmpty
+                                              ? _closingTimeController.text
+                                              : 'Set time',
+                                          style: AppTextStyles.bodyLarge,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ],

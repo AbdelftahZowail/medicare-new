@@ -49,7 +49,7 @@ class _RegisterDoctorToClinicScreenState extends State<RegisterDoctorToClinicScr
 
     try {
       final data = {
-        'doctorId': _doctorData?['id'],
+        'doctorId': _doctorData?['doctorId'] ?? _doctorData?['id'] ?? 0,
         'qrCodeKey': _doctorData?['qrCodeKey'],
         'consultationFee': double.tryParse(_feeController.text) ?? 0.0,
         'isAvailable': _isAvailable,

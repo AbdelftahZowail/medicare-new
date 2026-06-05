@@ -40,17 +40,19 @@ class _ScanDoctorQrScreenState extends State<ScanDoctorQrScreen> {
     });
 
     try {
-      final doctor = await _service.scanDoctorQr(qrCode);
+      final data = await _service.scanDoctorQr(qrCode);
       setState(() {
+        // Normalize field names: the backend may return 'doctorId' instead of 'id'
+        // and 'defaultConsultationFee' instead of 'consultationFee'
         _scannedDoctor = {
-          'id': doctor.id,
-          'fullName': doctor.fullName,
-          'specialization': doctor.specialization,
-          'profileImageUrl': doctor.profileImageUrl,
-          'consultationFee': doctor.consultationFee,
-          'averageRating': doctor.averageRating,
-          'totalReviews': doctor.totalReviews,
-          'qrCodeKey': doctor.qrCodeKey,
+          'id': data['doctorId'] ?? data['id'] ?? 0,
+          'fullName': data['fullName'] ?? '',
+          'specialization': data['specialization'] ?? '',
+          'profileImageUrl': data['profileImageUrl'],
+          'consultationFee': data['defaultConsultationFee'] ?? data['consultationFee'] ?? 0.0,
+          'averageRating': data['averageRating'] ?? 0.0,
+          'totalReviews': data['totalReviews'] ?? 0,
+          'qrCodeKey': data['qrCodeKey'] ?? data['doctorQrCodeKey'],
         };
         _isScanning = false;
         _isLoading = false;

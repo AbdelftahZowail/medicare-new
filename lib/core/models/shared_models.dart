@@ -234,10 +234,10 @@ class Medication {
 
   Map<String, dynamic> toJson() {
     return {
-      'name': name,
-      'category': category,
-      'dosage': dosage,
-      'duration': duration,
+      'Name': name,
+      'Category': category,
+      'Dosage': dosage,
+      'Duration': duration,
     };
   }
 }
