@@ -80,6 +80,7 @@ class AuthFailure extends AuthState {
 // BLoC
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthService _authService;
+  StreamSubscription<void>? _authInvalidatedSub;
 
   AuthBloc({AuthService? authService})
       : _authService = authService ?? AuthService(),
@@ -90,6 +91,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthRegisterDoctorRequested>(_onAuthRegisterDoctorRequested);
     on<AuthRegisterClinicRequested>(_onAuthRegisterClinicRequested);
     on<AuthLogoutRequested>(_onAuthLogoutRequested);
+
+    // Listen for auth invalidation (e.g., expired refresh token)
+    _authInvalidatedSub = _authService.onAuthInvalidated.listen((_) {
+      add(AuthLogoutRequested());
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _authInvalidatedSub?.cancel();
+    return super.close();
   }
 
   Future<void> _onAuthCheckRequested(

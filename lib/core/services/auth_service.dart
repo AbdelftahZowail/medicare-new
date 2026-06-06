@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,6 +15,12 @@ class AuthService {
   final _secureStorage = const FlutterSecureStorage();
   final ApiService _apiService = ApiService();
 
+  final _authInvalidatedController = StreamController<void>.broadcast();
+
+  /// Stream that emits when auth is invalidated (e.g., refresh token expired).
+  /// AuthBloc should listen to this and emit AuthUnauthenticated.
+  Stream<void> get onAuthInvalidated => _authInvalidatedController.stream;
+
   AuthResponse? _currentAuth;
   AuthResponse? get currentAuth => _currentAuth;
 
@@ -21,6 +28,9 @@ class AuthService {
     final token = await _secureStorage.read(key: StorageKeys.accessToken);
     final refresh = await _secureStorage.read(key: StorageKeys.refreshToken);
     final role = await _secureStorage.read(key: StorageKeys.userRole);
+
+    // Register callback for when refresh token is invalid
+    _apiService.onTokensInvalidated = _clearAuth;
 
     if (token != null && refresh != null) {
       _apiService.setTokens(token, refresh);
@@ -183,6 +193,9 @@ class AuthService {
     await _secureStorage.delete(key: StorageKeys.userId);
     await _secureStorage.delete(key: StorageKeys.profileId);
     await _secureStorage.delete(key: StorageKeys.userName);
+
+    // Notify listeners that auth was invalidated
+    _authInvalidatedController.add(null);
   }
 
   Future<bool> isLoggedIn() async {

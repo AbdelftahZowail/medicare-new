@@ -112,6 +112,9 @@ class ApiEndpoints {
   // Upload
   static const String uploadLicense = '$apiBase/upload/license';
   static const String uploadProfileImage = '$apiBase/upload/profile-image';
+
+  // Info
+  static const String version = '$apiBase/info/version';
 }
 
 class AppRoutes {

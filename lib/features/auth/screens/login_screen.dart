@@ -1,7 +1,10 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../core/bloc/auth_bloc.dart';
 import '../../../core/constants/app_constants.dart';
@@ -24,12 +27,35 @@ class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscure = true;
+  String _appVersion = '';
+  String? _backendVersion;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersions();
+  }
 
   @override
   void dispose() {
     _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadVersions() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() => _appVersion = 'v${packageInfo.version}');
+
+    if (kDebugMode) {
+      try {
+        final response = await Dio().get(ApiEndpoints.version);
+        final data = response.data as Map<String, dynamic>;
+        if (data['isSuccess'] == true && data['data'] != null) {
+          setState(() => _backendVersion = data['data']['version'] as String?);
+        }
+      } catch (_) {}
+    }
   }
 
   void _submit() {
@@ -151,60 +177,29 @@ class _LoginScreenState extends State<LoginScreen> {
                         'Continue up with',
                         style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _SocialButton(
-                            icon: FontAwesomeIcons.google,
-                            onTap: () {},
-                          ),
-                          const SizedBox(width: 12),
-                          _SocialButton(
-                            icon: FontAwesomeIcons.apple,
-                            onTap: () {},
-                          ),
-                          const SizedBox(width: 12),
-                          _SocialButton(
-                            icon: FontAwesomeIcons.facebookF,
-                            onTap: () {},
-                          ),
-                        ],
-                      ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 32),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_backendVersion != null) ...[
+                      Text(
+                        _appVersion,
+                        style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Backend: v$_backendVersion',
+                        style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _SocialButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.borderLight),
-          ),
-          child: Icon(icon, size: 18, color: AppColors.textSecondary),
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../constants/app_constants.dart';
@@ -12,6 +13,10 @@ class ApiService {
   late Dio _dio;
   String? _accessToken;
   String? _refreshToken;
+
+  /// Callback invoked when tokens are cleared due to invalid/expired refresh token.
+  /// Set by AuthService to handle secure storage cleanup and auth state notification.
+  Future<void> Function()? onTokensInvalidated;
 
   void initialize() {
     _dio = Dio(
@@ -57,20 +62,27 @@ class ApiService {
           }
 
           // Handle 401 - Token expired
+          // Don't retry if the failing request IS the refresh-token endpoint (prevents infinite loop)
+          final isRefreshRequest = error.requestOptions.path.contains('refresh-token');
           if (error.response?.statusCode == 401 && _refreshToken != null) {
-            try {
-              final refreshed = await _refreshAccessToken();
-              if (refreshed) {
-                // Retry original request
-                final options = error.requestOptions;
-                options.headers['Authorization'] = 'Bearer $_accessToken';
-                final response = await _dio.fetch(options);
-                handler.resolve(response);
-                return;
+            if (isRefreshRequest) {
+              // Refresh token itself is invalid - clear everything and let error propagate
+              await _handleInvalidRefreshToken();
+            } else {
+              try {
+                final refreshed = await _refreshAccessToken();
+                if (refreshed) {
+                  // Retry original request
+                  final options = error.requestOptions;
+                  options.headers['Authorization'] = 'Bearer $_accessToken';
+                  final response = await _dio.fetch(options);
+                  handler.resolve(response);
+                  return;
+                }
+              } catch (e) {
+                // Refresh failed, clear tokens
+                await _handleInvalidRefreshToken();
               }
-            } catch (e) {
-              // Refresh failed, clear tokens
-              await clearTokens();
             }
           }
 
@@ -88,6 +100,14 @@ class ApiService {
   Future<void> clearTokens() async {
     _accessToken = null;
     _refreshToken = null;
+  }
+
+  /// Called when refresh token is invalid/expired. Clears tokens and notifies listener.
+  Future<void> _handleInvalidRefreshToken() async {
+    await clearTokens();
+    if (onTokensInvalidated != null) {
+      await onTokensInvalidated!();
+    }
   }
 
   Future<bool> _refreshAccessToken() async {
