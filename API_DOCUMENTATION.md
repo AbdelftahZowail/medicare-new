@@ -180,9 +180,15 @@ interface RegisterClinicDto {
   linkMap?: string;        // max 500
   government: string;      // max 100
   area: string;            // max 100
+  address?: string;        // max 300
   phone: string;           // max 20
+  email?: string;          // max 100, email format
+  latitude?: number;
+  longitude?: number;
   password: string;        // min 6
   confirmPassword: string;
+  openingTime?: string;     // "HH:mm:ss"
+  closingTime?: string;     // "HH:mm:ss"
   licenseFileUrl: string;  // max 500
 }
 

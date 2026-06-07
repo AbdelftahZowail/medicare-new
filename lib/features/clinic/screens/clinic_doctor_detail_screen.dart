@@ -45,7 +45,7 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = errorMessage(e);
         _isLoading = false;
       });
     }

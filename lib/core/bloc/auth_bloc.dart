@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import '../constants/app_constants.dart';
 import '../models/auth_models.dart';
 import '../services/auth_service.dart';
+import '../utils/error_utils.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -133,10 +134,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           auth: response.data!,
         ));
       } else {
-        emit(AuthFailure(response.message));
+        emit(AuthFailure(response.message.isNotEmpty ? response.message : 'Login failed'));
       }
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      emit(AuthFailure(errorMessage(e)));
     }
   }
 
@@ -153,10 +154,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           auth: response.data!,
         ));
       } else {
-        emit(AuthFailure(response.message));
+        emit(AuthFailure(response.message.isNotEmpty ? response.message : 'Registration failed'));
       }
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      emit(AuthFailure(errorMessage(e)));
     }
   }
 
@@ -173,10 +174,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           auth: response.data!,
         ));
       } else {
-        emit(AuthFailure(response.message));
+        emit(AuthFailure(response.message.isNotEmpty ? response.message : 'Registration failed'));
       }
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      emit(AuthFailure(errorMessage(e)));
     }
   }
 
@@ -193,10 +194,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           auth: response.data!,
         ));
       } else {
-        emit(AuthFailure(response.message));
+        emit(AuthFailure(response.message.isNotEmpty ? response.message : 'Registration failed'));
       }
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      emit(AuthFailure(errorMessage(e)));
     }
   }
 
@@ -204,6 +205,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthLogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
+    if (state is AuthUnauthenticated) return; // Prevent logout loop
     emit(AuthLoading());
     await _authService.logout();
     emit(const AuthUnauthenticated());

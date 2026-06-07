@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../clinic/clinic_service.dart';
 
 class ClinicPatientSearchScreen extends StatefulWidget {
@@ -44,7 +45,7 @@ class _ClinicPatientSearchScreenState extends State<ClinicPatientSearchScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = errorMessage(e);
         _isLoading = false;
       });
     }

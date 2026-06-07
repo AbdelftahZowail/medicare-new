@@ -4,6 +4,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/models/doctor_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../clinic/clinic_service.dart';
 
 class ClinicDashboardScreen extends StatefulWidget {
@@ -47,7 +48,7 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
       setState(() {
         _isLoadingDoctors = false;
         _isLoading = false;
-        _error = e.toString();
+        _error = errorMessage(e);
       });
     }
   }
@@ -66,7 +67,7 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = errorMessage(e);
         _isLoading = false;
       });
     }
@@ -106,7 +107,9 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
                         child: Center(child: CircularProgressIndicator()),
                       )
                     : _error != null
-                        ? _buildError()
+                        ? (_doctors.isEmpty
+                            ? _buildNoDoctors()
+                            : _buildError())
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -319,6 +322,36 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
             ElevatedButton(
               onPressed: _loadDashboard,
               child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoDoctors() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 32, 16, 32),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.person_add_disabled, size: 48, color: AppColors.textSecondary.withOpacity(0.5)),
+            const SizedBox(height: 16),
+            Text(
+              'No doctors registered yet',
+              style: AppTextStyles.heading3.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Scan a doctor\'s QR code to start using the dashboard.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => context.push(AppRoutes.clinicScanQr),
+              icon: const Icon(Icons.qr_code_scanner, size: 18),
+              label: const Text('Scan Doctor QR'),
             ),
           ],
         ),

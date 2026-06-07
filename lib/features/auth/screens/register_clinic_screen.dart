@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/utils/error_utils.dart';
@@ -16,6 +16,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../../../core/widgets/location_picker_sheet.dart';
 import '../widgets/auth_layout.dart';
 import '../widgets/dashed_upload.dart';
 
@@ -76,48 +77,25 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
     super.dispose();
   }
 
-  Future<void> _getCurrentLocation() async {
-    try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Location permission denied')),
-            );
-          }
-          return;
-        }
-      }
+  Future<void> _pickLocationOnMap() async {
+    double? initialLat;
+    double? initialLng;
+    if (_latitudeController.text.isNotEmpty && _longitudeController.text.isNotEmpty) {
+      initialLat = double.tryParse(_latitudeController.text.trim());
+      initialLng = double.tryParse(_longitudeController.text.trim());
+    }
 
-      if (permission == LocationPermission.deniedForever) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Location permission permanently denied. Please enable it in settings.'),
-            ),
-          );
-        }
-        return;
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: AndroidSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
-
+    final picked = await showLocationPicker(
+      context: context,
+      initialLocation: (initialLat != null && initialLng != null)
+          ? LatLng(initialLat!, initialLng!)
+          : null,
+    );
+    if (picked != null && mounted) {
       setState(() {
-        _latitudeController.text = position.latitude.toString();
-        _longitudeController.text = position.longitude.toString();
+        _latitudeController.text = picked.latitude.toString();
+        _longitudeController.text = picked.longitude.toString();
       });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to get location: ${errorMessage(e)}')),
-        );
-      }
     }
   }
 
@@ -351,9 +329,9 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: _getCurrentLocation,
-                          icon: const Icon(Icons.my_location, size: 18),
-                          label: const Text('Use My Current Location'),
+                          onPressed: _pickLocationOnMap,
+                          icon: const Icon(Icons.map, size: 18),
+                          label: const Text('Pick on Map'),
                         ),
                       ),
                       const SizedBox(height: 14),

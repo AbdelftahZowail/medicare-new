@@ -54,36 +54,50 @@ class DoctorProfile {
   });
 
   factory DoctorProfile.fromJson(Map<String, dynamic> json) {
+    double parseDouble(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value) ?? 0.0;
+      return 0.0;
+    }
+
+    int parseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
     return DoctorProfile(
-      id: json['id'] ?? 0,
-      userId: json['userId'] ?? 0,
-      fullName: json['fullName'] ?? '',
-      phoneNumber: json['phoneNumber'] ?? '',
-      email: json['email'],
-      profileImageUrl: json['profileImageUrl'],
-      specialization: json['specialization'] ?? '',
-      licenseNumber: json['licenseNumber'],
-      licenseImageUrl: json['licenseImageUrl'],
-      yearsOfExperience: json['yearsOfExperience'],
-      bio: json['bio'],
-      consultationFee: (json['consultationFee'] ?? 0).toDouble(),
-      averageRating: (json['averageRating'] ?? 0).toDouble(),
-      totalReviews: json['totalReviews'] ?? 0,
+      id: parseInt(json['id']),
+      userId: parseInt(json['userId']),
+      fullName: json['fullName']?.toString() ?? '',
+      phoneNumber: json['phoneNumber']?.toString() ?? '',
+      email: json['email']?.toString(),
+      profileImageUrl: json['profileImageUrl']?.toString(),
+      specialization: json['specialization']?.toString() ?? '',
+      licenseNumber: json['licenseNumber']?.toString(),
+      licenseImageUrl: json['licenseImageUrl']?.toString(),
+      yearsOfExperience: json['yearsOfExperience'] != null ? parseInt(json['yearsOfExperience']) : null,
+      bio: json['bio']?.toString(),
+      consultationFee: parseDouble(json['consultationFee']),
+      averageRating: parseDouble(json['averageRating']),
+      totalReviews: parseInt(json['totalReviews']),
       isAvailable: json['isAvailable'] ?? false,
-      clinicId: json['clinicId'],
-      clinicName: json['clinicName'],
-      degree: json['degree'],
-      university: json['university'],
-      subSpecialty: json['subSpecialty'],
-      graduationYear: json['graduationYear'],
-      boardCertification: json['boardCertification'],
+      clinicId: json['clinicId'] != null ? parseInt(json['clinicId']) : null,
+      clinicName: json['clinicName']?.toString(),
+      degree: json['degree']?.toString(),
+      university: json['university']?.toString(),
+      subSpecialty: json['subSpecialty']?.toString(),
+      graduationYear: json['graduationYear'] != null ? parseInt(json['graduationYear']) : null,
+      boardCertification: json['boardCertification']?.toString(),
       languages: json['languages'] != null
-          ? List<String>.from(json['languages'])
+          ? List<String>.from(json['languages'].map((x) => x.toString()))
           : [],
       associatedClinics: json['associatedClinics'] != null
-          ? List<String>.from(json['associatedClinics'])
+          ? List<String>.from(json['associatedClinics'].map((x) => x.toString()))
           : [],
-      qrCodeKey: json['qrCodeKey'],
+      qrCodeKey: json['qrCodeKey']?.toString(),
     );
   }
 }
@@ -120,20 +134,34 @@ class DoctorListItem {
   });
 
   factory DoctorListItem.fromJson(Map<String, dynamic> json) {
+    double parseDouble(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value) ?? 0.0;
+      return 0.0;
+    }
+
+    int parseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
     return DoctorListItem(
-      id: json['id'] ?? 0,
-      fullName: json['fullName'] ?? '',
-      specialization: json['specialization'] ?? '',
-      profileImageUrl: json['profileImageUrl'],
-      consultationFee: (json['consultationFee'] ?? 0).toDouble(),
-      averageRating: (json['averageRating'] ?? 0).toDouble(),
-      totalReviews: json['totalReviews'] ?? 0,
+      id: parseInt(json['id']),
+      fullName: json['fullName']?.toString() ?? '',
+      specialization: json['specialization']?.toString() ?? '',
+      profileImageUrl: json['profileImageUrl']?.toString(),
+      consultationFee: parseDouble(json['consultationFee']),
+      averageRating: parseDouble(json['averageRating']),
+      totalReviews: parseInt(json['totalReviews']),
       isAvailable: json['isAvailable'] ?? false,
-      clinicName: json['clinicName'],
-      clinicArea: json['clinicArea'],
+      clinicName: json['clinicName']?.toString(),
+      clinicArea: json['clinicArea']?.toString(),
       isFavorited: json['isFavorited'] ?? false,
-      latitude: json['latitude']?.toDouble(),
-      longitude: json['longitude']?.toDouble(),
+      latitude: json['latitude'] != null ? parseDouble(json['latitude']) : null,
+      longitude: json['longitude'] != null ? parseDouble(json['longitude']) : null,
     );
   }
 }
@@ -163,15 +191,23 @@ class DoctorSchedule {
 
   factory DoctorSchedule.fromJson(Map<String, dynamic> json) {
     final dayOfWeekValue = _parseDayOfWeek(json['dayOfWeek']);
+    
+    int parseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
     return DoctorSchedule(
-      id: json['id'] ?? 0,
-      doctorId: json['doctorId'] ?? 0,
+      id: parseInt(json['id']),
+      doctorId: parseInt(json['doctorId']),
       dayOfWeek: dayOfWeekValue,
-      dayName: json['dayName'] ?? _dayOfWeekToString(dayOfWeekValue),
-      startTime: json['startTime'] ?? '',
-      endTime: json['endTime'] ?? '',
-      slotDurationMinutes: json['slotDurationMinutes'] ?? 0,
-      maxPatients: json['maxPatients'] ?? 0,
+      dayName: json['dayName']?.toString() ?? _dayOfWeekToString(dayOfWeekValue),
+      startTime: json['startTime']?.toString() ?? '',
+      endTime: json['endTime']?.toString() ?? '',
+      slotDurationMinutes: parseInt(json['slotDurationMinutes']),
+      maxPatients: parseInt(json['maxPatients']),
       isActive: json['isActive'] ?? true,
     );
   }

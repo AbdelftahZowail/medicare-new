@@ -15,10 +15,12 @@ class DoctorShellScreen extends StatelessWidget {
       bottomNavigationBar: AppBottomNav(
         currentIndex: navigationShell.currentIndex,
         items: DoctorNavItems.items,
-        onTap: (index) => navigationShell.goBranch(
-          index,
-          initialLocation: index == navigationShell.currentIndex,
-        ),
+        onTap: (index) {
+          navigationShell.goBranch(
+            index,
+            initialLocation: index == navigationShell.currentIndex,
+          );
+        },
       ),
     );
   }

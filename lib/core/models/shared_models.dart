@@ -56,28 +56,91 @@ class FamilyMember {
   });
 
   factory FamilyMember.fromJson(Map<String, dynamic> json) {
+    // Parse gender string from backend enum ("Male"/"Female") to int (0/1)
+    int? _parseGender(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) {
+        switch (value.toLowerCase()) {
+          case 'male':
+            return 0;
+          case 'female':
+            return 1;
+        }
+      }
+      return null;
+    }
+
+    // Parse relation string from backend enum to int
+    int _parseRelation(dynamic value) {
+      if (value is int) return value;
+      if (value is String) {
+        switch (value.toLowerCase()) {
+          case 'parent':
+            return 0;
+          case 'child':
+            return 1;
+          case 'spouse':
+            return 2;
+          case 'sibling':
+            return 3;
+          case 'other':
+            return 4;
+        }
+      }
+      return 0;
+    }
+
+    int parseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
     return FamilyMember(
-      id: json['id'] ?? 0,
-      patientId: json['patientId'] ?? 0,
-      name: json['name'] ?? '',
-      relation: json['relation'] ?? 0,
-      age: json['age'],
-      gender: json['gender'],
-      bloodType: json['bloodType'],
-      medicalHistory: json['medicalHistory'],
-      allergies: json['allergies'],
-      chronicDiseases: json['chronicDiseases'],
+      id: parseInt(json['id']),
+      patientId: parseInt(json['patientId']),
+      name: json['name']?.toString() ?? '',
+      relation: _parseRelation(json['relation']),
+      age: json['age'] != null ? parseInt(json['age']) : null,
+      gender: _parseGender(json['gender']),
+      bloodType: json['bloodType']?.toString(),
+      medicalHistory: json['medicalHistory']?.toString(),
+      allergies: json['allergies']?.toString(),
+      chronicDiseases: json['chronicDiseases']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() {
+    // Convert int enums back to strings for backend
+    String? _genderToString(int? value) {
+      if (value == null) return null;
+      switch (value) {
+        case 0: return 'Male';
+        case 1: return 'Female';
+        default: return null;
+      }
+    }
+
+    String _relationToString(int value) {
+      switch (value) {
+        case 0: return 'Parent';
+        case 1: return 'Child';
+        case 2: return 'Spouse';
+        case 3: return 'Sibling';
+        case 4: return 'Other';
+        default: return 'Other';
+      }
+    }
+
     return {
       'id': id,
       'patientId': patientId,
       'name': name,
-      'relation': relation,
+      'relation': _relationToString(relation),
       'age': age,
-      'gender': gender,
+      'gender': _genderToString(gender),
       'bloodType': bloodType,
       'medicalHistory': medicalHistory,
       'allergies': allergies,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/patient_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/doctor_card.dart';
@@ -16,6 +17,7 @@ class PatientHomeScreen extends StatefulWidget {
 
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   final _doctorService = DoctorService();
+  final _patientService = PatientService();
   final _searchController = TextEditingController();
 
   final Set<int> _favoritedDoctorIds = <int>{};
@@ -102,7 +104,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                           fee: d.consultationFee,
                           location: d.clinicArea,
                           isFavorite: isFav,
-                          onFavoriteToggle: () {
+                          onFavoriteToggle: () async {
+                            await _patientService.favoriteToggle(d.id);
+                            if (!mounted) return;
                             setState(() {
                               if (isFav) {
                                 _favoritedDoctorIds.remove(d.id);

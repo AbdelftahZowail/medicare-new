@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../clinic/clinic_service.dart';
 
@@ -13,7 +17,8 @@ class ScanDoctorQrScreen extends StatefulWidget {
   State<ScanDoctorQrScreen> createState() => _ScanDoctorQrScreenState();
 }
 
-class _ScanDoctorQrScreenState extends State<ScanDoctorQrScreen> {
+class _ScanDoctorQrScreenState extends State<ScanDoctorQrScreen>
+    with WidgetsBindingObserver {
   final _service = ClinicService();
   final _qrController = TextEditingController();
   bool _isScanning = true;
@@ -21,8 +26,71 @@ class _ScanDoctorQrScreenState extends State<ScanDoctorQrScreen> {
   Map<String, dynamic>? _scannedDoctor;
   String? _error;
 
+  late final MobileScannerController _scannerController;
+  StreamSubscription<BarcodeCapture>? _barcodeSubscription;
+  bool _isProcessing = false;
+
   @override
-  void dispose() {
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _scannerController = MobileScannerController(
+      autoStart: false,
+      detectionSpeed: DetectionSpeed.noDuplicates,
+      formats: const [BarcodeFormat.qrCode],
+    );
+    _startScanner();
+  }
+
+  Future<void> _startScanner() async {
+    if (!_scannerController.value.hasCameraPermission) {
+      try {
+        await _scannerController.start();
+      } on MobileScannerException catch (e) {
+        if (e.errorCode == MobileScannerErrorCode.permissionDenied) {
+          setState(() => _error = 'Camera permission denied');
+        }
+        return;
+      }
+    }
+
+    _barcodeSubscription?.cancel();
+    _barcodeSubscription = _scannerController.barcodes.listen(_onBarcodeDetected);
+
+    await _scannerController.start();
+  }
+
+  void _onBarcodeDetected(BarcodeCapture capture) {
+    if (_isProcessing) return;
+    final rawValue = capture.barcodes.firstOrNull?.rawValue;
+    if (rawValue == null || rawValue.isEmpty) return;
+
+    _isProcessing = true;
+    _qrController.text = rawValue;
+    _scanQr();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_scannerController.value.hasCameraPermission) return;
+
+    switch (state) {
+      case AppLifecycleState.resumed:
+        unawaited(_scannerController.start());
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        unawaited(_scannerController.stop());
+    }
+  }
+
+  @override
+  Future<void> dispose() async {
+    WidgetsBinding.instance.removeObserver(this);
+    await _barcodeSubscription?.cancel();
+    _barcodeSubscription = null;
+    await _scannerController.dispose();
     _qrController.dispose();
     super.dispose();
   }
@@ -59,9 +127,11 @@ class _ScanDoctorQrScreenState extends State<ScanDoctorQrScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = errorMessage(e);
         _isLoading = false;
       });
+    } finally {
+      _isProcessing = false;
     }
   }
 
@@ -100,41 +170,18 @@ class _ScanDoctorQrScreenState extends State<ScanDoctorQrScreen> {
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       child: Column(
         children: [
-          Container(
-            height: 280,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.borderLight),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  height: 80,
-                  width: 80,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary100,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(
-                    Icons.qr_code_scanner,
-                    color: AppColors.primary,
-                    size: 40,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Camera Preview',
-                  style: AppTextStyles.heading3.copyWith(color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Point camera at doctor\'s QR code',
-                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
-                ),
-              ],
+          // QR Camera Scanner
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: SizedBox(
+              height: 280,
+              width: double.infinity,
+              child: MobileScanner(
+                controller: _scannerController,
+                errorBuilder: (context, error) {
+                  return _buildScannerError(error);
+                },
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -167,6 +214,53 @@ class _ScanDoctorQrScreenState extends State<ScanDoctorQrScreen> {
             onPressed: _scanQr,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildScannerError(MobileScannerException error) {
+    String message;
+    IconData icon;
+
+    switch (error.errorCode) {
+      case MobileScannerErrorCode.permissionDenied:
+        message = 'Camera permission denied';
+        icon = Icons.camera_alt_outlined;
+        break;
+      case MobileScannerErrorCode.controllerUninitialized:
+        message = 'Camera initializing...';
+        icon = Icons.camera_alt_outlined;
+        break;
+      default:
+        message = 'Unable to start camera';
+        icon = Icons.error_outline;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 48, color: AppColors.textSecondary.withOpacity(0.5)),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'You can also enter the QR code key manually below.',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textTertiary),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

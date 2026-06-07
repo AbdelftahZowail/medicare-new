@@ -41,6 +41,8 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Medicare needs camera access to scan doctor QR codes.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Medicare needs your location to show nearby clinics and doctors, and to auto-fill your clinic's coordinates during registration.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>

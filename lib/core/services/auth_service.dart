@@ -123,10 +123,10 @@ class AuthService {
         data: {},
         fromJson: (_) => null,
       );
-      await _clearAuth();
+      await _clearAuthLocal();
       return response;
     } catch (e) {
-      await _clearAuth();
+      await _clearAuthLocal();
       return ApiResponse(
         isSuccess: true,
         message: 'Logged out',
@@ -183,7 +183,9 @@ class AuthService {
     await prefs.setBool(StorageKeys.isFirstTime, false);
   }
 
-  Future<void> _clearAuth() async {
+  /// Clears auth without firing the onAuthInvalidated stream.
+  /// Used by logout() where the user intentionally signs out — no need to notify.
+  Future<void> _clearAuthLocal() async {
     _currentAuth = null;
     await _apiService.clearTokens();
 
@@ -193,6 +195,12 @@ class AuthService {
     await _secureStorage.delete(key: StorageKeys.userId);
     await _secureStorage.delete(key: StorageKeys.profileId);
     await _secureStorage.delete(key: StorageKeys.userName);
+  }
+
+  /// Clears auth AND fires the onAuthInvalidated stream for involuntary invalidation
+  /// (e.g., expired refresh token, server-side session termination).
+  Future<void> _clearAuth() async {
+    await _clearAuthLocal();
 
     // Notify listeners that auth was invalidated
     _authInvalidatedController.add(null);

@@ -40,7 +40,7 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = errorMessage(e);
         _isLoading = false;
       });
     }

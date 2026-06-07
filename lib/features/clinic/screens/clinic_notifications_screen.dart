@@ -38,7 +38,7 @@ class _ClinicNotificationsScreenState extends State<ClinicNotificationsScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = errorMessage(e);
         _isLoading = false;
       });
     }

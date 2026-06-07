@@ -36,6 +36,7 @@ try {
     $multipart.Add([System.Net.Http.StringContent]::new("0"), "ttl")
 
     $client = [System.Net.Http.HttpClient]::new()
+    $client.Timeout = [System.TimeSpan]::FromMinutes(60)
     $client.DefaultRequestHeaders.Authorization = `
         [System.Net.Http.Headers.AuthenticationHeaderValue]::new("Bearer", $TOKEN)
 
@@ -44,12 +45,21 @@ try {
 
     if ($response.IsSuccessStatusCode) {
         $json = $body | ConvertFrom-Json
+        Write-Host "Upload succeeded." -ForegroundColor Green
         Write-Output $json.url
     } else {
         Write-Host "Upload failed: $($response.StatusCode.value__) $($response.ReasonPhrase)" -ForegroundColor Red
         Write-Host $body -ForegroundColor Red
         exit 1
     }
+}
+catch [System.AggregateException] {
+    Write-Host "Upload error: $($_.Exception.InnerException.Message)" -ForegroundColor Red
+    exit 1
+}
+catch {
+    Write-Host "Upload error: $_" -ForegroundColor Red
+    exit 1
 }
 finally {
     $fileStream.Dispose()

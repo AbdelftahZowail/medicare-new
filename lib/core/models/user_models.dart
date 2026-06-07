@@ -63,13 +63,28 @@ class PatientProfile {
   });
 
   factory PatientProfile.fromJson(Map<String, dynamic> json) {
+    // Parse gender: backend sends string ("Male"/"Female") but Dart model uses int (0/1)
+    int? _parseGender(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) {
+        switch (value.toLowerCase()) {
+          case 'male':
+            return 0;
+          case 'female':
+            return 1;
+        }
+      }
+      return null;
+    }
+
     return PatientProfile(
       id: json['id'] ?? 0,
       userId: json['userId'] ?? 0,
       fullName: json['fullName'] ?? '',
       phoneNumber: json['phoneNumber'] ?? '',
       email: json['email'],
-      gender: json['gender'],
+      gender: _parseGender(json['gender']),
       age: json['age'],
       dateOfBirth: json['dateOfBirth'] != null
           ? DateTime.tryParse(json['dateOfBirth'])
@@ -85,13 +100,26 @@ class PatientProfile {
   }
 
   Map<String, dynamic> toJson() {
+    // Convert gender int to string enum as backend expects (Male=0, Female=1)
+    String? _genderToString(int? value) {
+      if (value == null) return null;
+      switch (value) {
+        case 0:
+          return 'Male';
+        case 1:
+          return 'Female';
+        default:
+          return null;
+      }
+    }
+
     return {
       'id': id,
       'userId': userId,
       'fullName': fullName,
       'phoneNumber': phoneNumber,
       'email': email,
-      'gender': gender,
+      'gender': _genderToString(gender),
       'age': age,
       'dateOfBirth': dateOfBirth?.toIso8601String(),
       'profileImageUrl': profileImageUrl,

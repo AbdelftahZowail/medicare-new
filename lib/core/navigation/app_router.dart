@@ -239,6 +239,8 @@ class AppRouter {
             final extra = state.extra as Map<String, dynamic>?;
             return BookAppointmentScreen(
               doctorId: extra?['doctorId'] ?? 0,
+              selectedDate: extra?['selectedDate'] as DateTime?,
+              selectedTime: extra?['selectedTime'] as String?,
             );
           },
         ),

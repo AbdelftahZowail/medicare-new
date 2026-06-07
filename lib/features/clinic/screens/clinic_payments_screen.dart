@@ -4,6 +4,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/models/doctor_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../clinic/clinic_service.dart';
 
 class ClinicPaymentsScreen extends StatefulWidget {
@@ -48,7 +49,7 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
       setState(() {
         _isLoadingDoctors = false;
         _isLoading = false;
-        _error = e.toString();
+        _error = errorMessage(e);
       });
     }
   }
@@ -70,7 +71,7 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = errorMessage(e);
         _isLoading = false;
       });
     }
@@ -115,7 +116,9 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _error != null
-                      ? _buildError()
+                      ? (_doctors.isEmpty
+                          ? _buildNoDoctors()
+                          : _buildError())
                       : RefreshIndicator(
                           onRefresh: _loadPayments,
                           child: SingleChildScrollView(
@@ -258,6 +261,37 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
             child: const Text('Retry'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNoDoctors() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_add_disabled, size: 48, color: AppColors.textSecondary.withOpacity(0.5)),
+            const SizedBox(height: 16),
+            Text(
+              'No doctors registered yet',
+              style: AppTextStyles.heading3.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Scan a doctor\'s QR code to start tracking payments.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => context.push(AppRoutes.clinicScanQr),
+              icon: const Icon(Icons.qr_code_scanner, size: 18),
+              label: const Text('Scan Doctor QR'),
+            ),
+          ],
+        ),
       ),
     );
   }

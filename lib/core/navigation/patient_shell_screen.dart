@@ -15,10 +15,22 @@ class PatientShellScreen extends StatelessWidget {
       bottomNavigationBar: AppBottomNav(
         currentIndex: navigationShell.currentIndex,
         items: PatientNavItems.items,
-        onTap: (index) => navigationShell.goBranch(
-          index,
-          initialLocation: index == navigationShell.currentIndex,
-        ),
+        onTap: (index) {
+          // AI Bot tab is coming soon
+          if (index == 2) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('AI Bot is coming soon!'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+            return;
+          }
+          navigationShell.goBranch(
+            index,
+            initialLocation: index == navigationShell.currentIndex,
+          );
+        },
         centerFabIndex: 2,
         centerFabIcon: Icons.smart_toy_outlined,
       ),

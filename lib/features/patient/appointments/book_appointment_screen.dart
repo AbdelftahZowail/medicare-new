@@ -16,7 +16,14 @@ import '../services/patient_family_members_service.dart';
 
 class BookAppointmentScreen extends StatefulWidget {
   final int doctorId;
-  const BookAppointmentScreen({super.key, required this.doctorId});
+  final DateTime? selectedDate;
+  final String? selectedTime;
+  const BookAppointmentScreen({
+    super.key,
+    required this.doctorId,
+    this.selectedDate,
+    this.selectedTime,
+  });
 
   @override
   State<BookAppointmentScreen> createState() => _BookAppointmentScreenState();
@@ -43,7 +50,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedDate = widget.selectedDate;
+    _selectedTime = widget.selectedTime;
     _loadData();
+    if (_selectedDate != null) {
+      _loadSlots(_selectedDate!, resetTime: false);
+    }
   }
 
   Future<void> _loadData() async {
@@ -92,7 +104,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     } catch (e) {
       if (!mounted) return;
       String message = 'Booking failed. Please try again.';
-      if (e.toString().contains('409') || e.toString().contains('already booked')) {
+      final errMsg = errorMessage(e);
+      if (errMsg.contains('409') || errMsg.contains('already booked')) {
         message = 'This slot is already booked. Please choose another time.';
         _loadSlots(_selectedDate!); // Refresh available slots
       }
@@ -107,11 +120,11 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     }
   }
 
-  Future<void> _loadSlots(DateTime date) async {
+  Future<void> _loadSlots(DateTime date, {bool resetTime = true}) async {
     setState(() {
       _slotsLoading = true;
       _selectedDate = date;
-      _selectedTime = null;
+      if (resetTime) _selectedTime = null;
     });
     try {
       final slots = await _doctorService.getAvailableSlots(
