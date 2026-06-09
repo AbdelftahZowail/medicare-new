@@ -41,7 +41,14 @@ class _SpecializationsScreenState extends State<SpecializationsScreen> {
         title: const Text('Specializations'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            final router = GoRouter.of(context);
+            if (router.canPop()) {
+              router.pop();
+            } else {
+              router.go(AppRoutes.patientHome);
+            }
+          },
         ),
       ),
       body: SafeArea(
@@ -56,7 +63,7 @@ class _SpecializationsScreenState extends State<SpecializationsScreen> {
                   return InkWell(
                     borderRadius: BorderRadius.circular(16),
                     onTap: () {
-                      context.go(
+                      context.push(
                         AppRoutes.patientBrowseDoctors,
                         extra: {'specialization': s},
                       );

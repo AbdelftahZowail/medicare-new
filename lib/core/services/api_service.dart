@@ -40,7 +40,7 @@ class ApiService {
           if (options.data is! FormData) {
             options.contentType = 'application/json';
           }
-          if (kDebugMode) {
+          if (kEnableDebugTools) {
             print('REQUEST: ${options.method} ${options.path}');
             print('HEADERS: ${options.headers}');
             print('DATA: ${options.data}');
@@ -48,13 +48,13 @@ class ApiService {
           handler.next(options);
         },
         onResponse: (response, handler) {
-          if (kDebugMode) {
+          if (kEnableDebugTools) {
             print('RESPONSE: ${response.statusCode} ${response.data}');
           }
           handler.next(response);
         },
         onError: (error, handler) async {
-          if (kDebugMode) {
+          if (kEnableDebugTools) {
             print('ERROR: ${error.response?.statusCode} ${error.message}');
             print('RESPONSE BODY: ${error.response?.data}');
             print('REQUEST URL: ${error.requestOptions.uri}');

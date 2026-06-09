@@ -47,7 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final packageInfo = await PackageInfo.fromPlatform();
     setState(() => _appVersion = 'v${packageInfo.version}');
 
-    if (kDebugMode) {
+    if (kEnableDebugTools) {
       try {
         final response = await Dio().get(ApiEndpoints.version);
         final data = response.data as Map<String, dynamic>;
@@ -171,11 +171,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Text('Sign Up', style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 18),
-                      Text(
-                        'Continue up with',
-                        style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
                       ),
                     ],
                   ),

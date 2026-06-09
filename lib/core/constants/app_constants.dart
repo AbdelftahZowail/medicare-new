@@ -192,7 +192,6 @@ class AssetPaths {
   static const String logo = '$images/app_logo.png';
   static const String onboarding1 = '$images/onboarding_1.png';
   static const String onboarding2 = '$images/onboarding_2.png';
-  static const String onboarding3 = '$images/onboarding_3.png';
 
   // Illustrations
   static const String illustrationOnlineDoctor = '$images/illustration_online_doctor.png';

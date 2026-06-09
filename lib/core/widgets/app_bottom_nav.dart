@@ -57,11 +57,20 @@ class AppBottomNav extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        isSelected ? item.selectedIcon : item.icon,
-                        color: isSelected ? AppColors.primary : AppColors.textTertiary,
-                        size: 24,
-                      ),
+                      item.imageAsset != null
+                          ? Image.asset(
+                              item.imageAsset!,
+                              height: 24,
+                              width: 24,
+                              color: isSelected ? AppColors.primary : AppColors.textTertiary,
+                              colorBlendMode: BlendMode.srcIn,
+                              fit: BoxFit.contain,
+                            )
+                          : Icon(
+                              isSelected ? item.selectedIcon : item.icon,
+                              color: isSelected ? AppColors.primary : AppColors.textTertiary,
+                              size: 24,
+                            ),
                       const SizedBox(height: 4),
                       Text(
                         item.label,
@@ -123,6 +132,7 @@ class AppBottomNav extends StatelessWidget {
                       selectedIcon: item.selectedIcon,
                       isSelected: isSelected,
                       onTap: () => onTap(idx),
+                      imageAsset: item.imageAsset,
                     ),
                   );
                 }),
@@ -138,6 +148,7 @@ class AppBottomNav extends StatelessWidget {
                       selectedIcon: item.selectedIcon,
                       isSelected: isSelected,
                       onTap: () => onTap(idx),
+                      imageAsset: item.imageAsset,
                     ),
                   );
                 }),
@@ -170,11 +181,19 @@ class AppBottomNav extends StatelessWidget {
                     color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    centerFabIcon ?? items[fabIdx].icon,
-                    color: AppColors.textOnPrimary,
-                    size: 26,
-                  ),
+                  child: items[fabIdx].imageAsset != null
+                      ? Image.asset(
+                          items[fabIdx].imageAsset!,
+                          height: 26,
+                          width: 26,
+                          colorBlendMode: BlendMode.srcIn,
+                          fit: BoxFit.contain,
+                        )
+                      : Icon(
+                          centerFabIcon ?? items[fabIdx].icon,
+                          color: AppColors.textOnPrimary,
+                          size: 26,
+                        ),
                 ),
               ),
             ),
@@ -192,6 +211,7 @@ class _NavItem extends StatelessWidget {
     required this.selectedIcon,
     required this.isSelected,
     required this.onTap,
+    this.imageAsset,
   });
 
   final String label;
@@ -199,6 +219,7 @@ class _NavItem extends StatelessWidget {
   final IconData selectedIcon;
   final bool isSelected;
   final VoidCallback onTap;
+  final String? imageAsset;
 
   @override
   Widget build(BuildContext context) {
@@ -220,7 +241,16 @@ class _NavItem extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     )
                   : null,
-              child: Icon(isSelected ? selectedIcon : icon, color: fg, size: 22),
+              child: imageAsset != null
+                  ? Image.asset(
+                      imageAsset!,
+                      height: 22,
+                      width: 22,
+                      color: fg,
+                      colorBlendMode: BlendMode.srcIn,
+                      fit: BoxFit.contain,
+                    )
+                  : Icon(isSelected ? selectedIcon : icon, color: fg, size: 22),
             ),
             const SizedBox(height: 6),
             Text(
@@ -243,11 +273,13 @@ class BottomNavItem {
   final IconData icon;
   final IconData selectedIcon;
   final String label;
+  final String? imageAsset;
 
   BottomNavItem({
     required this.icon,
     required this.selectedIcon,
     required this.label,
+    this.imageAsset,
   });
 }
 
@@ -268,6 +300,7 @@ class PatientNavItems {
           icon: Icons.chat_bubble_outline,
           selectedIcon: Icons.chat_bubble,
           label: 'AI Bot',
+          imageAsset: 'assets/images/shady_ai_icon.png',
         ),
         BottomNavItem(
           icon: Icons.location_on_outlined,
@@ -298,6 +331,7 @@ class DoctorNavItems {
           icon: Icons.chat_bubble_outline,
           selectedIcon: Icons.chat_bubble,
           label: 'Community',
+          imageAsset: 'assets/images/shady_ai_icon.png',
         ),
         BottomNavItem(
           icon: Icons.person_outline,

@@ -26,7 +26,7 @@ class NearbyService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getNearbyClinics failed: $e');
+      if (kEnableDebugTools) debugPrint('getNearbyClinics failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     return _mockNearbyClinics;
@@ -54,7 +54,7 @@ class NearbyService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getNearbyDoctors failed: $e');
+      if (kEnableDebugTools) debugPrint('getNearbyDoctors failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     return _mockNearbyDoctors;

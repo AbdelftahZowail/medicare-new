@@ -18,7 +18,7 @@ class PatientService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getProfile failed: $e');
+      if (kEnableDebugTools) debugPrint('getProfile failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     debugPrint('⚠️ MOCK FALLBACK: PatientService.getProfile returning mock data');
@@ -34,7 +34,7 @@ class PatientService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('updateProfile failed: $e');
+      if (kEnableDebugTools) debugPrint('updateProfile failed: $e');
     }
     return profile;
   }
@@ -50,7 +50,7 @@ class PatientService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getFamilyMembers failed: $e');
+      if (kEnableDebugTools) debugPrint('getFamilyMembers failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     debugPrint('⚠️ MOCK FALLBACK: PatientService.getFamilyMembers returning mock data');
@@ -66,7 +66,7 @@ class PatientService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('addFamilyMember failed: $e');
+      if (kEnableDebugTools) debugPrint('addFamilyMember failed: $e');
     }
     return member;
   }
@@ -78,7 +78,7 @@ class PatientService {
         fromJson: (_) => null,
       );
     } catch (e) {
-      if (kDebugMode) debugPrint('removeFamilyMember failed: $e');
+      if (kEnableDebugTools) debugPrint('removeFamilyMember failed: $e');
     }
   }
 
@@ -93,7 +93,7 @@ class PatientService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getNotifications failed: $e');
+      if (kEnableDebugTools) debugPrint('getNotifications failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     debugPrint('⚠️ MOCK FALLBACK: PatientService.getNotifications returning mock data');
@@ -108,7 +108,7 @@ class PatientService {
         fromJson: (_) => null,
       );
     } catch (e) {
-      if (kDebugMode) debugPrint('markNotificationRead failed: $e');
+      if (kEnableDebugTools) debugPrint('markNotificationRead failed: $e');
     }
   }
 
@@ -123,7 +123,7 @@ class PatientService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getFavorites failed: $e');
+      if (kEnableDebugTools) debugPrint('getFavorites failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     debugPrint('⚠️ MOCK FALLBACK: PatientService.getFavorites returning mock data');

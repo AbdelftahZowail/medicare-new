@@ -27,12 +27,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
     OnboardingPageData(
       image: AssetPaths.onboarding2,
-      title: 'Your Health Helper',
-      description: 'See doctors. Stay healthy. All in one app.',
-      color: AppColors.primary,
-    ),
-    OnboardingPageData(
-      image: AssetPaths.onboarding3,
       title: 'Smart Clinic App',
       description: 'Real appointments. Real doctors. Real easy.',
       color: AppColors.primary,

@@ -16,7 +16,7 @@ class AppointmentService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('bookAppointment failed: $e');
+      if (kEnableDebugTools) debugPrint('bookAppointment failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     debugPrint('⚠️ MOCK FALLBACK: AppointmentService.bookAppointment returning mock data');
@@ -35,7 +35,7 @@ class AppointmentService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getPatientAppointments failed: $e');
+      if (kEnableDebugTools) debugPrint('getPatientAppointments failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     debugPrint('⚠️ MOCK FALLBACK: AppointmentService.getPatientAppointments returning mock data');
@@ -50,7 +50,7 @@ class AppointmentService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getAppointmentDetail failed: $e');
+      if (kEnableDebugTools) debugPrint('getAppointmentDetail failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     debugPrint('⚠️ MOCK FALLBACK: AppointmentService.getAppointmentDetail returning mock data');
@@ -65,7 +65,7 @@ class AppointmentService {
         fromJson: (_) => null,
       );
     } catch (e) {
-      if (kDebugMode) debugPrint('cancelAppointment failed: $e');
+      if (kEnableDebugTools) debugPrint('cancelAppointment failed: $e');
     }
   }
 
@@ -77,7 +77,7 @@ class AppointmentService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getQueueTracker failed: $e');
+      if (kEnableDebugTools) debugPrint('getQueueTracker failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     return LiveQueueTracker(

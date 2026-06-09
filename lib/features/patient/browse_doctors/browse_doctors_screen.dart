@@ -25,19 +25,29 @@ class _BrowseDoctorsScreenState extends State<BrowseDoctorsScreen> {
   List<DoctorListItem> _items = const [];
   String? _specialization;
 
+  bool _initialLoadDone = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final extra = GoRouterState.of(context).extra;
+    final state = GoRouterState.of(context);
+    final extra = state.extra;
     if (extra is Map<String, dynamic>) {
       _specialization = extra['specialization'] as String?;
+    }
+    final query = state.uri.queryParameters['q'];
+    if (query != null && query.isNotEmpty && _controller.text.isEmpty) {
+      _controller.text = query;
+    }
+    if (!_initialLoadDone) {
+      _initialLoadDone = true;
+      _load();
     }
   }
 
   @override
   void initState() {
     super.initState();
-    _load();
   }
 
   Future<void> _load() async {
@@ -64,10 +74,16 @@ class _BrowseDoctorsScreenState extends State<BrowseDoctorsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('All Appointment'),
+        title: const Text('Browse Doctors'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRoutes.patientHome);
+            }
+          },
         ),
       ),
       body: SafeArea(
@@ -132,7 +148,7 @@ class _BrowseDoctorsScreenState extends State<BrowseDoctorsScreen> {
                       fee: d.consultationFee,
                       location: '${d.clinicArea ?? ''}${(d.clinicArea != null && d.clinicName != null) ? ', ' : ''}${d.clinicName ?? ''}',
                       isFavorite: d.isFavorited,
-                      onTap: () => context.go('${AppRoutes.patientDoctorProfile}/${d.id}'),
+                      onTap: () => context.push('${AppRoutes.patientDoctorProfile}/${d.id}'),
                       onFavoriteToggle: () async {
                         await _patientService.favoriteToggle(d.id);
                         setState(() => _items[i] = DoctorListItem(

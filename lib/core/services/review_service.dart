@@ -26,7 +26,7 @@ class ReviewService {
         fromJson: (_) => null,
       );
     } catch (e) {
-      if (kDebugMode) debugPrint('submitReview failed: $e');
+      if (kEnableDebugTools) debugPrint('submitReview failed: $e');
     }
   }
 
@@ -41,7 +41,7 @@ class ReviewService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getDoctorReviews failed: $e');
+      if (kEnableDebugTools) debugPrint('getDoctorReviews failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     return _mockReviews;

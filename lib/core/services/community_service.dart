@@ -20,7 +20,7 @@ class CommunityService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getPosts failed: $e');
+      if (kEnableDebugTools) debugPrint('getPosts failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     return _mockPosts;
@@ -35,7 +35,7 @@ class CommunityService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('createPost failed: $e');
+      if (kEnableDebugTools) debugPrint('createPost failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     return _mockPosts.first;
@@ -52,7 +52,7 @@ class CommunityService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getComments failed: $e');
+      if (kEnableDebugTools) debugPrint('getComments failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     return _mockComments;
@@ -66,7 +66,7 @@ class CommunityService {
         fromJson: (_) => null,
       );
     } catch (e) {
-      if (kDebugMode) debugPrint('addComment failed: $e');
+      if (kEnableDebugTools) debugPrint('addComment failed: $e');
     }
   }
 }

@@ -23,7 +23,7 @@ class DoctorService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getPopularDoctors failed: $e');
+      if (kEnableDebugTools) debugPrint('getPopularDoctors failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     return _mockPopularDoctors;
@@ -39,7 +39,7 @@ class DoctorService {
         return res.data!;
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('getSpecializations failed: $e');
+      if (kEnableDebugTools) debugPrint('getSpecializations failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     return _mockSpecializations;
@@ -66,7 +66,7 @@ class DoctorService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('browseDoctors failed: $e');
+      if (kEnableDebugTools) debugPrint('browseDoctors failed: $e');
       if (!useMockDataFallback) rethrow;
     }
 
@@ -93,7 +93,7 @@ class DoctorService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getDoctorProfile failed: $e');
+      if (kEnableDebugTools) debugPrint('getDoctorProfile failed: $e');
       if (!useMockDataFallback) rethrow;
     }
     return _mockDoctorProfile(id);
@@ -114,7 +114,7 @@ class DoctorService {
       );
       if (res.isSuccess && res.data != null) return res.data!;
     } catch (e) {
-      if (kDebugMode) debugPrint('getAvailableSlots failed: $e');
+      if (kEnableDebugTools) debugPrint('getAvailableSlots failed: $e');
       if (!useMockDataFallback) rethrow;
     }
 

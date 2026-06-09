@@ -213,7 +213,7 @@ class ClinicService {
 
   Future<void> updateDoctorSchedule(int doctorId, List<Map<String, dynamic>> schedules) async {
     for (final schedule in schedules) {
-      if (kDebugMode) {
+      if (kEnableDebugTools) {
         print('--- Sending schedule ---');
         print('Schedule data: $schedule');
       }
@@ -225,7 +225,7 @@ class ClinicService {
         },
         fromJson: (data) => data,
       );
-      if (kDebugMode) {
+      if (kEnableDebugTools) {
         print('Schedule response: isSuccess=${response.isSuccess} message="${response.message}" errors=${response.errors}');
       }
       if (!response.isSuccess) {
