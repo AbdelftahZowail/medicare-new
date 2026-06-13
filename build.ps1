@@ -4,7 +4,7 @@ $APK_PATH = ".\build\app\outputs\flutter-apk\app-release.apk"
 $UPLOAD_PATH = "apps/app-release.apk"
 
 Write-Host "=== Building APK ===" -ForegroundColor Cyan
-flutter build apk
+flutter build apk --release
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Build failed with exit code $LASTEXITCODE" -ForegroundColor Red

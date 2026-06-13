@@ -14,4 +14,4 @@ clinic: phonenumber 01067179862, password: password
 
 ---
 
-anything endpoints related consult @API_DOCUMENTATION.md first to be sure your calls are accurate and as expected
+anything endpoints related consult @medicare-backend/API_DOCUMENTATION.md first to be sure your calls are accurate and as expected

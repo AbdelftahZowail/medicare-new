@@ -154,7 +154,7 @@ class _TopBar extends StatelessWidget {
             color: AppColors.primary100,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(Icons.health_and_safety, color: AppColors.primary),
+          child: Image.asset(AssetPaths.logo, height: 20, width: 20)
         ),
         const SizedBox(width: 10),
         Text('Medicare', style: AppTextStyles.heading3.copyWith(fontWeight: FontWeight.w700)),
