@@ -18,13 +18,21 @@ class DoctorNotificationsScreen extends StatefulWidget {
 
 class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> {
   final _service = DoctorService();
+  List<NotificationItem> _notifications = [];
   Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
+    _loadNotifications();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) setState(() {});
+      if (mounted) _loadNotifications();
+    });
+  }
+
+  void _loadNotifications() {
+    _service.getNotifications().then((data) {
+      if (mounted) setState(() => _notifications = data);
     });
   }
 
@@ -76,34 +84,8 @@ class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> {
         ),
       ),
       body: SafeArea(
-        child: FutureBuilder(
-          future: _service.getNotifications(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (snapshot.hasError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48, color: AppColors.textTertiary),
-                    const SizedBox(height: 12),
-                    Text(
-                      snapshot.error?.toString() ?? 'Failed to load notifications',
-                      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            final notifications = snapshot.data ?? [];
-
-            if (notifications.isEmpty) {
-              return Center(
+        child: _notifications.isEmpty
+            ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -121,24 +103,20 @@ class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> {
                     ),
                   ],
                 ),
-              );
-            }
-
-            return ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-              itemCount: notifications.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final notification = notifications[index];
-                return _NotificationCard(
-                  notification: notification,
-                  icon: _getNotificationIcon(notification.type),
-                  iconColor: _getNotificationColor(notification.type),
-                );
-              },
-            );
-          },
-        ),
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                itemCount: _notifications.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final notification = _notifications[index];
+                  return _NotificationCard(
+                    notification: notification,
+                    icon: _getNotificationIcon(notification.type),
+                    iconColor: _getNotificationColor(notification.type),
+                  );
+                },
+              ),
       ),
     );
   }

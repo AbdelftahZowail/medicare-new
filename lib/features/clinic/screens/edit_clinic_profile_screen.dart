@@ -468,7 +468,7 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
               shape: BoxShape.circle,
               image: _logoUrl != null
                   ? DecorationImage(
-                      image: NetworkImage(_logoUrl!),
+                      image: NetworkImage(ApiEndpoints.resolveImageUrl(_logoUrl)!),
                       fit: BoxFit.cover,
                     )
                   : null,

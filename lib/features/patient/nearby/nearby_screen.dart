@@ -537,7 +537,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
                       final item = items[index];
                       if (item is DoctorListItem) {
                         return DoctorCard(
-                          imageAsset: AssetPaths.doctorPhoto1,
+                          imageUrl: item.profileImageUrl,
                           name: item.fullName,
                           specialization: item.specialization,
                           rating: item.averageRating,

@@ -125,8 +125,6 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
                                 _InfoItem(icon: Icons.description, label: 'Description', value: description),
                               if (linkMap != null)
                                 _InfoItem(icon: Icons.map, label: 'Google Maps', value: linkMap),
-                              if (licenseImageUrl != null)
-                                _InfoItem(icon: Icons.verified, label: 'License', value: licenseImageUrl),
                               _InfoItem(
                                 icon: Icons.people,
                                 label: 'Doctors',
@@ -134,6 +132,10 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
                               ),
                             ],
                           ),
+                          if (licenseImageUrl != null) ...[
+                            const SizedBox(height: 20),
+                            _buildLicenseItem(licenseImageUrl),
+                          ],
                           const SizedBox(height: 20),
                           _buildInfoSection(
                             title: 'Location',
@@ -257,7 +259,7 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
               shape: BoxShape.circle,
               image: logoUrl != null
                   ? DecorationImage(
-                      image: NetworkImage(logoUrl),
+                      image: NetworkImage(ApiEndpoints.resolveImageUrl(logoUrl)!),
                       fit: BoxFit.cover,
                     )
                   : const DecorationImage(
@@ -337,6 +339,145 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLicenseItem(String url) {
+    final resolved = ApiEndpoints.resolveImageUrl(url);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 40,
+            width: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primary100,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.verified, color: AppColors.primary, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('License', style: AppTextStyles.bodySmall),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: () => _showLicensePreview(resolved ?? url),
+                  child: Container(
+                    height: 80,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.borderLight),
+                      image: resolved != null
+                          ? DecorationImage(
+                              image: NetworkImage(resolved),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                    ),
+                    child: resolved == null
+                        ? const Center(
+                            child: Icon(Icons.broken_image, color: AppColors.textTertiary),
+                          )
+                        : Align(
+                            alignment: Alignment.bottomRight,
+                            child: Container(
+                              margin: const EdgeInsets.all(6),
+                              padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.fullscreen, color: Colors.white, size: 14),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Tap to expand',
+                                    style: TextStyle(color: Colors.white, fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLicensePreview(String url) {
+    final resolved = ApiEndpoints.resolveImageUrl(url);
+    if (resolved == null) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: InteractiveViewer(
+                maxScale: 5,
+                child: Image.network(
+                  resolved,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      height: 400,
+                      color: Colors.black87,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 400,
+                    color: Colors.black87,
+                    child: const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.broken_image, color: Colors.white54, size: 48),
+                          SizedBox(height: 8),
+                          Text('Failed to load image', style: TextStyle(color: Colors.white54)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

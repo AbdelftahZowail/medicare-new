@@ -181,23 +181,6 @@ class _DoctorCard extends StatelessWidget {
     required this.onTap,
   });
 
-  String _doctorAsset(int idx) {
-    const assets = [
-      AssetPaths.drJamesWilson,
-      AssetPaths.drSarahChen,
-      AssetPaths.doctorJulian,
-      AssetPaths.doctorJulian2,
-      AssetPaths.drSarahChen2,
-      AssetPaths.sarahJohnson,
-      AssetPaths.emilyDavis,
-      AssetPaths.doctorPhoto1,
-      AssetPaths.doctorPhoto2,
-      AssetPaths.doctorPhoto3,
-      AssetPaths.doctorPhoto4,
-    ];
-    return assets[idx % assets.length];
-  }
-
   @override
   Widget build(BuildContext context) {
     final isAvailable = doctor.isAvailable ?? false;
@@ -228,15 +211,17 @@ class _DoctorCard extends StatelessWidget {
                         child: Image.network(
                           doctor.profileImageUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Image.asset(
-                            _doctorAsset(index),
-                            fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.person,
+                            size: 50,
+                            color: AppColors.primary,
                           ),
                         ),
                       )
-                    : Image.asset(
-                        _doctorAsset(index),
-                        fit: BoxFit.cover,
+                    : const Icon(
+                        Icons.person,
+                        size: 50,
+                        color: AppColors.primary,
                       ),
               ),
             ),

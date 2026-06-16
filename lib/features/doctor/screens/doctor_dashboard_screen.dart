@@ -19,12 +19,20 @@ class DoctorDashboardScreen extends StatefulWidget {
 class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   final _service = DoctorService();
   Timer? _pollTimer;
+  Map<String, dynamic>? _dashboardData;
 
   @override
   void initState() {
     super.initState();
+    _loadDashboard();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) setState(() {});
+      if (mounted) _loadDashboard();
+    });
+  }
+
+  void _loadDashboard() {
+    _service.getDashboard().then((data) {
+      if (mounted) setState(() => _dashboardData = data);
     });
   }
 
@@ -36,115 +44,88 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final data = _dashboardData;
+
+    if (data == null) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: FutureBuilder(
-          future: _service.getDashboard(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (snapshot.hasError || !snapshot.hasData) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: AppColors.textTertiary),
-                      const SizedBox(height: 12),
-                      Text(
-                        snapshot.error?.toString() ?? 'Failed to load dashboard',
-                        style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      OutlinedButton(
-                        onPressed: () => setState(() {}),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            final data = snapshot.data!;
-
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _TopBar(
-                    onNotificationsTap: () =>
-                        context.push(AppRoutes.doctorNotifications),
-                  ),
-                  const SizedBox(height: 20),
-                  _TodayAppointmentsCard(
-                    total: data['totalAppointments'] as int? ?? 0,
-                    newPatients: data['newPatientsCount'] as int? ?? 0,
-                    followUps: data['followUpsCount'] as int? ?? 0,
-                    walkIns: data['walkInsCount'] as int? ?? 0,
-                    online: data['onlineCount'] as int? ?? 0,
-                  ),
-                  const SizedBox(height: 16),
-                  _EarningsCard(
-                    amount: (data['todayEarnings'] as num?)?.toDouble() ?? 0,
-                  ),
-                  const SizedBox(height: 16),
-                  _ScheduleButton(
-                    onTap: () => context.go(AppRoutes.doctorAppointments),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 52,
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        try {
-                          final profile = await DoctorService().getProfile();
-                          if (mounted) {
-                            context.push(
-                              AppRoutes.doctorSchedule,
-                              extra: {'doctorId': profile.id},
-                            );
-                          }
-                        } catch (e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(kEnableDebugTools
-                                    ? 'Failed to load schedule: ${errorMessage(e)}'
-                                    : 'Failed to load schedule. Please try again.'),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.edit_calendar, size: 18),
-                      label: const Text('Manage My Schedule'),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Queue Summary',
-                    style: AppTextStyles.heading2.copyWith(
-                      color: AppColors.primaryDark,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _QueueSummaryCard(
-                    waiting: data['waitingCount'] as int? ?? 0,
-                    withDoctor: data['withDoctorCount'] as int? ?? 0,
-                    completed: data['completedCount'] as int? ?? 0,
-                  ),
-                ],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _TopBar(
+                onNotificationsTap: () =>
+                    context.push(AppRoutes.doctorNotifications),
               ),
-            );
-          },
+              const SizedBox(height: 20),
+              _TodayAppointmentsCard(
+                total: data['totalAppointments'] as int? ?? 0,
+                newPatients: data['newPatientsCount'] as int? ?? 0,
+                followUps: data['followUpsCount'] as int? ?? 0,
+                walkIns: data['walkInsCount'] as int? ?? 0,
+                online: data['onlineCount'] as int? ?? 0,
+              ),
+              const SizedBox(height: 16),
+              _EarningsCard(
+                amount: (data['todayEarnings'] as num?)?.toDouble() ?? 0,
+              ),
+              const SizedBox(height: 16),
+              _ScheduleButton(
+                onTap: () => context.go(AppRoutes.doctorAppointments),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 52,
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    try {
+                      final profile = await DoctorService().getProfile();
+                      if (mounted) {
+                        context.push(
+                          AppRoutes.doctorSchedule,
+                          extra: {'doctorId': profile.id},
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(kEnableDebugTools
+                                ? 'Failed to load schedule: ${errorMessage(e)}'
+                                : 'Failed to load schedule. Please try again.'),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.edit_calendar, size: 18),
+                  label: const Text('Manage My Schedule'),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Queue Summary',
+                style: AppTextStyles.heading2.copyWith(
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _QueueSummaryCard(
+                waiting: data['waitingCount'] as int? ?? 0,
+                withDoctor: data['withDoctorCount'] as int? ?? 0,
+                completed: data['completedCount'] as int? ?? 0,
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -11,6 +11,25 @@ class ApiEndpoints {
   static const String baseUrl = 'https://medicare.shortformfunnels.com';
   static const String apiBase = '$baseUrl/api';
 
+  /// Resolves a potentially relative or file-scheme image URL to an absolute HTTP URL.
+  /// Handles: relative paths (/uploads/...), file:/// URIs, and already-absolute URLs.
+  /// Returns null if input is null/empty, otherwise the resolved absolute URL.
+  static String? resolveImageUrl(String? url) {
+    if (url == null || url.isEmpty) return null;
+
+    // Already an absolute HTTP/HTTPS URL
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+
+    // Strip file:/// prefix if present (malformed local URI)
+    final clean = url.startsWith('file:///') ? url.replaceFirst('file:///', '/') : url;
+
+    // If it now starts with /, prepend the base URL
+    if (clean.startsWith('/')) return '$baseUrl$clean';
+
+    // Otherwise return as-is (unrecognized format)
+    return clean;
+  }
+
   // Auth
   static const String login = '$apiBase/auth/login';
   static const String registerPatient = '$apiBase/auth/register/patient';

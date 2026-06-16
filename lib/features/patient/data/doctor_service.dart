@@ -99,6 +99,23 @@ class DoctorService {
     return _mockDoctorProfile(id);
   }
 
+  Future<List<DoctorSchedule>> getDoctorSchedules(int doctorId) async {
+    try {
+      final res = await _api.getList<DoctorSchedule>(
+        ApiEndpoints.doctorSchedules(doctorId),
+        fromJson: (data) {
+          final list = (data as List).cast<Map<String, dynamic>>();
+          return list.map(DoctorSchedule.fromJson).toList();
+        },
+      );
+      if (res.isSuccess && res.data != null) return res.data!;
+    } catch (e) {
+      if (kEnableDebugTools) debugPrint('getDoctorSchedules failed: $e');
+      if (!useMockDataFallback) rethrow;
+    }
+    return [];
+  }
+
   Future<List<AvailableSlot>> getAvailableSlots({
     required int doctorId,
     required DateTime date,

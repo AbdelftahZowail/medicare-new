@@ -23,6 +23,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   bool _loading = true;
   bool _slotsLoading = false;
   DoctorProfile? _doctor;
+  List<DoctorSchedule> _schedules = [];
   DateTime? _selectedDate;
   List<AvailableSlot> _availableSlots = [];
   String? _selectedTime;
@@ -34,10 +35,14 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   }
 
   Future<void> _load() async {
-    final d = await _service.getDoctorProfile(widget.doctorId);
+    final results = await Future.wait([
+      _service.getDoctorProfile(widget.doctorId),
+      _service.getDoctorSchedules(widget.doctorId),
+    ]);
     if (!mounted) return;
     setState(() {
-      _doctor = d;
+      _doctor = results[0] as DoctorProfile;
+      _schedules = results[1] as List<DoctorSchedule>;
       _loading = false;
     });
   }
@@ -67,9 +72,15 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     }
   }
 
-  List<DateTime> get _next14Days {
+  /// Days in the next 14 days where the doctor has a schedule.
+  /// Falls back to all 14 days when no schedule data is available.
+  List<DateTime> get _availableDates {
     final now = DateTime.now();
-    return List.generate(14, (i) => now.add(Duration(days: i)));
+    final allDays = List.generate(14, (i) => now.add(Duration(days: i)));
+    if (_schedules.isEmpty) return allDays;
+    final scheduledDays = _schedules.map((s) => s.dayOfWeek).toSet();
+    // DateTime.weekday: 1=Mon..7=Sun. DoctorSchedule.dayOfWeek: 0=Sun..6=Sat.
+    return allDays.where((d) => scheduledDays.contains(d.weekday % 7)).toList();
   }
 
   @override
@@ -343,53 +354,72 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                     // Inline Calendar
                     Text('Select Date', style: AppTextStyles.heading3),
                     const SizedBox(height: 10),
-                    SizedBox(
-                      height: 80,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _next14Days.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
-                        itemBuilder: (context, index) {
-                          final date = _next14Days[index];
-                          final isSelected = _selectedDate != null &&
-                              date.year == _selectedDate!.year &&
-                              date.month == _selectedDate!.month &&
-                              date.day == _selectedDate!.day;
-                          return GestureDetector(
-                            onTap: () => _loadSlots(date),
-                            child: Container(
-                              width: 60,
-                              padding: const EdgeInsets.fromLTRB(4, 10, 4, 10),
-                              decoration: BoxDecoration(
-                                color: isSelected ? AppColors.primary : AppColors.surface,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: isSelected ? AppColors.primary : AppColors.borderLight,
+                    if (_availableDates.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.borderLight),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'No available days in the next 14 days',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      SizedBox(
+                        height: 80,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _availableDates.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          itemBuilder: (context, index) {
+                            final date = _availableDates[index];
+                            final isSelected = _selectedDate != null &&
+                                date.year == _selectedDate!.year &&
+                                date.month == _selectedDate!.month &&
+                                date.day == _selectedDate!.day;
+                            return GestureDetector(
+                              onTap: () => _loadSlots(date),
+                              child: Container(
+                                width: 60,
+                                padding: const EdgeInsets.fromLTRB(4, 10, 4, 10),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? AppColors.primary : AppColors.surface,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: isSelected ? AppColors.primary : AppColors.borderLight,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      DateFormat('EEE').format(date),
+                                      style: AppTextStyles.labelMedium.copyWith(
+                                        color: isSelected ? AppColors.textOnPrimary : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${date.day}',
+                                      style: AppTextStyles.heading3.copyWith(
+                                        color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    DateFormat('EEE').format(date),
-                                    style: AppTextStyles.labelMedium.copyWith(
-                                      color: isSelected ? AppColors.textOnPrimary : AppColors.textSecondary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${date.day}',
-                                    style: AppTextStyles.heading3.copyWith(
-                                      color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 20),
 
                     // Available Slots

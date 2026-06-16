@@ -93,14 +93,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         itemCount: _favorites.length,
                         itemBuilder: (context, index) {
                           final doctor = _favorites[index];
-                        final doctorAssets = [
-                          AssetPaths.doctorPhoto1,
-                          AssetPaths.doctorPhoto2,
-                          AssetPaths.doctorPhoto3,
-                          AssetPaths.doctorPhoto4,
-                        ];
                         return DoctorCard(
-                          imageAsset: doctorAssets[index % doctorAssets.length],
+                          imageUrl: doctor.profileImageUrl,
                           name: doctor.fullName,
                           specialization: doctor.specialization,
                           rating: doctor.averageRating,

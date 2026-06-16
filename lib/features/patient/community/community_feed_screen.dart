@@ -268,13 +268,7 @@ class _PostCard extends StatelessWidget {
                 CircleAvatar(
                   radius: 20,
                   backgroundColor: AppColors.primary100,
-                  backgroundImage: AssetImage(
-                    [
-                      AssetPaths.familyMember1,
-                      AssetPaths.familyMember2,
-                      AssetPaths.familyMember3,
-                    ][(post.id - 1) % 3],
-                  ),
+                  child: Icon(Icons.person, color: AppColors.primary),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

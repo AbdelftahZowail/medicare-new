@@ -133,14 +133,8 @@ class _BrowseDoctorsScreenState extends State<BrowseDoctorsScreen> {
                   itemCount: _items.length,
                   itemBuilder: (context, i) {
                     final d = _items[i];
-                    final doctorAssets = [
-                      AssetPaths.doctorPhoto1,
-                      AssetPaths.doctorPhoto2,
-                      AssetPaths.doctorPhoto3,
-                      AssetPaths.doctorPhoto4,
-                    ];
                     return DoctorCard(
-                      imageAsset: doctorAssets[i % doctorAssets.length],
+                      imageUrl: d.profileImageUrl,
                       name: d.fullName,
                       specialization: d.specialization,
                       rating: d.averageRating,

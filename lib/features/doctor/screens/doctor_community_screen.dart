@@ -19,13 +19,21 @@ class DoctorCommunityScreen extends StatefulWidget {
 
 class _DoctorCommunityScreenState extends State<DoctorCommunityScreen> {
   final _service = DoctorService();
+  List<CommunityPost> _posts = [];
   Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
+    _loadPosts();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) setState(() {});
+      if (mounted) _loadPosts();
+    });
+  }
+
+  void _loadPosts() {
+    _service.getCommunityPosts().then((data) {
+      if (mounted) setState(() => _posts = data);
     });
   }
 
@@ -51,34 +59,8 @@ class _DoctorCommunityScreenState extends State<DoctorCommunityScreen> {
         ],
       ),
       body: SafeArea(
-        child: FutureBuilder(
-          future: _service.getCommunityPosts(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (snapshot.hasError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48, color: AppColors.textTertiary),
-                    const SizedBox(height: 12),
-                    Text(
-                      snapshot.error?.toString() ?? 'Failed to load community posts',
-                      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            final posts = snapshot.data ?? [];
-
-            if (posts.isEmpty) {
-              return Center(
+        child: _posts.isEmpty
+            ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -101,20 +83,16 @@ class _DoctorCommunityScreenState extends State<DoctorCommunityScreen> {
                     ),
                   ],
                 ),
-              );
-            }
-
-            return ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-              itemCount: posts.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final post = posts[index];
-                return _CommunityPostCard(post: post);
-              },
-            );
-          },
-        ),
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                itemCount: _posts.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final post = _posts[index];
+                  return _CommunityPostCard(post: post);
+                },
+              ),
       ),
     );
   }

@@ -20,13 +20,24 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
   final _service = DoctorService();
   DateTime _selectedDate = DateTime.now();
   int _statusFilter = -1; // -1 = all
+  List<Appointment> _appointments = [];
+  List<Appointment> get _filteredAppointments => _statusFilter == -1
+      ? _appointments
+      : _appointments.where((a) => a.status == _statusFilter).toList();
   Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
+    _loadAppointments();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) setState(() {});
+      if (mounted) _loadAppointments();
+    });
+  }
+
+  void _loadAppointments() {
+    _service.getAppointments(date: _selectedDate).then((data) {
+      if (mounted) setState(() => _appointments = data);
     });
   }
 
@@ -123,7 +134,10 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
                       date.month == DateTime.now().month &&
                       date.year == DateTime.now().year;
                   return GestureDetector(
-                    onTap: () => setState(() => _selectedDate = date),
+                    onTap: () {
+                      setState(() => _selectedDate = date);
+                      _loadAppointments();
+                    },
                     child: Container(
                       width: 44,
                       padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
@@ -161,39 +175,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
             const SizedBox(height: 8),
             // Appointment list
             Expanded(
-              child: FutureBuilder(
-                future: _service.getAppointments(date: _selectedDate),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error_outline, size: 48, color: AppColors.textTertiary),
-                          const SizedBox(height: 12),
-                          Text(
-                            snapshot.error?.toString() ?? 'Failed to load appointments',
-                            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  final allAppointments = snapshot.data ?? [];
-                  final appointments = _statusFilter == -1
-                      ? allAppointments
-                      : allAppointments
-                          .where((a) => a.status == _statusFilter)
-                          .toList();
-
-                  if (appointments.isEmpty) {
-                    return Center(
+              child: _filteredAppointments.isEmpty
+                  ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -211,32 +194,28 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
                           ),
                         ],
                       ),
-                    );
-                  }
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                    itemCount: appointments.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final appt = appointments[index];
-                      return _AppointmentCard(
-                        appointment: appt,
-                        statusColor: _statusColor(appt.status),
-                        statusBgColor: _statusBgColor(appt.status),
-                        onTap: () {
-                          if (appt.status == AppEnums.confirmed ||
-                              appt.status == AppEnums.inProgress) {
-                            context.push(
-                              '${AppRoutes.doctorConsultation}/${appt.id}',
-                            );
-                          }
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                      itemCount: _filteredAppointments.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final appt = _filteredAppointments[index];
+                        return _AppointmentCard(
+                          appointment: appt,
+                          statusColor: _statusColor(appt.status),
+                          statusBgColor: _statusBgColor(appt.status),
+                          onTap: () {
+                            if (appt.status == AppEnums.confirmed ||
+                                appt.status == AppEnums.inProgress) {
+                              context.push(
+                                '${AppRoutes.doctorConsultation}/${appt.id}',
+                              );
+                            }
+                          },
+                        );
+                      },
+                    ),
             ),
           ],
         ),

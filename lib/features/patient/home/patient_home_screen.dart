@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/models/doctor_models.dart';
 import '../../../core/services/patient_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -23,13 +24,21 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   final _searchController = TextEditingController();
 
   final Set<int> _favoritedDoctorIds = <int>{};
+  List<DoctorListItem> _popularDoctors = [];
   Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
+    _loadPopularDoctors();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) setState(() {});
+      if (mounted) _loadPopularDoctors();
+    });
+  }
+
+  void _loadPopularDoctors() {
+    _doctorService.getPopularDoctors().then((doctors) {
+      if (mounted) setState(() => _popularDoctors = doctors);
     });
   }
 
@@ -84,58 +93,46 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
               const SizedBox(height: 18),
               Text('Popular Doctors', style: AppTextStyles.heading2.copyWith(color: AppColors.primaryDark)),
               const SizedBox(height: 10),
-              FutureBuilder(
-                future: _doctorService.getPopularDoctors(),
-                builder: (context, snapshot) {
-                  final doctors = snapshot.data ?? const [];
-                  if (snapshot.connectionState == ConnectionState.waiting && doctors.isEmpty) {
-                    return const SizedBox(
-                      height: 190,
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-
-                  return SizedBox(
-                    height: 190,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemBuilder: (context, index) {
-                        final d = doctors[index];
-                        final isFav = _favoritedDoctorIds.contains(d.id) || d.isFavorited;
-                        final doctorAssets = [
-                          AssetPaths.doctorPhoto1,
-                          AssetPaths.doctorPhoto2,
-                          AssetPaths.doctorPhoto3,
-                        ];
-                        return DoctorCard(
-                          imageAsset: doctorAssets[index % doctorAssets.length],
-                          name: d.fullName,
-                          specialization: d.specialization,
-                          rating: d.averageRating,
-                          reviewsCount: d.totalReviews,
-                          fee: d.consultationFee,
-                          location: d.clinicArea,
-                          isFavorite: isFav,
-                          onFavoriteToggle: () async {
-                            await _patientService.favoriteToggle(d.id);
-                            if (!mounted) return;
-                            setState(() {
-                              if (isFav) {
-                                _favoritedDoctorIds.remove(d.id);
-                              } else {
-                                _favoritedDoctorIds.add(d.id);
-                              }
-                            });
-                          },
-                          onTap: () => context.push('${AppRoutes.patientDoctorProfile}/${d.id}'),
-                        );
-                      },
-                      separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemCount: doctors.length,
-                    ),
-                  );
-                },
-              ),
+              if (_popularDoctors.isEmpty)
+                const SizedBox(
+                  height: 190,
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else
+                SizedBox(
+                  height: 190,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemBuilder: (context, index) {
+                      final d = _popularDoctors[index];
+                      final isFav = _favoritedDoctorIds.contains(d.id) || d.isFavorited;
+                      return DoctorCard(
+                        imageUrl: d.profileImageUrl,
+                        name: d.fullName,
+                        specialization: d.specialization,
+                        rating: d.averageRating,
+                        reviewsCount: d.totalReviews,
+                        fee: d.consultationFee,
+                        location: d.clinicArea,
+                        isFavorite: isFav,
+                        onFavoriteToggle: () async {
+                          await _patientService.favoriteToggle(d.id);
+                          if (!mounted) return;
+                          setState(() {
+                            if (isFav) {
+                              _favoritedDoctorIds.remove(d.id);
+                            } else {
+                              _favoritedDoctorIds.add(d.id);
+                            }
+                          });
+                        },
+                        onTap: () => context.push('${AppRoutes.patientDoctorProfile}/${d.id}'),
+                      );
+                    },
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemCount: _popularDoctors.length,
+                  ),
+                ),
               const SizedBox(height: 16),
               Text('Community', style: AppTextStyles.heading2.copyWith(color: AppColors.primaryDark)),
               const SizedBox(height: 10),

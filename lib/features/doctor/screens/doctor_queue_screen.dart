@@ -18,13 +18,21 @@ class DoctorQueueScreen extends StatefulWidget {
 
 class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
   final _service = DoctorService();
+  List<Appointment> _queue = [];
   Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
+    _loadQueue();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) setState(() {});
+      if (mounted) _loadQueue();
+    });
+  }
+
+  void _loadQueue() {
+    _service.getLiveQueue().then((data) {
+      if (mounted) setState(() => _queue = data);
     });
   }
 
@@ -109,34 +117,8 @@ class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
         ],
       ),
       body: SafeArea(
-        child: FutureBuilder(
-          future: _service.getLiveQueue(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (snapshot.hasError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48, color: AppColors.textTertiary),
-                    const SizedBox(height: 12),
-                    Text(
-                      snapshot.error?.toString() ?? 'Failed to load queue',
-                      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            final queue = snapshot.data ?? [];
-
-            if (queue.isEmpty) {
-              return Center(
+        child: _queue.isEmpty
+            ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -154,30 +136,26 @@ class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
                     ),
                   ],
                 ),
-              );
-            }
-
-            return ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-              itemCount: queue.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final patient = queue[index];
-                return _QueueCard(
-                  appointment: patient,
-                  statusColor: _queueStatusColor(patient.queueStatus),
-                  statusBgColor: _queueStatusBgColor(patient.queueStatus),
-                  statusText: _queueStatusText(patient.queueStatus),
-                  onStartConsultation: () {
-                    context.push(
-                      '${AppRoutes.doctorConsultation}/${patient.id}',
-                    );
-                  },
-                );
-              },
-            );
-          },
-        ),
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                itemCount: _queue.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final patient = _queue[index];
+                  return _QueueCard(
+                    appointment: patient,
+                    statusColor: _queueStatusColor(patient.queueStatus),
+                    statusBgColor: _queueStatusBgColor(patient.queueStatus),
+                    statusText: _queueStatusText(patient.queueStatus),
+                    onStartConsultation: () {
+                      context.push(
+                        '${AppRoutes.doctorConsultation}/${patient.id}',
+                      );
+                    },
+                  );
+                },
+              ),
       ),
     );
   }

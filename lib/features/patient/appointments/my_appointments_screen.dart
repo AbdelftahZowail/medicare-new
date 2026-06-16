@@ -193,18 +193,16 @@ class _AppointmentCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.primary100,
-                  backgroundImage: AssetImage(
-                    [
-                      AssetPaths.doctorPhoto1,
-                      AssetPaths.doctorPhoto2,
-                      AssetPaths.doctorPhoto3,
-                      AssetPaths.doctorPhoto4,
-                    ][(appointment.doctorId - 1) % 4],
-                  ),
-                ),
+                appointment.doctorProfileImageUrl != null
+                    ? CircleAvatar(
+                        radius: 24,
+                        backgroundImage: NetworkImage(appointment.doctorProfileImageUrl!),
+                      )
+                    : CircleAvatar(
+                        radius: 24,
+                        backgroundColor: AppColors.primary100,
+                        child: const Icon(Icons.person, color: AppColors.primary),
+                      ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
