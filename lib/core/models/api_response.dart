@@ -35,9 +35,7 @@ class ApiResponse<T> {
     return ApiResponse(
       isSuccess: json['isSuccess'] ?? false,
       message: json['message'] ?? '',
-      data: json['data'] != null
-          ? (json['data'] as List).map((e) => itemFromJson(e)).toList() as T
-          : null,
+      data: json['data'] != null ? itemFromJson(json['data']) : null,
       errors: json['errors'] != null
           ? List<String>.from(json['errors'])
           : null,

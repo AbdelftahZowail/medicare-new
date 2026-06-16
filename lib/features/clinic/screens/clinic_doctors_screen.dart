@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
@@ -19,10 +21,21 @@ class _ClinicDoctorsScreenState extends State<ClinicDoctorsScreen> {
   bool _isLoading = true;
   String? _error;
 
+  Timer? _pollTimer;
+
   @override
   void initState() {
     super.initState();
     _loadDoctors();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) _loadDoctors();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadDoctors() async {

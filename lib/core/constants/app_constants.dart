@@ -47,6 +47,10 @@ class ApiEndpoints {
   static const String doctorQrCode = '$apiBase/doctor/qr-code';
   static String doctorPatientHistory(int patientId) => '$apiBase/doctor/patients/$patientId/history';
   static String doctorSession(int appointmentId) => '$apiBase/doctor/session/$appointmentId';
+  static String doctorConsultation(int appointmentId) => '$apiBase/doctor/consultation/$appointmentId';
+  static const String doctorActiveConsultations = '$apiBase/doctor/active-consultations';
+  static String doctorCompleteConsultation(int appointmentId) =>
+      '$apiBase/doctor/consultation/$appointmentId/complete';
 
   // Clinic (public)
   static const String clinics = '$apiBase/clinic';
@@ -301,4 +305,18 @@ class AppEnums {
   static const int spouse = 2;
   static const int sibling = 3;
   static const int other = 4;
+
+  // PaymentStatus
+  static const int paymentPending = 0;
+  static const int paymentPaid = 1;
+  static const int paymentRefunded = 2;
+
+  // DayOfWeek
+  static const int sunday = 0;
+  static const int monday = 1;
+  static const int tuesday = 2;
+  static const int wednesday = 3;
+  static const int thursday = 4;
+  static const int friday = 5;
+  static const int saturday = 6;
 }

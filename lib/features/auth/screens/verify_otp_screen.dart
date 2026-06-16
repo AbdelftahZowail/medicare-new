@@ -96,7 +96,11 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage(e))),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Verify OTP error: ${errorMessage(e)}'
+              : 'Something went wrong. Please try again.'),
+        ),
       );
     } finally {
       if (mounted) setState(() => _loading = false);

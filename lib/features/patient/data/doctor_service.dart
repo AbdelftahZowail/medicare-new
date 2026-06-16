@@ -271,5 +271,6 @@ DoctorProfile _mockDoctorProfile(int id) {
     boardCertification: 'Egyptian Board',
     languages: const ['Arabic', 'English'],
     associatedClinics: const ['Medicare Clinic'],
+    totalPatients: 0,
   );
 }

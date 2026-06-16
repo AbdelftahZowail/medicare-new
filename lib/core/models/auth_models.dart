@@ -94,7 +94,7 @@ class RegisterDoctorRequest {
   final String password;
   final String confirmPassword;
   final String specialization;
-  final String? licenseFileUrl;
+  final String licenseFileUrl;
 
   RegisterDoctorRequest({
     required this.name,
@@ -103,7 +103,7 @@ class RegisterDoctorRequest {
     required this.password,
     required this.confirmPassword,
     required this.specialization,
-    this.licenseFileUrl,
+    required this.licenseFileUrl,
   });
 
   Map<String, dynamic> toJson() => {
@@ -113,7 +113,7 @@ class RegisterDoctorRequest {
         'password': password,
         'confirmPassword': confirmPassword,
         'specialization': specialization,
-        if (licenseFileUrl != null) 'licenseFileUrl': licenseFileUrl,
+        'licenseFileUrl': licenseFileUrl,
       };
 }
 
@@ -130,7 +130,7 @@ class RegisterClinicRequest {
   final double? longitude;
   final String? openingTime;
   final String? closingTime;
-  final String? licenseFileUrl;
+  final String licenseFileUrl;
 
   RegisterClinicRequest({
     required this.clinicName,
@@ -145,7 +145,7 @@ class RegisterClinicRequest {
     this.longitude,
     this.openingTime,
     this.closingTime,
-    this.licenseFileUrl,
+    required this.licenseFileUrl,
   });
 
   Map<String, dynamic> toJson() => {
@@ -161,7 +161,7 @@ class RegisterClinicRequest {
         if (longitude != null) 'longitude': longitude,
         if (openingTime != null) 'openingTime': openingTime,
         if (closingTime != null) 'closingTime': closingTime,
-        if (licenseFileUrl != null) 'licenseFileUrl': licenseFileUrl,
+        'licenseFileUrl': licenseFileUrl,
       };
 }
 

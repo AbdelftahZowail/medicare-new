@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -20,11 +22,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   final _service = PatientNotificationsService();
   bool _loading = true;
   List<NotificationItem> _notifications = [];
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
     _loadNotifications();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) _loadNotifications();
+    });
   }
 
   Future<void> _loadNotifications() async {
@@ -39,13 +45,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load notifications')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to load notifications: ${errorMessage(e)}'
+              : 'Failed to load notifications. Please try again.'),
+        ),
       );
       setState(() {
         _notifications = [];
         _loading = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _markAllAsRead() async {
@@ -130,7 +146,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete notification: ${errorMessage(e)}')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to delete notification: ${errorMessage(e)}'
+              : 'Failed to delete notification. Please try again.'),
+        ),
       );
     }
   }

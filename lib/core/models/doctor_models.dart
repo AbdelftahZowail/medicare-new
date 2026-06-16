@@ -23,6 +23,7 @@ class DoctorProfile {
   final String? boardCertification;
   final List<String> languages;
   final List<String> associatedClinics;
+  final int totalPatients;
   final String? qrCodeKey;
 
   DoctorProfile({
@@ -50,6 +51,7 @@ class DoctorProfile {
     this.boardCertification,
     required this.languages,
     required this.associatedClinics,
+    required this.totalPatients,
     this.qrCodeKey,
   });
 
@@ -97,6 +99,7 @@ class DoctorProfile {
       associatedClinics: json['associatedClinics'] != null
           ? List<String>.from(json['associatedClinics'].map((x) => x.toString()))
           : [],
+      totalPatients: parseInt(json['totalPatients']),
       qrCodeKey: json['qrCodeKey']?.toString(),
     );
   }

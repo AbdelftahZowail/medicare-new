@@ -138,7 +138,11 @@ class _NearbyScreenState extends State<NearbyScreen> {
       setState(() => _loadingData = false);
       debugPrint('=== NEARBY error: $e ===');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load nearby: ${errorMessage(e)}')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to load nearby: ${errorMessage(e)}'
+              : 'Failed to load nearby. Please try again.'),
+        ),
       );
     }
   }

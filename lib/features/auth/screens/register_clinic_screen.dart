@@ -170,7 +170,7 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
               closingTime: _closingTimeController.text.trim().isNotEmpty
                   ? _closingTimeController.text.trim()
                   : null,
-              licenseFileUrl: _licenseFileUrl,
+              licenseFileUrl: _licenseFileUrl!,
             ),
           ),
         );
@@ -214,7 +214,11 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
       setState(() => _isUploading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload error: ${errorMessage(e)}')),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Upload error: ${errorMessage(e)}'
+                : 'Failed to upload license. Please try again.'),
+          ),
         );
       }
     }

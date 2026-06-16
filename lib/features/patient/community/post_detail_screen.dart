@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/models/community_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -68,7 +69,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         _loading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load post: ${errorMessage(e)}')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to load post: ${errorMessage(e)}'
+              : 'Failed to load post. Please try again.'),
+        ),
       );
     }
   }
@@ -93,7 +98,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add comment: ${errorMessage(e)}')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to add comment: ${errorMessage(e)}'
+              : 'Failed to add comment. Please try again.'),
+        ),
       );
     } finally {
       if (mounted) setState(() => _postingComment = false);
@@ -123,7 +132,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete comment: ${errorMessage(e)}')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to delete comment: ${errorMessage(e)}'
+              : 'Failed to delete comment. Please try again.'),
+        ),
       );
     }
   }

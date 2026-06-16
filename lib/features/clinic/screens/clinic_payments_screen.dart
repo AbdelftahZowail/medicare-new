@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
@@ -24,10 +26,21 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
   String? _error;
   String _timeframe = 'today'; // today, week, month
 
+  Timer? _pollTimer;
+
   @override
   void initState() {
     super.initState();
     _loadDoctors();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) _loadPayments();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadDoctors() async {
@@ -89,13 +102,14 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final summary = _paymentsData?['summary'] as Map<String, dynamic>? ?? {};
-    final transactions = (_paymentsData?['transactions'] as List<dynamic>?) ?? [];
-
-    final totalRevenue = (summary['totalRevenue'] as num?)?.toDouble() ?? 0.0;
-    final cashRevenue = (summary['cashRevenue'] as num?)?.toDouble() ?? 0.0;
-    final onlineRevenue = (summary['onlineRevenue'] as num?)?.toDouble() ?? 0.0;
-    final refunds = (summary['totalRefunds'] as num?)?.toDouble() ?? 0.0;
+    final totalRevenue = (_paymentsData?['totalRevenue'] as num?)?.toDouble() ?? 0.0;
+    final cashAmount = (_paymentsData?['cashAmount'] as num?)?.toDouble() ?? 0.0;
+    final onlineAmount = (_paymentsData?['onlineAmount'] as num?)?.toDouble() ?? 0.0;
+    final refundsAmount = (_paymentsData?['refundsAmount'] as num?)?.toDouble() ?? 0.0;
+    final cashPercentage = (_paymentsData?['cashPercentage'] as num?)?.toDouble() ?? 0.0;
+    final onlinePercentage = (_paymentsData?['onlinePercentage'] as num?)?.toDouble() ?? 0.0;
+    final refundsPercentage = (_paymentsData?['refundsPercentage'] as num?)?.toDouble() ?? 0.0;
+    final recentTransactions = (_paymentsData?['recentTransactions'] as List<dynamic>?) ?? [];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -131,20 +145,20 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
                                 const SizedBox(height: 20),
                                 _buildRevenueCard(totalRevenue),
                                 const SizedBox(height: 20),
-                                _buildBreakdownCards(cashRevenue, onlineRevenue, refunds),
+                                _buildBreakdownCards(cashAmount, onlineAmount, refundsAmount, cashPercentage, onlinePercentage, refundsPercentage),
                                 const SizedBox(height: 24),
                                 Text('Recent Transactions', style: AppTextStyles.heading2),
                                 const SizedBox(height: 12),
-                                if (transactions.isEmpty)
+                                if (recentTransactions.isEmpty)
                                   _buildEmptyTransactions()
                                 else
                                   ListView.separated(
                                     shrinkWrap: true,
                                     physics: const NeverScrollableScrollPhysics(),
-                                    itemCount: transactions.length,
+                                    itemCount: recentTransactions.length,
                                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                                     itemBuilder: (context, index) {
-                                      final tx = transactions[index] as Map<String, dynamic>;
+                                      final tx = recentTransactions[index] as Map<String, dynamic>;
                                       return _TransactionCard(transaction: tx);
                                     },
                                   ),
@@ -390,7 +404,8 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
     );
   }
 
-  Widget _buildBreakdownCards(double cash, double online, double refunds) {
+  Widget _buildBreakdownCards(double cash, double online, double refunds,
+      double cashPct, double onlinePct, double refundsPct) {
     return Row(
       children: [
         Expanded(
@@ -398,6 +413,7 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
             icon: Icons.money,
             label: 'Cash',
             value: '\$${cash.toStringAsFixed(2)}',
+            subtitle: '${cashPct.toStringAsFixed(1)}%',
             iconColor: AppColors.success,
             iconBg: AppColors.successBg,
           ),
@@ -408,6 +424,7 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
             icon: Icons.credit_card,
             label: 'Online',
             value: '\$${online.toStringAsFixed(2)}',
+            subtitle: '${onlinePct.toStringAsFixed(1)}%',
             iconColor: AppColors.primary,
             iconBg: AppColors.primary100,
           ),
@@ -418,6 +435,7 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
             icon: Icons.undo,
             label: 'Refunds',
             value: '\$${refunds.toStringAsFixed(2)}',
+            subtitle: '${refundsPct.toStringAsFixed(1)}%',
             iconColor: AppColors.error,
             iconBg: AppColors.errorBg,
           ),
@@ -453,6 +471,7 @@ class _BreakdownCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+  final String? subtitle;
   final Color iconColor;
   final Color iconBg;
 
@@ -460,6 +479,7 @@ class _BreakdownCard extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.subtitle,
     required this.iconColor,
     required this.iconBg,
   });
@@ -489,6 +509,10 @@ class _BreakdownCard extends StatelessWidget {
           Text(value, style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(label, style: AppTextStyles.bodySmall),
+          if (subtitle != null) ...[
+            const SizedBox(height: 2),
+            Text(subtitle!, style: AppTextStyles.bodySmall.copyWith(fontSize: 11)),
+          ],
         ],
       ),
     );
@@ -504,9 +528,9 @@ class _TransactionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final patientName = transaction['patientName'] ?? '';
     final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
-    final isRefund = transaction['isRefund'] ?? false;
+    final isRefund = transaction['status'] == 'Refunded';
     final paymentMethod = transaction['paymentMethodText'] ?? '';
-    final date = transaction['createdAt'] ?? '';
+    final date = transaction['dateTime'] ?? '';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),

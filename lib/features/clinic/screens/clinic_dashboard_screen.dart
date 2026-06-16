@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/models/appointment_models.dart';
 import '../../../core/models/doctor_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -17,16 +20,29 @@ class ClinicDashboardScreen extends StatefulWidget {
 class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
   final _service = ClinicService();
   Map<String, dynamic>? _dashboardData;
+  List<Appointment> _recentAppointments = [];
   List<DoctorListItem> _doctors = [];
   int? _selectedDoctorId;
   bool _isLoading = true;
   bool _isLoadingDoctors = true;
+  bool _isLoadingQueue = false;
   String? _error;
+
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
     _loadDoctors();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) _loadDashboard();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadDoctors() async {
@@ -71,6 +87,22 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
         _isLoading = false;
       });
     }
+    // Load queue list for recent appointments section
+    _loadQueueForRecent();
+  }
+
+  Future<void> _loadQueueForRecent() async {
+    if (_selectedDoctorId == null) return;
+    try {
+      setState(() => _isLoadingQueue = true);
+      final queue = await _service.getClinicQueue(doctorId: _selectedDoctorId!);
+      setState(() {
+        _recentAppointments = queue;
+        _isLoadingQueue = false;
+      });
+    } catch (_) {
+      setState(() => _isLoadingQueue = false);
+    }
   }
 
   void _onDoctorChanged(int doctorId) {
@@ -80,9 +112,7 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final todayStats = _dashboardData?['todayStats'] as Map<String, dynamic>? ?? {};
-    final queueSummary = _dashboardData?['queueSummary'] as Map<String, dynamic>? ?? {};
-    final recentAppointments = (_dashboardData?['recentAppointments'] as List<dynamic>?) ?? [];
+    final dashboard = _dashboardData ?? <String, dynamic>{};
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -113,13 +143,11 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildStatsCards(todayStats),
+                              _buildStatsCards(dashboard),
                               const SizedBox(height: 24),
                               _buildQuickActions(),
                               const SizedBox(height: 24),
-                              _buildQueueSummary(queueSummary),
-                              const SizedBox(height: 24),
-                              _buildRecentAppointments(recentAppointments),
+                              _buildRecentAppointments(),
                             ],
                           ),
               ],
@@ -359,10 +387,10 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
     );
   }
 
-  Widget _buildStatsCards(Map<String, dynamic> stats) {
-    final paidCount = stats['paidCount'] ?? 0;
-    final walkIns = stats['walkIns'] ?? 0;
-    final revenue = stats['revenue'] ?? 0.0;
+  Widget _buildStatsCards(Map<String, dynamic> data) {
+    final paidCount = data['paidCount'] ?? 0;
+    final walkInCount = data['walkInCount'] ?? 0;
+    final revenue = data['todayRevenueAmount'] ?? 0.0;
 
     return Row(
       children: [
@@ -381,7 +409,7 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
             icon: Icons.person_add_alt_outlined,
             iconColor: AppColors.success,
             iconBg: AppColors.successBg,
-            value: walkIns.toString(),
+            value: walkInCount.toString(),
             label: 'Walk-ins',
           ),
         ),
@@ -432,65 +460,8 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
     );
   }
 
-  Widget _buildQueueSummary(Map<String, dynamic> summary) {
-    final totalWaiting = summary['totalWaiting'] ?? 0;
-    final totalInProgress = summary['totalInProgress'] ?? 0;
-    final totalCompleted = summary['totalCompleted'] ?? 0;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Queue Summary', style: AppTextStyles.heading2),
-              TextButton(
-                onPressed: () => context.push(
-                  '${AppRoutes.clinicQueue}?doctorId=$_selectedDoctorId',
-                ),
-                child: const Text('See All'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _QueueStatusItem(
-                  count: totalWaiting.toString(),
-                  label: 'Waiting',
-                  color: AppColors.warning,
-                ),
-              ),
-              Expanded(
-                child: _QueueStatusItem(
-                  count: totalInProgress.toString(),
-                  label: 'In Progress',
-                  color: AppColors.primary,
-                ),
-              ),
-              Expanded(
-                child: _QueueStatusItem(
-                  count: totalCompleted.toString(),
-                  label: 'Completed',
-                  color: AppColors.success,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecentAppointments(List<dynamic> appointments) {
+  Widget _buildRecentAppointments() {
+    final appointments = _recentAppointments;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -517,13 +488,13 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
             itemCount: appointments.length.clamp(0, 5),
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
-              final appt = appointments[index] as Map<String, dynamic>;
+              final appt = appointments[index];
               return _AppointmentListItem(
-                patientName: appt['patientName'] ?? '',
-                doctorName: appt['doctorName'] ?? '',
-                time: appt['startTime'] ?? '--:--',
-                status: appt['statusText'] ?? '',
-                isPaid: appt['isPaid'] ?? false,
+                patientName: appt.patientName,
+                doctorName: appt.doctorName,
+                time: appt.startTime,
+                status: appt.statusText,
+                isPaid: appt.isPaid,
               );
             },
           ),
@@ -633,29 +604,6 @@ class _ActionButton extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _QueueStatusItem extends StatelessWidget {
-  final String count;
-  final String label;
-  final Color color;
-
-  const _QueueStatusItem({
-    required this.count,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(count, style: AppTextStyles.heading1.copyWith(color: color, fontSize: 24)),
-        const SizedBox(height: 4),
-        Text(label, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
-      ],
     );
   }
 }

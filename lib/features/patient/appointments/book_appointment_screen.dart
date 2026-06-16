@@ -72,7 +72,11 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load data: ${errorMessage(e)}')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to load data: ${errorMessage(e)}'
+              : 'Failed to load data. Please try again.'),
+        ),
       );
     }
   }
@@ -111,7 +115,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
+          content: Text(kEnableDebugTools
+              ? 'Booking failed: ${errorMessage(e)}'
+              : message),
           duration: const Duration(seconds: 3),
         ),
       );

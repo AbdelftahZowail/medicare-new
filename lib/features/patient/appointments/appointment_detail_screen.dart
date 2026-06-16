@@ -4,10 +4,13 @@ import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/appointment_models.dart';
+import '../../../core/models/shared_models.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../services/patient_appointments_service.dart';
+import '../services/patient_medical_history_service.dart';
 
 class AppointmentDetailScreen extends StatefulWidget {
   final int appointmentId;
@@ -19,8 +22,11 @@ class AppointmentDetailScreen extends StatefulWidget {
 
 class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
   final _service = PatientAppointmentsService();
+  final _medicalHistoryService = PatientMedicalHistoryService();
   bool _loading = true;
   Appointment? _appointment;
+  MedicalRecord? _medicalRecord;
+  bool _loadingRecord = false;
 
   @override
   void initState() {
@@ -36,6 +42,10 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
         _appointment = appointment;
         _loading = false;
       });
+      // If completed, also load the medical record for this appointment
+      if (appointment.status == AppEnums.completed) {
+        _loadMedicalRecord();
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -44,35 +54,81 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
       });
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to load appointment details. Please try again.')),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to load appointment details: ${e.toString()}'
+                : 'Failed to load appointment details. Please try again.'),
+          ),
         );
       }
     }
   }
 
+  Future<void> _loadMedicalRecord() async {
+    setState(() => _loadingRecord = true);
+    try {
+      final patientId = await AuthService().getProfileId();
+      if (patientId == null) return;
+      final records = await _medicalHistoryService.getMedicalRecords(patientId);
+      if (!mounted) return;
+      // Find the record linked to this appointment
+      final record = records.cast<MedicalRecord?>().firstWhere(
+        (r) => r!.appointmentId == widget.appointmentId,
+        orElse: () => null,
+      );
+      setState(() {
+        _medicalRecord = record;
+        _loadingRecord = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingRecord = false);
+    }
+  }
+
   Future<void> _cancelAppointment() async {
-    final confirmed = await showDialog<bool>(
+    final reasonController = TextEditingController();
+    final reason = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Cancel Appointment'),
-        content: const Text('Are you sure you want to cancel this appointment?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Please provide a reason for cancellation:'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                hintText: 'Enter cancellation reason...',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+                          ),
+                      ],
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('No'),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Back'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Yes', style: TextStyle(color: AppColors.error)),
+            onPressed: () {
+              if (reasonController.text.trim().isEmpty) return;
+              Navigator.pop(context, reasonController.text.trim());
+            },
+            child: const Text('Confirm Cancel', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
     );
 
-    if (confirmed != true) return;
+    reasonController.dispose();
+    if (reason == null || reason.isEmpty) return;
 
     try {
-      await _service.cancelAppointment(widget.appointmentId);
+      await _service.cancelAppointment(widget.appointmentId, reason: reason);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Appointment cancelled successfully')),
@@ -81,7 +137,11 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Appointment cancelled')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to cancel: ${e.toString()}'
+              : 'Failed to cancel. Please try again.'),
+        ),
       );
     }
   }
@@ -220,14 +280,50 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                           const Divider(height: 24),
                           _DetailRow(
                             icon: Icons.check_circle,
-                            label: 'Paid',
-                            value: _appointment!.isPaid ? 'Yes' : 'No',
-                            valueColor: _appointment!.isPaid ? AppColors.success : AppColors.error,
+                            label: 'Payment Status',
+                            value: _appointment!.paymentStatusText ?? 'N/A',
+                            valueColor: _appointment!.paymentStatus == AppEnums.paymentPaid
+                                ? AppColors.success
+                                : _appointment!.paymentStatus == AppEnums.paymentPending
+                                    ? AppColors.warning
+                                    : _appointment!.paymentStatus == AppEnums.paymentRefunded
+                                        ? AppColors.textSecondary
+                                        : null,
                           ),
+                          if (_appointment!.consultationFee != null) ...[
+                            const Divider(height: 24),
+                            _DetailRow(
+                              icon: Icons.attach_money,
+                              label: 'Consultation Fee',
+                              value: '${_appointment!.consultationFee!.toStringAsFixed(2)} EGP',
+                              valueColor: AppColors.primary,
+                            ),
+                          ],
                         ],
                       ),
                     ),
                     const SizedBox(height: 24),
+
+                    // Prescription (only for completed appointments)
+                    if (_appointment!.status == AppEnums.completed) ...[
+                      Text('Prescription', style: AppTextStyles.heading3),
+                      const SizedBox(height: 10),
+                      _loadingRecord
+                          ? const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            )
+                          : _medicalRecord != null
+                              ? _PrescriptionCard(record: _medicalRecord!)
+                              : Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 20),
+                                  child: Text(
+                                    'No prescription data available.',
+                                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                                  ),
+                                ),
+                      const SizedBox(height: 24),
+                    ],
 
                     // Action Buttons
                     if (_appointment!.status == AppEnums.confirmed || _appointment!.status == AppEnums.pending) ...[
@@ -243,13 +339,16 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                         isOutlined: true,
                         onPressed: _rescheduleAppointment,
                       ),
-                      const SizedBox(height: 12),
-                      AppButton(
-                        text: 'Cancel Appointment',
-                        isOutlined: true,
-                        backgroundColor: AppColors.error,
-                        onPressed: _cancelAppointment,
-                      ),
+                      if (_appointment!.queueStatus == null ||
+                          _appointment!.queueStatus == AppEnums.waiting) ...[
+                        const SizedBox(height: 12),
+                        AppButton(
+                          text: 'Cancel Appointment',
+                          isOutlined: true,
+                          backgroundColor: AppColors.error,
+                          onPressed: _cancelAppointment,
+                        ),
+                      ],
                     ],
 
                     if (_appointment!.status == AppEnums.completed) ...[
@@ -333,6 +432,91 @@ class _DoctorHeader extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PrescriptionCard extends StatelessWidget {
+  final MedicalRecord record;
+  const _PrescriptionCard({required this.record});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Diagnosis
+          _DetailRow(
+            icon: Icons.healing,
+            label: 'Diagnosis',
+            value: record.diagnosis,
+          ),
+          // Medications
+          if (record.medications != null && record.medications!.isNotEmpty) ...[
+            const Divider(height: 24),
+            Text(
+              'Medications',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            ...record.medications!.map((med) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 36,
+                    width: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary50,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.medication, color: AppColors.primary, size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          med.name,
+                          style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${med.dosage} - ${med.category}',
+                          style: AppTextStyles.bodySmall,
+                        ),
+                        Text(
+                          'Duration: ${med.duration}',
+                          style: AppTextStyles.caption,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )),
+          ],
+          // Instructions
+          if (record.instructions != null && record.instructions!.isNotEmpty) ...[
+            const Divider(height: 24),
+            _DetailRow(
+              icon: Icons.assignment,
+              label: 'Instructions',
+              value: record.instructions!,
+            ),
+          ],
         ],
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -5,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/appointment_models.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../services/patient_appointments_service.dart';
@@ -23,6 +26,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
 
   bool _loading = true;
   List<Appointment> _appointments = [];
+  Timer? _pollTimer;
 
   @override
   void initState() {
@@ -30,10 +34,14 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_onTabChanged);
     _loadAppointments();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) _loadAppointments();
+    });
   }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
@@ -69,6 +77,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
         _loading = false;
       });
     } catch (e) {
+      debugPrint('MyAppointmentsScreen._loadAppointments ERROR: $e');
       if (!mounted) return;
       setState(() {
         _appointments = [];
@@ -76,7 +85,11 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
       });
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to load appointments. Please try again.')),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to load appointments: ${errorMessage(e)}'
+                : 'Failed to load appointments. Please try again.'),
+          ),
         );
       }
     }

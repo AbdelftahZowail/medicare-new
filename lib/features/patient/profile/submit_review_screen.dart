@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/services/review_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -47,7 +48,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
       await ReviewService().submitReview(
         doctorId: widget.doctorId,
         appointmentId: widget.appointmentId,
-        rating: _rating.toDouble(),
+        rating: _rating,
         comment: _commentController.text.trim().isEmpty
             ? null
             : _commentController.text.trim(),
@@ -62,7 +63,11 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
       if (!mounted) return;
       setState(() => _submitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to submit review: ${errorMessage(e)}')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to submit review: ${errorMessage(e)}'
+              : 'Failed to submit review. Please try again.'),
+        ),
       );
     }
   }

@@ -76,7 +76,11 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load profile: ${errorMessage(e)}')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to load profile: ${errorMessage(e)}'
+              : 'Failed to load profile. Please try again.'),
+        ),
       );
     }
   }
@@ -131,7 +135,11 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
       setState(() => _isUploading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload error: ${errorMessage(e)}')),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Upload error: ${errorMessage(e)}'
+                : 'Upload error. Please try again.'),
+          ),
         );
       }
     }
@@ -195,7 +203,11 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile saved')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Profile save error: ${errorMessage(e)}'
+              : 'Profile saved. Please try again if not applied.'),
+        ),
       );
       context.pop();
     } finally {

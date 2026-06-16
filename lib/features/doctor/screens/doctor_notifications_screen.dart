@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,6 +18,22 @@ class DoctorNotificationsScreen extends StatefulWidget {
 
 class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> {
   final _service = DoctorService();
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
   IconData _getNotificationIcon(String? type) {
     switch (type?.toLowerCase()) {
       case 'appointment':

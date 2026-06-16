@@ -69,7 +69,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage(e))),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Reset password error: ${errorMessage(e)}'
+              : 'Something went wrong. Please try again.'),
+        ),
       );
     } finally {
       if (mounted) setState(() => _loading = false);

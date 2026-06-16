@@ -11,7 +11,7 @@ class ReviewService {
   Future<void> submitReview({
     required int doctorId,
     required int appointmentId,
-    required double rating,
+    required int rating,
     String? comment,
   }) async {
     try {

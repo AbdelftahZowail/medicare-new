@@ -69,7 +69,7 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
                 controller: feeController,
                 decoration: const InputDecoration(
                   labelText: 'Consultation Fee',
-                  prefixText: '\$',
+                  prefixText: 'EGP ',
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
@@ -125,7 +125,11 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage(e))),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to update doctor: ${errorMessage(e)}'
+                : 'Failed to update doctor. Please try again.'),
+          ),
         );
       }
     }
@@ -164,7 +168,11 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage(e))),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to remove doctor: ${errorMessage(e)}'
+                : 'Failed to remove doctor. Please try again.'),
+          ),
         );
       }
     }
@@ -371,7 +379,7 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
           _InfoRow(
             icon: Icons.attach_money,
             label: 'Consultation Fee',
-            value: '\$${fee.toStringAsFixed(2)}',
+            value: '${fee.toStringAsFixed(2)} EGP',
             iconColor: AppColors.primary,
           ),
           const Divider(height: 24),

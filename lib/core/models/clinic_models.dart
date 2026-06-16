@@ -10,6 +10,7 @@ class ClinicProfile {
   final String? email;
   final String? logoUrl;
   final String? licenseImageUrl;
+  final String? linkMap;
   final double? latitude;
   final double? longitude;
   final String? openingTime;
@@ -29,6 +30,7 @@ class ClinicProfile {
     this.email,
     this.logoUrl,
     this.licenseImageUrl,
+    this.linkMap,
     this.latitude,
     this.longitude,
     this.openingTime,
@@ -50,6 +52,7 @@ class ClinicProfile {
       email: json['email'],
       logoUrl: json['logoUrl'],
       licenseImageUrl: json['licenseImageUrl'],
+      linkMap: json['linkMap']?.toString(),
       latitude: json['latitude']?.toDouble(),
       longitude: json['longitude']?.toDouble(),
       openingTime: json['openingTime'],
@@ -72,6 +75,7 @@ class ClinicProfile {
       'email': email,
       'logoUrl': logoUrl,
       'licenseImageUrl': licenseImageUrl,
+      'linkMap': linkMap,
       'latitude': latitude,
       'longitude': longitude,
       'openingTime': openingTime,

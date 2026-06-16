@@ -100,26 +100,13 @@ class PatientProfile {
   }
 
   Map<String, dynamic> toJson() {
-    // Convert gender int to string enum as backend expects (Male=0, Female=1)
-    String? _genderToString(int? value) {
-      if (value == null) return null;
-      switch (value) {
-        case 0:
-          return 'Male';
-        case 1:
-          return 'Female';
-        default:
-          return null;
-      }
-    }
-
     return {
       'id': id,
       'userId': userId,
       'fullName': fullName,
       'phoneNumber': phoneNumber,
       'email': email,
-      'gender': _genderToString(gender),
+      'gender': gender,
       'age': age,
       'dateOfBirth': dateOfBirth?.toIso8601String(),
       'profileImageUrl': profileImageUrl,

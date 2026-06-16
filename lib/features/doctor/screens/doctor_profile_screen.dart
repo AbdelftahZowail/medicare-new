@@ -82,33 +82,33 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _ProfileHeader(
-                    name: profile?.fullName ?? '',
-                    specialization: profile?.specialization ?? '',
-                    imageUrl: profile?.profileImageUrl,
-                    rating: profile?.averageRating ?? 0,
-                    reviewsCount: profile?.totalReviews ?? 0,
+                    name: profile.fullName,
+                    specialization: profile.specialization,
+                    imageUrl: profile.profileImageUrl,
+                    rating: profile.averageRating,
+                    reviewsCount: profile.totalReviews,
                   ),
                   const SizedBox(height: 16),
                   _StatsRow(
-                    experience: profile?.yearsOfExperience ?? 0,
-                    patients: 0,
-                    rating: profile?.averageRating ?? 0,
+                    experience: profile.yearsOfExperience ?? 0,
+                    patients: profile.totalPatients,
+                    rating: profile.averageRating,
                   ),
                   const SizedBox(height: 20),
                   _ProfessionalDetailsCard(profile: profile),
                   const SizedBox(height: 16),
                   _EducationCard(profile: profile),
                   const SizedBox(height: 16),
-                  if (profile?.associatedClinics.isNotEmpty == true) ...[
+                  if (profile.associatedClinics.isNotEmpty) ...[
                     Text(
                       'Associated Clinics',
                       style: AppTextStyles.heading4.copyWith(color: AppColors.primaryDark),
                     ),
                     const SizedBox(height: 8),
-                    ...profile!.associatedClinics.map((clinic) => _ClinicCard(name: clinic)),
+                    ...profile.associatedClinics.map((clinic) => _ClinicCard(name: clinic)),
                     const SizedBox(height: 16),
                   ],
-                  if (profile?.bio != null && profile!.bio!.isNotEmpty) ...[
+                  if (profile.bio != null && profile.bio!.isNotEmpty) ...[
                     Text(
                       'Professional Bio',
                       style: AppTextStyles.heading4.copyWith(color: AppColors.primaryDark),
@@ -157,7 +157,11 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         } catch (e) {
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(errorMessage(e))),
+                              SnackBar(
+                                content: Text(kEnableDebugTools
+                                    ? 'Failed to load schedule: ${errorMessage(e)}'
+                                    : 'Failed to load schedule. Please try again.'),
+                              ),
                             );
                           }
                         }

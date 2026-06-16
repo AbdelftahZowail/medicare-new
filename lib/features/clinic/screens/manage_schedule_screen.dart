@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/models/clinic_models.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/models/doctor_models.dart';
@@ -84,7 +85,11 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load data: ${errorMessage(e)}')),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to load schedule: ${errorMessage(e)}'
+                : 'Failed to load schedule. Please try again.'),
+          ),
         );
       }
       for (int i = 0; i < 7; i++) {
@@ -135,7 +140,11 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage(e))),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to save schedule: ${errorMessage(e)}'
+                : 'Failed to save schedule. Please try again.'),
+          ),
         );
       }
     } finally {

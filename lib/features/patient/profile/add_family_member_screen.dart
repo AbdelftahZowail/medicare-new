@@ -119,7 +119,11 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save family member: ${errorMessage(e)}')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to save family member: ${errorMessage(e)}'
+              : 'Failed to save family member. Please try again.'),
+        ),
       );
     }
   }

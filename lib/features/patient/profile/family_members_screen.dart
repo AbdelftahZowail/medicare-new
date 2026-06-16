@@ -5,6 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/models/shared_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/app_button.dart';
 import '../services/patient_family_members_service.dart';
 
@@ -38,7 +39,11 @@ class _FamilyMembersScreenState extends State<FamilyMembersScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load family members')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to load family members: ${errorMessage(e)}'
+              : 'Failed to load family members. Please try again.'),
+        ),
       );
       setState(() {
         _members = [];

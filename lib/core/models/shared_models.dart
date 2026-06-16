@@ -192,6 +192,9 @@ class MedicalRecord {
   final int? appointmentId;
   final String diagnosis;
   final String? prescription;
+  final String? instructions;
+  final int? familyMemberId;
+  final String? familyMemberName;
   final String? treatmentPlan;
   final String? notes;
   final String? symptoms;
@@ -219,6 +222,9 @@ class MedicalRecord {
     this.appointmentId,
     required this.diagnosis,
     this.prescription,
+    this.instructions,
+    this.familyMemberId,
+    this.familyMemberName,
     this.treatmentPlan,
     this.notes,
     this.symptoms,
@@ -248,6 +254,9 @@ class MedicalRecord {
       appointmentId: json['appointmentId'],
       diagnosis: json['diagnosis'] ?? '',
       prescription: json['prescription'],
+      instructions: json['instructions'],
+      familyMemberId: json['familyMemberId'],
+      familyMemberName: json['familyMemberName'],
       treatmentPlan: json['treatmentPlan'],
       notes: json['notes'],
       symptoms: json['symptoms'],
@@ -297,10 +306,10 @@ class Medication {
 
   Map<String, dynamic> toJson() {
     return {
-      'Name': name,
-      'Category': category,
-      'Dosage': dosage,
-      'Duration': duration,
+      'name': name,
+      'category': category,
+      'dosage': dosage,
+      'duration': duration,
     };
   }
 }

@@ -23,6 +23,7 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
   final _service = PatientCommunityService();
   final _searchController = TextEditingController();
   Timer? _debounce;
+  Timer? _pollTimer;
 
   bool _loading = true;
   List<CommunityPost> _posts = [];
@@ -40,10 +41,14 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
       if (mounted) setState(() {});
     });
     _loadPosts();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) _loadPosts();
+    });
   }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _searchController.dispose();
     _debounce?.cancel();
     super.dispose();
@@ -87,7 +92,11 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete post: ${errorMessage(e)}')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to delete post: ${errorMessage(e)}'
+              : 'Failed to delete post. Please try again.'),
+        ),
       );
     }
   }
@@ -109,7 +118,11 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
         _loading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load posts: ${errorMessage(e)}')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to load posts: ${errorMessage(e)}'
+              : 'Failed to load posts. Please try again.'),
+        ),
       );
     }
   }

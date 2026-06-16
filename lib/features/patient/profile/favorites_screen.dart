@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -20,11 +22,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   final _service = PatientService();
   bool _loading = true;
   List<DoctorListItem> _favorites = [];
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
     _loadFavorites();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) _loadFavorites();
+    });
   }
 
   Future<void> _loadFavorites() async {
@@ -39,13 +45,23 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load favorites: ${errorMessage(e)}')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to load favorites: ${errorMessage(e)}'
+              : 'Failed to load favorites. Please try again.'),
+        ),
       );
       setState(() {
         _favorites = [];
         _loading = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -102,7 +118,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                             } catch (e) {
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Failed to unfavorite: ${errorMessage(e)}')),
+                                SnackBar(
+                                  content: Text(kEnableDebugTools
+                                      ? 'Failed to unfavorite: ${errorMessage(e)}'
+                                      : 'Failed to unfavorite. Please try again.'),
+                                ),
                               );
                             }
                           },

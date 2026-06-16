@@ -3,9 +3,11 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/models/appointment_models.dart';
 import '../../../core/models/shared_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -24,31 +26,52 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   final _service = DoctorService();
   final _formKey = GlobalKey<FormState>();
 
-  final _subjectiveController = TextEditingController();
-  final _objectiveController = TextEditingController();
-  final _assessmentController = TextEditingController();
-  final _planController = TextEditingController();
-  final _bloodPressureController = TextEditingController();
-  final _heartRateController = TextEditingController();
-  final _weightController = TextEditingController();
   final _diagnosisController = TextEditingController();
-  final _notesController = TextEditingController();
-
+  final _instructionsController = TextEditingController();
   final List<Medication> _medications = [];
+
+  bool _isLoading = true;
   bool _isSaving = false;
+  String? _errorMessage;
+  ConsultationScreenData? _data;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
 
   @override
   void dispose() {
-    _subjectiveController.dispose();
-    _objectiveController.dispose();
-    _assessmentController.dispose();
-    _planController.dispose();
-    _bloodPressureController.dispose();
-    _heartRateController.dispose();
-    _weightController.dispose();
     _diagnosisController.dispose();
-    _notesController.dispose();
+    _instructionsController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      final data = await _service.getConsultationDetail(widget.appointmentId);
+
+      if (mounted) {
+        setState(() {
+          _data = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e, stackTrace) {
+      developer.log('Error loading consultation data', error: e, stackTrace: stackTrace);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = errorMessage(e);
+        });
+      }
+    }
   }
 
   void _addMedication() {
@@ -66,53 +89,43 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
     setState(() => _medications.removeAt(index));
   }
 
-  Future<void> _saveConsultation() async {
+  Future<void> _submitConsultation() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
 
-    final data = {
-      'PatientId': 0, // Backend gets actual patientId from appointment
-      'AppointmentId': widget.appointmentId,
-      'Subjective': _subjectiveController.text,
-      'Objective': _objectiveController.text,
-      'Assessment': _assessmentController.text,
-      'Plan': _planController.text,
-      'BloodPressure': _bloodPressureController.text,
-      'HeartRate': _heartRateController.text,
-      'Weight': double.tryParse(_weightController.text),
-      'Diagnosis': _diagnosisController.text,
-      'Notes': _notesController.text,
-      'Medications': _medications.map((m) => m.toJson()).toList(),
-    };
-
-    developer.log('Saving consultation for appointment: ${widget.appointmentId}');
-    developer.log('Consultation data: $data');
-
     try {
-      final success = await _service.saveConsultation(widget.appointmentId, data);
-      developer.log('Save consultation result: $success');
+      final request = CompleteConsultationRequest(
+        diagnosis: _diagnosisController.text.trim(),
+        medications: _medications.isNotEmpty ? _medications : null,
+        instructions: _instructionsController.text.trim().isNotEmpty
+            ? _instructionsController.text.trim()
+            : null,
+      );
 
-      setState(() => _isSaving = false);
+      developer.log(
+        'Submitting consultation for appointment: ${widget.appointmentId}',
+      );
 
-      if (success && mounted) {
-        developer.log('Consultation saved successfully');
+      await _service.completeConsultation(widget.appointmentId, request);
+
+      if (mounted) {
+        setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Consultation saved successfully')),
+          const SnackBar(content: Text('Consultation completed successfully')),
         );
         context.pop();
-      } else if (mounted) {
-        developer.log('Failed to save consultation - success=false');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to save consultation')),
-        );
       }
     } catch (e, stackTrace) {
-      developer.log('Error saving consultation', error: e, stackTrace: stackTrace);
-      setState(() => _isSaving = false);
+      developer.log('Error completing consultation', error: e, stackTrace: stackTrace);
       if (mounted) {
+        setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${errorMessage(e)}')),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to complete consultation: ${errorMessage(e)}'
+                : 'Failed to complete consultation. Please try again.'),
+          ),
         );
       }
     }
@@ -130,154 +143,432 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
         ),
       ),
       body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: _buildBody(),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_errorMessage != null) {
+      return _buildErrorState();
+    }
+
+    if (_data == null) {
+      return _buildEmptyState();
+    }
+
+    return Form(
+      key: _formKey,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Patient Info Header ──────────────────────────────────────
+            _buildPatientHeader(_data!.patient, _data!.appointment),
+            const SizedBox(height: 16),
+
+            // ── Chief Complaint (from appointment) ───────────────────────
+            if (_data!.appointment.chiefComplaint != null &&
+                _data!.appointment.chiefComplaint!.isNotEmpty)
+              _SectionCard(
+                title: 'Chief Complaint',
+                children: [
+                  Text(
+                    _data!.appointment.chiefComplaint!,
+                    style: AppTextStyles.bodyMedium,
+                  ),
+                ],
+              ),
+            if (_data!.appointment.chiefComplaint != null &&
+                _data!.appointment.chiefComplaint!.isNotEmpty)
+              const SizedBox(height: 16),
+
+            // ── Medical History ──────────────────────────────────────────
+            if (_data!.medicalHistory.isNotEmpty)
+              _SectionCard(
+                title: 'Medical History',
+                children: [
+                  ..._data!.medicalHistory.map((record) =>
+                      _MedicalHistoryItem(record: record)),
+                ],
+              ),
+            if (_data!.medicalHistory.isNotEmpty)
+              const SizedBox(height: 16),
+
+            // ── Previous Visits ──────────────────────────────────────────
+            if (_data!.previousVisits.isNotEmpty)
+              _SectionCard(
+                title: 'Previous Visits',
+                children: [
+                  ..._data!.previousVisits.map((visit) =>
+                      _PreviousVisitItem(visit: visit)),
+                ],
+              ),
+            if (_data!.previousVisits.isNotEmpty)
+              const SizedBox(height: 16),
+
+            // ── Previous Diagnoses ───────────────────────────────────────
+            if (_data!.previousDiagnoses.isNotEmpty)
+              _SectionCard(
+                title: 'Previous Diagnoses',
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: _data!.previousDiagnoses.map((d) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary50,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppColors.primary200),
+                        ),
+                        child: Text(
+                          d,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            if (_data!.previousDiagnoses.isNotEmpty)
+              const SizedBox(height: 16),
+
+            // ── Previous Prescriptions ───────────────────────────────────
+            if (_data!.previousPrescriptions.isNotEmpty)
+              _SectionCard(
+                title: 'Previous Prescriptions',
+                children: [
+                  ..._data!.previousPrescriptions.map((med) {
+                    return _MedicationItem(
+                      medication: med,
+                      onRemove: null,
+                    );
+                  }),
+                ],
+              ),
+            if (_data!.previousPrescriptions.isNotEmpty)
+              const SizedBox(height: 16),
+
+            // ── Diagnosis Form ───────────────────────────────────────────
+            _SectionCard(
+              title: 'Diagnosis',
               children: [
-                // SOAP Section
-                _SectionCard(
-                  title: 'SOAP Summary',
-                  children: [
-                    AppTextField(
-                      label: 'Subjective',
-                      hint: 'Patient\'s chief complaint...',
-                      controller: _subjectiveController,
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 12),
-                    AppTextField(
-                      label: 'Objective',
-                      hint: 'Physical findings, test results...',
-                      controller: _objectiveController,
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 12),
-                    AppTextField(
-                      label: 'Assessment',
-                      hint: 'Diagnosis and clinical impression...',
-                      controller: _assessmentController,
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 12),
-                    AppTextField(
-                      label: 'Plan',
-                      hint: 'Treatment plan and follow-up...',
-                      controller: _planController,
-                      maxLines: 3,
-                    ),
-                  ],
+                AppTextField(
+                  label: 'Diagnosis *',
+                  hint: 'Enter primary diagnosis...',
+                  controller: _diagnosisController,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Diagnosis is required';
+                    }
+                    return null;
+                  },
                 ),
-                const SizedBox(height: 16),
-                // Vitals Section
-                _SectionCard(
-                  title: 'Vitals',
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppTextField(
-                            label: 'Blood Pressure',
-                            hint: '120/80',
-                            controller: _bloodPressureController,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AppTextField(
-                            label: 'Heart Rate',
-                            hint: '72 bpm',
-                            controller: _heartRateController,
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    AppTextField(
-                      label: 'Weight',
-                      hint: '70 kg',
-                      controller: _weightController,
-                      keyboardType: TextInputType.number,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Diagnosis
-                _SectionCard(
-                  title: 'Diagnosis',
-                  children: [
-                    AppTextField(
-                      label: 'Primary Diagnosis',
-                      hint: 'Enter diagnosis...',
-                      controller: _diagnosisController,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Prescriptions
-                _SectionCard(
-                  title: 'Prescriptions',
-                  children: [
-                    if (_medications.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Text(
-                            'No medications added yet',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      ..._medications.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final med = entry.value;
-                        return _MedicationItem(
-                          medication: med,
-                          onRemove: () => _removeMedication(index),
-                        );
-                      }),
-                    const SizedBox(height: 12),
-                    AppButton(
-                      text: 'Add Prescription',
-                      isOutlined: true,
-                      onPressed: _addMedication,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Notes
-                _SectionCard(
-                  title: 'Additional Notes',
-                  children: [
-                    AppTextField(
-                      label: 'Notes',
-                      hint: 'Enter any additional notes...',
-                      controller: _notesController,
-                      maxLines: 4,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                AppButton(
-                  text: 'Save Consultation',
-                  isLoading: _isSaving,
-                  onPressed: _saveConsultation,
-                ),
-                const SizedBox(height: 16),
               ],
             ),
+            const SizedBox(height: 16),
+
+            // ── Prescriptions ────────────────────────────────────────────
+            _SectionCard(
+              title: 'Prescriptions',
+              children: [
+                if (_medications.isEmpty)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'No medications added yet',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  ..._medications.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final med = entry.value;
+                    return _MedicationItem(
+                      medication: med,
+                      onRemove: () => _removeMedication(index),
+                    );
+                  }),
+                const SizedBox(height: 12),
+                AppButton(
+                  text: 'Add Prescription',
+                  isOutlined: true,
+                  onPressed: _addMedication,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // ── Instructions ─────────────────────────────────────────────
+            _SectionCard(
+              title: 'Instructions',
+              children: [
+                AppTextField(
+                  label: 'Instructions',
+                  hint: 'Enter post-treatment instructions, follow-up notes...',
+                  controller: _instructionsController,
+                  maxLines: 4,
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            AppButton(
+              text: 'Complete Consultation',
+              isLoading: _isSaving,
+              onPressed: _submitConsultation,
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPatientHeader(ConsultationPatient patient, Appointment appointment) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Name row
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: AppColors.primaryLight.withOpacity(0.3),
+                child: Icon(
+                  patient.gender != null &&
+                          patient.gender!.toLowerCase() == 'female'
+                      ? Icons.female
+                      : Icons.person,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      patient.fullName,
+                      style: AppTextStyles.heading3.copyWith(
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      patient.isFamilyMember ? 'Family Member' : 'Patient',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Info chips row
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _infoChip(Icons.calendar_today, '${patient.age} years'),
+              if (patient.gender != null)
+                _infoChip(
+                  patient.gender!.toLowerCase() == 'female'
+                      ? Icons.female
+                      : Icons.male,
+                  patient.gender!,
+                ),
+              if (patient.bloodType != null)
+                _infoChip(Icons.bloodtype, patient.bloodType!),
+            ],
+          ),
+
+          // Chronic conditions
+          if (patient.chronicConditions.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Divider(color: Colors.white24, height: 1),
+            const SizedBox(height: 12),
+            Text(
+              'Chronic Conditions',
+              style: AppTextStyles.labelMedium.copyWith(color: Colors.white70),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: patient.chronicConditions.map((c) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    c,
+                    style: AppTextStyles.bodySmall.copyWith(color: Colors.white),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+
+          // Allergies
+          if (patient.allergies.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Allergies',
+              style: AppTextStyles.labelMedium.copyWith(color: Colors.white70),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: patient.allergies.map((a) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    a,
+                    style: AppTextStyles.bodySmall.copyWith(color: Colors.white),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _infoChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: AppTextStyles.bodySmall.copyWith(color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load consultation',
+              style: AppTextStyles.heading3,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage!,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            AppButton(
+              text: 'Retry',
+              onPressed: _loadData,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.medication_outlined,
+              size: 64,
+              color: AppColors.textTertiary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No consultation data available',
+              style: AppTextStyles.heading3.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared widget: Section Card
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _SectionCard extends StatelessWidget {
   final String title;
@@ -310,13 +601,156 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Medical History Item
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _MedicalHistoryItem extends StatelessWidget {
+  final MedicalRecord record;
+
+  const _MedicalHistoryItem({required this.record});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                height: 32,
+                width: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.infoBg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.history,
+                  color: AppColors.info,
+                  size: 16,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      record.doctorName.isNotEmpty
+                          ? record.doctorName
+                          : 'Visit',
+                      style: AppTextStyles.labelLarge,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatDate(record.visitDate),
+                      style: AppTextStyles.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            record.diagnosis.isNotEmpty ? record.diagnosis : 'No diagnosis',
+            style: AppTextStyles.bodyMedium,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Previous Visit Item
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PreviousVisitItem extends StatelessWidget {
+  final PreviousVisit visit;
+
+  const _PreviousVisitItem({required this.visit});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: 36,
+            width: 36,
+            decoration: BoxDecoration(
+              color: AppColors.primary50,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.calendar_month,
+              color: AppColors.primary,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  visit.doctorName,
+                  style: AppTextStyles.labelLarge,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _formatDate(visit.visitDate),
+                  style: AppTextStyles.bodySmall,
+                ),
+                if (visit.diagnosis != null && visit.diagnosis!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    visit.diagnosis!,
+                    style: AppTextStyles.bodyMedium,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Medication Item (reused from original, onRemove nullable for read-only)
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _MedicationItem extends StatelessWidget {
   final Medication medication;
-  final VoidCallback onRemove;
+  final VoidCallback? onRemove;
 
   const _MedicationItem({
     required this.medication,
-    required this.onRemove,
+    this.onRemove,
   });
 
   @override
@@ -353,18 +787,30 @@ class _MedicationItem extends StatelessWidget {
                   '${medication.dosage}  \u2022  ${medication.duration}',
                   style: AppTextStyles.bodySmall,
                 ),
+                if (medication.category.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    medication.category,
+                    style: AppTextStyles.caption,
+                  ),
+                ],
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
-            onPressed: onRemove,
-          ),
+          if (onRemove != null)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+              onPressed: onRemove,
+            ),
         ],
       ),
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Add Medication Dialog (kept from original with same Medication model)
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _AddMedicationDialog extends StatefulWidget {
   final Function(Medication) onAdd;

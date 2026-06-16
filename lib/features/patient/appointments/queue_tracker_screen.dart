@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/appointment_models.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../services/patient_appointments_service.dart';
@@ -56,7 +57,11 @@ class _QueueTrackerScreenState extends State<QueueTrackerScreen> {
       });
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to load queue tracker. Please try again.')),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to load queue tracker: ${errorMessage(e)}'
+                : 'Failed to load queue tracker. Please try again.'),
+          ),
         );
       }
     }

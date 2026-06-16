@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/models/appointment_models.dart';
 import '../../../core/models/shared_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -55,13 +56,16 @@ class _DoctorPatientHistoryScreenState extends State<DoctorPatientHistoryScreen>
               );
             }
 
-            final records = snapshot.data ?? [];
+            final patientData = snapshot.data;
 
-            // Extract patient info from first record if available
-            final firstRecord = records.isNotEmpty ? records.first : null;
-            final patientName = firstRecord?.patientName ?? '';
-            final chronicConditions = firstRecord?.recommendedCare ?? [];
-            final currentMedications = firstRecord?.medications ?? [];
+            if (patientData == null) {
+              return Center(
+                child: Text(
+                  'No patient data available',
+                  style: AppTextStyles.bodyLarge,
+                ),
+              );
+            }
 
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -69,13 +73,13 @@ class _DoctorPatientHistoryScreenState extends State<DoctorPatientHistoryScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _PatientHeader(
-                    name: patientName,
-                    age: '65 yrs',
-                    gender: 'Female',
-                    bloodType: 'Blood Type A+',
+                    name: patientData.fullName,
+                    age: '${patientData.age} yrs',
+                    gender: patientData.gender ?? '',
+                    bloodType: patientData.bloodType != null ? 'Blood Type ${patientData.bloodType}' : '',
                   ),
                   const SizedBox(height: 16),
-                  if (chronicConditions.isNotEmpty) ...[
+                  if (patientData.chronicConditions.isNotEmpty) ...[
                     Text(
                       'Chronic Conditions',
                       style: AppTextStyles.heading4.copyWith(color: AppColors.primaryDark),
@@ -84,7 +88,7 @@ class _DoctorPatientHistoryScreenState extends State<DoctorPatientHistoryScreen>
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: chronicConditions.map((condition) {
+                      children: patientData.chronicConditions.map((condition) {
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
@@ -101,13 +105,13 @@ class _DoctorPatientHistoryScreenState extends State<DoctorPatientHistoryScreen>
                     ),
                     const SizedBox(height: 16),
                   ],
-                  if (currentMedications.isNotEmpty) ...[
+                  if (patientData.currentMedications.isNotEmpty) ...[
                     Text(
                       'Current Medications',
                       style: AppTextStyles.heading4.copyWith(color: AppColors.primaryDark),
                     ),
                     const SizedBox(height: 8),
-                    ...currentMedications.map((med) => _MedicationCard(medication: med)),
+                    ...patientData.currentMedications.map((med) => _MedicationCard(medicationName: med)),
                     const SizedBox(height: 16),
                   ],
                   Text(
@@ -115,7 +119,7 @@ class _DoctorPatientHistoryScreenState extends State<DoctorPatientHistoryScreen>
                     style: AppTextStyles.heading4.copyWith(color: AppColors.primaryDark),
                   ),
                   const SizedBox(height: 8),
-                  if (records.isEmpty)
+                  if (patientData.pastRecords.isEmpty)
                     Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24),
@@ -128,7 +132,7 @@ class _DoctorPatientHistoryScreenState extends State<DoctorPatientHistoryScreen>
                       ),
                     )
                   else
-                    ...records.map((record) => _MedicalRecordCard(record: record)),
+                    ...patientData.pastRecords.map((record) => _MedicalRecordCard(record: record)),
                 ],
               ),
             );
@@ -212,9 +216,9 @@ class _PatientHeader extends StatelessWidget {
 }
 
 class _MedicationCard extends StatelessWidget {
-  final Medication medication;
+  final String medicationName;
 
-  const _MedicationCard({required this.medication});
+  const _MedicationCard({required this.medicationName});
 
   @override
   Widget build(BuildContext context) {
@@ -242,12 +246,7 @@ class _MedicationCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(medication.name, style: AppTextStyles.labelLarge),
-                const SizedBox(height: 2),
-                Text(
-                  '${medication.dosage}  \u2022  ${medication.duration}',
-                  style: AppTextStyles.bodySmall,
-                ),
+                Text(medicationName, style: AppTextStyles.labelLarge),
               ],
             ),
           ),

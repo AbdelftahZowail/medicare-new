@@ -1,3 +1,5 @@
+import 'shared_models.dart';
+
 class Appointment {
   final int id;
   final int? patientId;
@@ -25,6 +27,12 @@ class Appointment {
   final bool isEmergency;
   final String? chiefComplaint;
   final bool isPaid;
+  final int? paymentStatus;
+  final String? paymentStatusText;
+  final double? consultationFee;
+  final String? offlinePatientPhone;
+  final int? offlinePatientAge;
+  final int? offlinePatientGender;
   final String paymentMethodText;
   final DateTime createdAt;
 
@@ -55,6 +63,12 @@ class Appointment {
     required this.isEmergency,
     this.chiefComplaint,
     required this.isPaid,
+    this.paymentStatus,
+    this.paymentStatusText,
+    this.consultationFee,
+    this.offlinePatientPhone,
+    this.offlinePatientAge,
+    this.offlinePatientGender,
     required this.paymentMethodText,
     required this.createdAt,
   });
@@ -87,6 +101,12 @@ class Appointment {
       isEmergency: json['isEmergency'] ?? false,
       chiefComplaint: json['chiefComplaint'],
       isPaid: json['isPaid'] ?? false,
+      paymentStatus: _parsePaymentStatus(json['paymentStatus']),
+      paymentStatusText: json['paymentStatusText'],
+      consultationFee: (json['consultationFee'] as num?)?.toDouble(),
+      offlinePatientPhone: json['offlinePatientPhone'],
+      offlinePatientAge: json['offlinePatientAge'],
+      offlinePatientGender: json['offlinePatientGender'],
       paymentMethodText: json['paymentMethodText'] ?? '',
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
     );
@@ -110,6 +130,19 @@ class Appointment {
       }
     }
     return 0;
+  }
+
+  static int? _parsePaymentStatus(dynamic value) {
+    if (value is int) return value;
+    if (value is String) {
+      switch (value.toLowerCase()) {
+        case 'pending': return 0;
+        case 'paid': return 1;
+        case 'refunded': return 2;
+        default: return 0;
+      }
+    }
+    return null;
   }
 
   static int? _parseQueueStatus(dynamic value) {
@@ -136,8 +169,6 @@ class BookAppointmentRequest {
   final String startTime;
   final int? familyMemberId;
   final String? notes;
-  final bool isEmergency;
-  final String? chiefComplaint;
 
   BookAppointmentRequest({
     required this.doctorId,
@@ -145,8 +176,6 @@ class BookAppointmentRequest {
     required this.startTime,
     this.familyMemberId,
     this.notes,
-    this.isEmergency = false,
-    this.chiefComplaint,
   });
 
   Map<String, dynamic> toJson() => {
@@ -155,8 +184,6 @@ class BookAppointmentRequest {
         'startTime': startTime,
         if (familyMemberId != null) 'familyMemberId': familyMemberId,
         if (notes != null) 'notes': notes,
-        'isEmergency': isEmergency,
-        if (chiefComplaint != null) 'chiefComplaint': chiefComplaint,
       };
 }
 
@@ -188,6 +215,179 @@ class LiveQueueTracker {
       estimatedWaitTimeMinutes: json['estimatedWaitTimeMinutes'] ?? 0,
       myQueueStatus: Appointment._parseQueueStatus(json['myQueueStatus']),
       doctorName: json['doctorName'] ?? '',
+    );
+  }
+}
+
+/// Request body for POST /api/doctor/consultation/{appointmentId}/complete
+class CompleteConsultationRequest {
+  final String diagnosis;
+  final List<Medication>? medications;
+  final String? instructions;
+
+  CompleteConsultationRequest({
+    required this.diagnosis,
+    this.medications,
+    this.instructions,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'diagnosis': diagnosis,
+        if (medications != null) 'medications': medications!.map((m) => m.toJson()).toList(),
+        if (instructions != null) 'instructions': instructions,
+      };
+}
+
+/// Patient info within ConsultationScreenDto
+class ConsultationPatient {
+  final int? patientId;
+  final int? familyMemberId;
+  final String fullName;
+  final String? profileImageUrl;
+  final int age;
+  final String? gender;
+  final String? bloodType;
+  final List<String> chronicConditions;
+  final List<String> allergies;
+  final bool isFamilyMember;
+
+  ConsultationPatient({
+    this.patientId,
+    this.familyMemberId,
+    required this.fullName,
+    this.profileImageUrl,
+    required this.age,
+    this.gender,
+    this.bloodType,
+    this.chronicConditions = const [],
+    this.allergies = const [],
+    this.isFamilyMember = false,
+  });
+
+  factory ConsultationPatient.fromJson(Map<String, dynamic> json) {
+    return ConsultationPatient(
+      patientId: json['patientId'],
+      familyMemberId: json['familyMemberId'],
+      fullName: json['fullName'] ?? '',
+      profileImageUrl: json['profileImageUrl'],
+      age: json['age'] ?? 0,
+      gender: json['gender'],
+      bloodType: json['bloodType'],
+      chronicConditions: List<String>.from(json['chronicConditions'] ?? []),
+      allergies: List<String>.from(json['allergies'] ?? []),
+      isFamilyMember: json['isFamilyMember'] ?? false,
+    );
+  }
+}
+
+/// Previous visit entry within ConsultationScreenDto
+class PreviousVisit {
+  final int appointmentId;
+  final DateTime visitDate;
+  final String doctorName;
+  final String? diagnosis;
+  final String? chiefComplaint;
+
+  PreviousVisit({
+    required this.appointmentId,
+    required this.visitDate,
+    required this.doctorName,
+    this.diagnosis,
+    this.chiefComplaint,
+  });
+
+  factory PreviousVisit.fromJson(Map<String, dynamic> json) {
+    return PreviousVisit(
+      appointmentId: json['appointmentId'] ?? 0,
+      visitDate: DateTime.parse(json['visitDate'] ?? DateTime.now().toIso8601String()),
+      doctorName: json['doctorName'] ?? '',
+      diagnosis: json['diagnosis'],
+      chiefComplaint: json['chiefComplaint'],
+    );
+  }
+}
+
+/// Full consultation screen data from GET /api/doctor/consultation/{appointmentId}
+class ConsultationScreenData {
+  final Appointment appointment;
+  final ConsultationPatient patient;
+  final List<MedicalRecord> medicalHistory;
+  final List<PreviousVisit> previousVisits;
+  final List<String> previousDiagnoses;
+  final List<Medication> previousPrescriptions;
+
+  ConsultationScreenData({
+    required this.appointment,
+    required this.patient,
+    this.medicalHistory = const [],
+    this.previousVisits = const [],
+    this.previousDiagnoses = const [],
+    this.previousPrescriptions = const [],
+  });
+
+  factory ConsultationScreenData.fromJson(Map<String, dynamic> json) {
+    return ConsultationScreenData(
+      appointment: Appointment.fromJson(json['appointment'] ?? {}),
+      patient: ConsultationPatient.fromJson(json['patient'] ?? {}),
+      medicalHistory: json['medicalHistory'] != null
+          ? List<MedicalRecord>.from(
+              json['medicalHistory'].map((x) => MedicalRecord.fromJson(x)),
+            )
+          : [],
+      previousVisits: json['previousVisits'] != null
+          ? List<PreviousVisit>.from(
+              json['previousVisits'].map((x) => PreviousVisit.fromJson(x)),
+            )
+          : [],
+      previousDiagnoses: List<String>.from(json['previousDiagnoses'] ?? []),
+      previousPrescriptions: json['previousPrescriptions'] != null
+          ? List<Medication>.from(
+              json['previousPrescriptions'].map((x) => Medication.fromJson(x)),
+            )
+          : [],
+    );
+  }
+}
+
+/// Patient history wrapper returned by GET /api/doctor/patients/{patientId}/history
+class PatientHistoryData {
+  final int patientId;
+  final String fullName;
+  final String? profileImageUrl;
+  final int age;
+  final String? gender;
+  final String? bloodType;
+  final List<String> chronicConditions;
+  final List<String> currentMedications;
+  final List<MedicalRecord> pastRecords;
+
+  PatientHistoryData({
+    required this.patientId,
+    required this.fullName,
+    this.profileImageUrl,
+    required this.age,
+    this.gender,
+    this.bloodType,
+    this.chronicConditions = const [],
+    this.currentMedications = const [],
+    this.pastRecords = const [],
+  });
+
+  factory PatientHistoryData.fromJson(Map<String, dynamic> json) {
+    return PatientHistoryData(
+      patientId: json['patientId'] ?? 0,
+      fullName: json['fullName'] ?? '',
+      profileImageUrl: json['profileImageUrl'],
+      age: json['age'] ?? 0,
+      gender: json['gender'],
+      bloodType: json['bloodType'],
+      chronicConditions: List<String>.from(json['chronicConditions'] ?? []),
+      currentMedications: List<String>.from(json['currentMedications'] ?? []),
+      pastRecords: json['pastRecords'] != null
+          ? List<MedicalRecord>.from(
+              json['pastRecords'].map((x) => MedicalRecord.fromJson(x)),
+            )
+          : [],
     );
   }
 }

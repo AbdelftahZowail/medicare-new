@@ -73,7 +73,7 @@ class _RegisterDoctorScreenState extends State<RegisterDoctorScreen> {
               password: _passwordController.text,
               confirmPassword: _confirmController.text,
               specialization: _specialization ?? '',
-              licenseFileUrl: _licenseFileUrl,
+              licenseFileUrl: _licenseFileUrl!,
             ),
           ),
         );
@@ -117,7 +117,11 @@ class _RegisterDoctorScreenState extends State<RegisterDoctorScreen> {
       setState(() => _isUploading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload error: ${errorMessage(e)}')),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Upload error: ${errorMessage(e)}'
+                : 'Failed to upload license. Please try again.'),
+          ),
         );
       }
     }

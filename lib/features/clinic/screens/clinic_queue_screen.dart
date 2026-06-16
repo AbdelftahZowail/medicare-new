@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/models/appointment_models.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -17,14 +20,26 @@ class ClinicQueueScreen extends StatefulWidget {
 
 class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
   final _service = ClinicService();
-  List<dynamic> _patients = [];
+  List<Appointment> _appointments = [];
   bool _isLoading = true;
   String? _error;
+  int? _startingAppointmentId;
+
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
     _loadQueue();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) _loadQueue();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadQueue() async {
@@ -35,7 +50,7 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
       });
       final data = await _service.getClinicQueue(doctorId: widget.doctorId);
       setState(() {
-        _patients = data;
+        _appointments = data;
         _isLoading = false;
       });
     } catch (e) {
@@ -66,17 +81,18 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
                 ? _buildError()
                 : RefreshIndicator(
                     onRefresh: _loadQueue,
-                    child: _patients.isEmpty
+                    child: _appointments.isEmpty
                         ? _buildEmptyState()
                         : ListView.separated(
                             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                            itemCount: _patients.length,
+                            itemCount: _appointments.length,
                             separatorBuilder: (_, __) => const SizedBox(height: 12),
                             itemBuilder: (context, index) {
-                              final patient = _patients[index] as Map<String, dynamic>;
+                              final appointment = _appointments[index];
                               return _PatientQueueCard(
-                                patient: patient,
-                                onStartCheckup: () => _startCheckup(patient),
+                                appointment: appointment,
+                                isStarting: _startingAppointmentId == appointment.id,
+                                onStartCheckup: () => _startCheckup(appointment),
                               );
                             },
                           ),
@@ -141,13 +157,12 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
     );
   }
 
-  Future<void> _startCheckup(Map<String, dynamic> patient) async {
-    final appointmentId = patient['appointmentId'] as int?;
-    if (appointmentId == null) return;
-
+  Future<void> _startCheckup(Appointment appointment) async {
+    setState(() => _startingAppointmentId = appointment.id);
     try {
-      await _service.startCheckup(appointmentId);
+      await _service.startCheckup(appointment.id);
       if (mounted) {
+        setState(() => _startingAppointmentId = null);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Checkup started successfully')),
         );
@@ -155,8 +170,14 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _startingAppointmentId = null);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage(e))),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to start checkup: ${errorMessage(e)}'
+                : 'Failed to start checkup. Please try again.'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     }
@@ -164,21 +185,23 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
 }
 
 class _PatientQueueCard extends StatelessWidget {
-  final Map<String, dynamic> patient;
+  final Appointment appointment;
+  final bool isStarting;
   final VoidCallback onStartCheckup;
 
   const _PatientQueueCard({
-    required this.patient,
+    required this.appointment,
+    this.isStarting = false,
     required this.onStartCheckup,
   });
 
   @override
   Widget build(BuildContext context) {
-    final queueNumber = patient['queueNumber']?.toString() ?? '--';
-    final patientName = patient['patientName'] ?? '';
-    final status = patient['statusText'] ?? '';
-    final time = patient['startTime'] ?? '--:--';
-    final isEmergency = patient['isEmergency'] ?? false;
+    final queueNumber = appointment.queueNumber?.toString() ?? '--';
+    final patientName = appointment.patientName;
+    final status = appointment.statusText;
+    final time = appointment.startTime.isNotEmpty ? appointment.startTime : '--:--';
+    final isEmergency = appointment.isEmergency;
 
     Color statusColor;
     switch (status.toLowerCase()) {
@@ -271,7 +294,7 @@ class _PatientQueueCard extends StatelessWidget {
               ),
             ],
           ),
-          if (status.toLowerCase() == 'waiting' || status.toLowerCase() == 'confirmed') ...[
+          if (appointment.queueStatus == AppEnums.waiting) ...[
             const SizedBox(height: 12),
             const Divider(height: 1),
             const SizedBox(height: 12),
@@ -279,7 +302,7 @@ class _PatientQueueCard extends StatelessWidget {
               height: 40,
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: onStartCheckup,
+                onPressed: isStarting ? null : onStartCheckup,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.textOnPrimary,
@@ -288,7 +311,16 @@ class _PatientQueueCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: const Text('Start Checkup'),
+                child: isStarting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.textOnPrimary,
+                        ),
+                      )
+                    : const Text('Start Checkup'),
               ),
             ),
           ],

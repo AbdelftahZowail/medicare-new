@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/models/shared_models.dart';
 import '../../../core/models/user_models.dart';
 import '../../../core/services/auth_service.dart';
@@ -61,7 +62,11 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen> {
         _loading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load medical history: ${errorMessage(e)}')),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Failed to load medical history: ${errorMessage(e)}'
+              : 'Failed to load medical history. Please try again.'),
+        ),
       );
     }
   }
@@ -264,9 +269,18 @@ class _VisitCard extends StatelessWidget {
           ),
           const Divider(height: 24),
           _VisitDetailRow(label: 'Diagnosis', value: record.diagnosis),
-          if (record.prescription != null) ...[
+          if (record.medications != null && record.medications!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Medications',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+            ),
             const SizedBox(height: 8),
-            _VisitDetailRow(label: 'Prescription', value: record.prescription!),
+            ...record.medications!.map((med) => _MedicationCard(medication: med)),
+          ],
+          if (record.instructions != null && record.instructions!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _VisitDetailRow(label: 'Instructions', value: record.instructions!),
           ],
           if (record.bloodPressure != null) ...[
             const SizedBox(height: 8),

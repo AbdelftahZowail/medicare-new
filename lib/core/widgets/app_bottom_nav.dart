@@ -224,8 +224,7 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fg = isSelected ? AppColors.primary : AppColors.textSecondary;
-    return Expanded(
-      child: GestureDetector(
+    return GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Column(
@@ -264,7 +263,6 @@ class _NavItem extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

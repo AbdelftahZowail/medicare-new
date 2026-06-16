@@ -36,6 +36,7 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
   final _longitudeController = TextEditingController();
   final _openingTimeController = TextEditingController();
   final _closingTimeController = TextEditingController();
+  final _linkMapController = TextEditingController();
 
   bool _isLoading = false;
   bool _isSaving = false;
@@ -64,11 +65,16 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
       _longitudeController.text = profile.longitude?.toString() ?? '';
       _openingTimeController.text = profile.openingTime ?? '';
       _closingTimeController.text = profile.closingTime ?? '';
+      _linkMapController.text = profile.linkMap ?? '';
       _logoUrl = profile.logoUrl;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading profile: ${errorMessage(e)}')),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to load profile: ${errorMessage(e)}'
+                : 'Failed to load profile. Please try again.'),
+          ),
         );
       }
     } finally {
@@ -123,6 +129,8 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
         'longitude': _longitudeController.text.trim().isEmpty ? null : double.tryParse(_longitudeController.text.trim()),
         'openingTime': _openingTimeController.text.trim().isEmpty ? null : _openingTimeController.text.trim(),
         'closingTime': _closingTimeController.text.trim().isEmpty ? null : _closingTimeController.text.trim(),
+        'logoUrl': _logoUrl,
+        'linkMap': _linkMapController.text.trim().isEmpty ? null : _linkMapController.text.trim(),
       };
 
       await _service.updateClinicProfile(data);
@@ -136,7 +144,11 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage(e))),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to save profile: ${errorMessage(e)}'
+                : 'Failed to save profile. Please try again.'),
+          ),
         );
       }
     } finally {
@@ -201,10 +213,32 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
       setState(() => _isUploading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload error: ${errorMessage(e)}')),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to upload logo: ${errorMessage(e)}'
+                : 'Failed to upload logo. Please try again.'),
+          ),
         );
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _facilityIdController.dispose();
+    _descriptionController.dispose();
+    _governmentController.dispose();
+    _areaController.dispose();
+    _addressController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
+    _openingTimeController.dispose();
+    _closingTimeController.dispose();
+    _linkMapController.dispose();
+    super.dispose();
   }
 
   @override
@@ -253,6 +287,12 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
                         hint: 'Enter clinic description',
                         controller: _descriptionController,
                         maxLines: 3,
+                      ),
+                      const SizedBox(height: 16),
+                      AppTextField(
+                        label: 'Google Maps Link',
+                        hint: 'Paste Google Maps link',
+                        controller: _linkMapController,
                       ),
                       const SizedBox(height: 24),
                       Text('Location', style: AppTextStyles.heading2),

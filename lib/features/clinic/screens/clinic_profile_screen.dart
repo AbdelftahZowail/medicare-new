@@ -88,6 +88,8 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
     final longitude = _profileData?['longitude'] as double?;
     final openingTime = _profileData?['openingTime'] as String?;
     final closingTime = _profileData?['closingTime'] as String?;
+    final linkMap = _profileData?['linkMap'] as String?;
+    final licenseImageUrl = _profileData?['licenseImageUrl'] as String?;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -121,6 +123,10 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
                                 _InfoItem(icon: Icons.badge, label: 'Facility ID', value: facilityId),
                               if (description != null)
                                 _InfoItem(icon: Icons.description, label: 'Description', value: description),
+                              if (linkMap != null)
+                                _InfoItem(icon: Icons.map, label: 'Google Maps', value: linkMap),
+                              if (licenseImageUrl != null)
+                                _InfoItem(icon: Icons.verified, label: 'License', value: licenseImageUrl),
                               _InfoItem(
                                 icon: Icons.people,
                                 label: 'Doctors',

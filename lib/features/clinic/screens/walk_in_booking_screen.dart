@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -109,7 +110,11 @@ class _WalkInBookingScreenState extends State<WalkInBookingScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage(e))),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to book appointment: ${errorMessage(e)}'
+                : 'Failed to book appointment. Please try again.'),
+          ),
         );
       }
     } finally {

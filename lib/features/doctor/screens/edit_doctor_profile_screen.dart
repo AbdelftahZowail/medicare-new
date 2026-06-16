@@ -70,7 +70,11 @@ class _EditDoctorProfileScreenState extends State<EditDoctorProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load profile: ${errorMessage(e)}')),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to load profile: ${errorMessage(e)}'
+                : 'Failed to load profile. Please try again.'),
+          ),
         );
       }
     }
@@ -96,6 +100,7 @@ class _EditDoctorProfileScreenState extends State<EditDoctorProfileScreen> {
       'graduationYear': int.tryParse(_graduationYearController.text),
       'boardCertification': _boardCertController.text.isEmpty ? null : _boardCertController.text,
       'languages': _languagesController.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
+      'profileImageUrl': _profileImageUrl,
     };
 
     try {
@@ -109,7 +114,11 @@ class _EditDoctorProfileScreenState extends State<EditDoctorProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update profile')),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to update profile: ${errorMessage(e)}'
+                : 'Failed to update profile. Please try again.'),
+          ),
         );
       }
     } finally {
@@ -152,7 +161,11 @@ class _EditDoctorProfileScreenState extends State<EditDoctorProfileScreen> {
       setState(() => _isUploading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload error: ${errorMessage(e)}')),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Upload error: ${errorMessage(e)}'
+                : 'Upload failed. Please try again.'),
+          ),
         );
       }
     }

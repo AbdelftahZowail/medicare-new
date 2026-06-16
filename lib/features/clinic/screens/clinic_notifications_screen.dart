@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/error_utils.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -19,10 +22,21 @@ class _ClinicNotificationsScreenState extends State<ClinicNotificationsScreen> {
   bool _isLoading = true;
   String? _error;
 
+  Timer? _pollTimer;
+
   @override
   void initState() {
     super.initState();
     _loadNotifications();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) _loadNotifications();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadNotifications() async {
@@ -64,7 +78,11 @@ class _ClinicNotificationsScreenState extends State<ClinicNotificationsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage(e))),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to mark notification as read: ${errorMessage(e)}'
+                : 'Failed to mark notification as read. Please try again.'),
+          ),
         );
       }
     }

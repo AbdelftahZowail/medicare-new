@@ -68,7 +68,11 @@ class _RegisterDoctorToClinicScreenState extends State<RegisterDoctorToClinicScr
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage(e))),
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Failed to register doctor: ${errorMessage(e)}'
+                : 'Failed to register doctor. Please try again.'),
+          ),
         );
       }
     } finally {

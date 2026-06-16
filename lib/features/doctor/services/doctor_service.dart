@@ -92,11 +92,10 @@ class DoctorService {
     return response.data as String;
   }
 
-  Future<List<MedicalRecord>> getPatientHistory(int patientId) async {
-    final response = await _api.getList(
+  Future<PatientHistoryData> getPatientHistory(int patientId) async {
+    final response = await _api.get(
       ApiEndpoints.doctorPatientHistory(patientId),
-      fromJson: (data) =>
-          (data as List).map((e) => MedicalRecord.fromJson(e)).toList(),
+      fromJson: (data) => PatientHistoryData.fromJson(data),
     );
     if (!response.isSuccess || response.data == null) {
       throw Exception(response.message.isNotEmpty ? response.message : 'Failed to load patient history');
@@ -104,6 +103,7 @@ class DoctorService {
     return response.data!;
   }
 
+  /// Retrieve the old session consultation data (kept for backward compatibility)
   Future<bool> saveConsultation(
     int appointmentId,
     Map<String, dynamic> data,
@@ -124,6 +124,52 @@ class DoctorService {
     }
     
     return response.isSuccess;
+  }
+
+  // ── New consultation flow (backend changelog 2026-06-13) ──────────────────────
+
+  /// GET /api/doctor/consultation/{appointmentId}
+  /// Loads the full consultation screen data including patient info, history, previous visits.
+  Future<ConsultationScreenData> getConsultationDetail(int appointmentId) async {
+    final response = await _api.get(
+      ApiEndpoints.doctorConsultation(appointmentId),
+      fromJson: (data) => ConsultationScreenData.fromJson(data),
+    );
+    if (!response.isSuccess || response.data == null) {
+      throw Exception(response.message.isNotEmpty ? response.message : 'Failed to load consultation data');
+    }
+    return response.data!;
+  }
+
+  /// GET /api/doctor/active-consultations
+  /// Returns today's active (in-progress) consultations.
+  Future<List<Appointment>> getActiveConsultations() async {
+    final response = await _api.getList(
+      ApiEndpoints.doctorActiveConsultations,
+      fromJson: (data) =>
+          (data as List).map((e) => Appointment.fromJson(e)).toList(),
+    );
+    if (!response.isSuccess || response.data == null) {
+      throw Exception(response.message.isNotEmpty ? response.message : 'Failed to load active consultations');
+    }
+    return response.data!;
+  }
+
+  /// POST /api/doctor/consultation/{appointmentId}/complete
+  /// Completes a consultation with diagnosis, medications, and instructions.
+  Future<MedicalRecord> completeConsultation(
+    int appointmentId,
+    CompleteConsultationRequest request,
+  ) async {
+    final response = await _api.post(
+      ApiEndpoints.doctorCompleteConsultation(appointmentId),
+      data: request.toJson(),
+      fromJson: (data) => MedicalRecord.fromJson(data),
+    );
+    if (!response.isSuccess || response.data == null) {
+      throw Exception(response.message.isNotEmpty ? response.message : 'Failed to complete consultation');
+    }
+    return response.data!;
   }
 
   Future<List<CommunityPost>> getCommunityPosts() async {

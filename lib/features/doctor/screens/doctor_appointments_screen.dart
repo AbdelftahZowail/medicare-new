@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,6 +20,21 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
   final _service = DoctorService();
   DateTime _selectedDate = DateTime.now();
   int _statusFilter = -1; // -1 = all
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
   List<DateTime> _getWeekDays() {
     final now = DateTime.now();
     final start = now.subtract(const Duration(days: 3));

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,6 +18,22 @@ class DoctorQueueScreen extends StatefulWidget {
 
 class _DoctorQueueScreenState extends State<DoctorQueueScreen> {
   final _service = DoctorService();
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
   Color _queueStatusColor(int? status) {
     switch (status) {
       case 0:

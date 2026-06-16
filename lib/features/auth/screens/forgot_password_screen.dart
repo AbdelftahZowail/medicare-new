@@ -49,7 +49,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage(e))),
+        SnackBar(
+          content: Text(kEnableDebugTools
+              ? 'Forgot password error: ${errorMessage(e)}'
+              : 'Something went wrong. Please try again.'),
+        ),
       );
     } finally {
       if (mounted) setState(() => _loading = false);

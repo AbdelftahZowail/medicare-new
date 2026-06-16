@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/models/appointment_models.dart';
 import '../../../core/models/clinic_models.dart';
 import '../../../core/models/doctor_models.dart';
 import '../../../core/models/shared_models.dart';
@@ -20,11 +21,12 @@ class ClinicService {
     throw Exception(response.message);
   }
 
-  Future<List<dynamic>> getClinicQueue({required int doctorId}) async {
+  Future<List<Appointment>> getClinicQueue({required int doctorId}) async {
     final response = await _api.getList(
       ApiEndpoints.appointmentClinicQueue,
       queryParameters: {'doctorId': doctorId},
-      fromJson: (data) => data as List<dynamic>,
+      fromJson: (data) =>
+          (data as List).map((e) => Appointment.fromJson(e)).toList(),
     );
     if (response.isSuccess && response.data != null) {
       return response.data!;
@@ -37,7 +39,14 @@ class ClinicService {
       ApiEndpoints.clinicDoctors,
       fromJson: (data) {
         final list = data as List<dynamic>;
-        return list.map((e) => DoctorListItem.fromJson(e as Map<String, dynamic>)).toList();
+        return list.map((e) {
+          final map = Map<String, dynamic>.from(e as Map<String, dynamic>);
+          // API returns ClinicDoctorDetailsDto with doctorId, not id
+          if ((map['id'] == null || map['id'] == 0) && map['doctorId'] != null) {
+            map['id'] = map['doctorId'];
+          }
+          return DoctorListItem.fromJson(map);
+        }).toList();
       },
     );
     if (response.isSuccess && response.data != null) {
@@ -154,15 +163,16 @@ class ClinicService {
     }
   }
 
-  Future<void> startCheckup(int appointmentId) async {
+  Future<Appointment> startCheckup(int appointmentId) async {
     final response = await _api.post(
       ApiEndpoints.appointmentStartCheckup(appointmentId),
       data: {},
-      fromJson: (data) => data,
+      fromJson: (data) => Appointment.fromJson(data),
     );
-    if (!response.isSuccess) {
+    if (!response.isSuccess || response.data == null) {
       throw Exception(response.message);
     }
+    return response.data!;
   }
 
   Future<void> removeDoctorFromClinic(int doctorId) async {
