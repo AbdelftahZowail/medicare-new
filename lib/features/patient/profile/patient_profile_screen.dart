@@ -106,9 +106,12 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                           CircleAvatar(
                             radius: 50,
                             backgroundColor: AppColors.primary100,
-                            backgroundImage: _profile?.profileImageUrl != null
+                            backgroundImage: _profile?.profileImageUrl != null && _profile!.profileImageUrl!.isNotEmpty
                                 ? NetworkImage(_profile!.profileImageUrl!)
-                                : const AssetImage(AssetPaths.patientProfile1) as ImageProvider,
+                                : null,
+                            child: (_profile?.profileImageUrl == null || _profile!.profileImageUrl!.isEmpty)
+                                ? const Icon(Icons.person, color: AppColors.primary, size: 50)
+                                : null,
                           ),
                           GestureDetector(
                             onTap: () => context.push(AppRoutes.patientEditProfile),

@@ -221,33 +221,6 @@ class AssetPaths {
   static const String illustrationDoctorsCuate = '$images/illustration_doctors_cuate.png';
   static const String illustrationOnlineDoctor2 = '$images/illustration_online_doctor_2.png';
 
-  // Doctor Photos
-  static const String doctorPhoto1 = '$images/doctor_photo_1.png';
-  static const String doctorPhoto2 = '$images/doctor_photo_2.png';
-  static const String doctorPhoto3 = '$images/doctor_photo_3.png';
-  static const String doctorPhoto4 = '$images/doctor_photo_4.png';
-  static const String doctorPhotoFavorite = '$images/doctor_photo_favorite.png';
-  static const String doctorJulian = '$images/doctor_julian.png';
-  static const String doctorJulian2 = '$images/doctor_julian_2.png';
-  static const String drJamesWilson = '$images/dr_james_wilson.png';
-  static const String drSarahChen = '$images/dr_sarah_chen.png';
-  static const String drSarahChen2 = '$images/dr_sarah_chen_2.png';
-  static const String sarahJohnson = '$images/sarah_johnson.png';
-  static const String emilyDavis = '$images/emily_davis.png';
-
-  // Family Members
-  static const String familyMember1 = '$images/family_member_1.png';
-  static const String familyMember2 = '$images/family_member_2.png';
-  static const String familyMember3 = '$images/family_member_3.png';
-
-  // Clinic
-  static const String clinicImage1 = '$images/clinic_image_1.png';
-  static const String clinicImage2 = '$images/clinic_image_2.png';
-
-  // Patients
-  static const String patientProfile1 = '$images/patient_profile_1.png';
-  static const String patientProfile2 = '$images/patient_profile_2.png';
-
   // Services
   static const String clinicBooking = '$images/illustration_online_doctor.png';
 

@@ -243,20 +243,22 @@ class _ProfileHeader extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.primary200, width: 2),
             ),
-            child: imageUrl != null
+            child: (imageUrl?.isNotEmpty == true)
                 ? ClipOval(
                     child: Image.network(
                       imageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const CircleAvatar(
+                      errorBuilder: (_, __, ___) => CircleAvatar(
                         radius: 45,
-                        backgroundImage: AssetImage(AssetPaths.doctorJulian),
+                        backgroundColor: AppColors.primary100,
+                        child: const Icon(Icons.person, color: AppColors.primary, size: 45),
                       ),
                     ),
                   )
-                : const CircleAvatar(
+                : CircleAvatar(
                     radius: 45,
-                    backgroundImage: AssetImage(AssetPaths.doctorJulian),
+                    backgroundColor: AppColors.primary100,
+                    child: const Icon(Icons.person, color: AppColors.primary, size: 45),
                   ),
           ),
           const SizedBox(height: 12),

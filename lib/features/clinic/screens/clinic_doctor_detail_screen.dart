@@ -310,16 +310,16 @@ class _ClinicDoctorDetailScreenState extends State<ClinicDoctorDetailScreen> {
             decoration: BoxDecoration(
               color: AppColors.primary100,
               shape: BoxShape.circle,
-              image: imageUrl != null
+              image: imageUrl != null && imageUrl.isNotEmpty
                   ? DecorationImage(
                       image: NetworkImage(imageUrl),
                       fit: BoxFit.cover,
                     )
-                  : const DecorationImage(
-                      image: AssetImage(AssetPaths.drJamesWilson),
-                      fit: BoxFit.cover,
-                    ),
+                  : null,
             ),
+            child: (imageUrl == null || imageUrl.isEmpty)
+                ? const Icon(Icons.person, color: AppColors.primary, size: 50)
+                : null,
           ),
           const SizedBox(height: 16),
           Text(name, style: AppTextStyles.heading2),

@@ -252,10 +252,13 @@ class _AppointmentCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundImage: appointment.doctorProfileImageUrl != null
+              backgroundColor: AppColors.primary100,
+              backgroundImage: appointment.doctorProfileImageUrl != null && appointment.doctorProfileImageUrl!.isNotEmpty
                   ? NetworkImage(appointment.doctorProfileImageUrl!)
-                  : const AssetImage(AssetPaths.patientProfile1) as ImageProvider,
-              onBackgroundImageError: (_, __) {},
+                  : null,
+              child: (appointment.doctorProfileImageUrl == null || appointment.doctorProfileImageUrl!.isEmpty)
+                  ? const Icon(Icons.person, color: AppColors.primary, size: 24)
+                  : null,
             ),
             const SizedBox(width: 12),
             Expanded(

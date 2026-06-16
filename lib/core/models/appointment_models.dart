@@ -20,6 +20,7 @@ class Appointment {
   final String? notes;
   final String? cancellationReason;
   final String? doctorProfileImageUrl;
+  final String? patientProfileImageUrl;
   final int? clinicId;
   final String? clinicName;
   final String? clinicAddress;
@@ -56,6 +57,7 @@ class Appointment {
     this.notes,
     this.cancellationReason,
     this.doctorProfileImageUrl,
+    this.patientProfileImageUrl,
     this.clinicId,
     this.clinicName,
     this.clinicAddress,
@@ -94,6 +96,7 @@ class Appointment {
       notes: json['notes'],
       cancellationReason: json['cancellationReason'],
       doctorProfileImageUrl: json['doctorProfileImageUrl'],
+      patientProfileImageUrl: json['patientProfileImageUrl'],
       clinicId: json['clinicId'],
       clinicName: json['clinicName'],
       clinicAddress: json['clinicAddress'],

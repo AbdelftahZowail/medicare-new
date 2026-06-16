@@ -101,8 +101,6 @@ class PatientProfile {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'userId': userId,
       'fullName': fullName,
       'phoneNumber': phoneNumber,
       'email': email,

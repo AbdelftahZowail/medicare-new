@@ -108,9 +108,12 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         CircleAvatar(
                           radius: 36,
                           backgroundColor: AppColors.primary100,
-                          backgroundImage: _doctor?.profileImageUrl != null
+                          backgroundImage: _doctor?.profileImageUrl != null && _doctor!.profileImageUrl!.isNotEmpty
                               ? NetworkImage(_doctor!.profileImageUrl!)
-                              : const AssetImage(AssetPaths.doctorPhoto1) as ImageProvider,
+                              : null,
+                          child: (_doctor?.profileImageUrl == null || _doctor!.profileImageUrl!.isEmpty)
+                              ? const Icon(Icons.person, color: AppColors.primary, size: 36)
+                              : null,
                         ),
                         const SizedBox(width: 14),
                         Expanded(

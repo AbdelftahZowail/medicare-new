@@ -182,8 +182,7 @@ final _mockPopularDoctors = <DoctorListItem>[
     id: 1,
     fullName: 'Dr.Ahmed',
     specialization: 'Dentist',
-    profileImageUrl:
-        'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600&auto=format&fit=crop&q=60',
+    profileImageUrl: null,
     consultationFee: 200,
     averageRating: 3.9,
     totalReviews: 120,
@@ -196,8 +195,7 @@ final _mockPopularDoctors = <DoctorListItem>[
     id: 2,
     fullName: 'Dr.Mohamed',
     specialization: 'Cardiologist',
-    profileImageUrl:
-        'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=600&auto=format&fit=crop&q=60',
+    profileImageUrl: null,
     consultationFee: 250,
     averageRating: 3.9,
     totalReviews: 98,
@@ -210,8 +208,7 @@ final _mockPopularDoctors = <DoctorListItem>[
     id: 3,
     fullName: 'Dr.Alaa',
     specialization: 'Dentist',
-    profileImageUrl:
-        'https://images.unsplash.com/photo-1580281657527-47f249e8f75f?w=600&auto=format&fit=crop&q=60',
+    profileImageUrl: null,
     consultationFee: 180,
     averageRating: 3.9,
     totalReviews: 76,
@@ -228,8 +225,7 @@ final _mockBrowseDoctors = <DoctorListItem>[
     id: 4,
     fullName: 'Dr.Sara',
     specialization: 'Neurology',
-    profileImageUrl:
-        'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=600&auto=format&fit=crop&q=60',
+    profileImageUrl: null,
     consultationFee: 300,
     averageRating: 4.6,
     totalReviews: 210,
@@ -242,8 +238,7 @@ final _mockBrowseDoctors = <DoctorListItem>[
     id: 5,
     fullName: 'Dr.Youssef',
     specialization: 'Orthopedics',
-    profileImageUrl:
-        'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=600&auto=format&fit=crop&q=60',
+    profileImageUrl: null,
     consultationFee: 220,
     averageRating: 4.2,
     totalReviews: 150,
@@ -256,8 +251,7 @@ final _mockBrowseDoctors = <DoctorListItem>[
     id: 6,
     fullName: 'Dr.Nour',
     specialization: 'Dermatology',
-    profileImageUrl:
-        'https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=600&auto=format&fit=crop&q=60',
+    profileImageUrl: null,
     consultationFee: 190,
     averageRating: 4.4,
     totalReviews: 89,
@@ -274,8 +268,7 @@ DoctorProfile _mockDoctorProfile(int id) {
     userId: 1000 + id,
     fullName: 'Dr. Ahmed',
     phoneNumber: '+20 000 000 0000',
-    profileImageUrl:
-        'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800&auto=format&fit=crop&q=60',
+    profileImageUrl: null,
     specialization: 'Specialist Dentist',
     consultationFee: 200,
     averageRating: 4.9,

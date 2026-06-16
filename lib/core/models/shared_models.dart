@@ -113,34 +113,13 @@ class FamilyMember {
   }
 
   Map<String, dynamic> toJson() {
-    // Convert int enums back to strings for backend
-    String? _genderToString(int? value) {
-      if (value == null) return null;
-      switch (value) {
-        case 0: return 'Male';
-        case 1: return 'Female';
-        default: return null;
-      }
-    }
-
-    String _relationToString(int value) {
-      switch (value) {
-        case 0: return 'Parent';
-        case 1: return 'Child';
-        case 2: return 'Spouse';
-        case 3: return 'Sibling';
-        case 4: return 'Other';
-        default: return 'Other';
-      }
-    }
-
     return {
       'id': id,
       'patientId': patientId,
       'name': name,
-      'relation': _relationToString(relation),
+      'relation': relation,
       'age': age,
-      'gender': _genderToString(gender),
+      'gender': gender,
       'bloodType': bloodType,
       'medicalHistory': medicalHistory,
       'allergies': allergies,

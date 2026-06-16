@@ -77,6 +77,7 @@ class _DoctorPatientHistoryScreenState extends State<DoctorPatientHistoryScreen>
                     age: '${patientData.age} yrs',
                     gender: patientData.gender ?? '',
                     bloodType: patientData.bloodType != null ? 'Blood Type ${patientData.bloodType}' : '',
+                    profileImageUrl: patientData.profileImageUrl,
                   ),
                   const SizedBox(height: 16),
                   if (patientData.chronicConditions.isNotEmpty) ...[
@@ -148,12 +149,14 @@ class _PatientHeader extends StatelessWidget {
   final String age;
   final String gender;
   final String bloodType;
+  final String? profileImageUrl;
 
   const _PatientHeader({
     required this.name,
     required this.age,
     required this.gender,
     required this.bloodType,
+    this.profileImageUrl,
   });
 
   @override
@@ -171,9 +174,15 @@ class _PatientHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 28,
-                backgroundImage: AssetImage(AssetPaths.patientProfile1),
+                backgroundColor: AppColors.primary100,
+                backgroundImage: profileImageUrl != null && profileImageUrl!.isNotEmpty
+                    ? NetworkImage(profileImageUrl!)
+                    : null,
+                child: (profileImageUrl == null || profileImageUrl!.isEmpty)
+                    ? const Icon(Icons.person, color: AppColors.primary, size: 28)
+                    : null,
               ),
               const SizedBox(width: 14),
               Expanded(

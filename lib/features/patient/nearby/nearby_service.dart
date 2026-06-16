@@ -108,8 +108,7 @@ final _mockNearbyDoctors = <DoctorListItem>[
     id: 1,
     fullName: 'Dr. Ahmed Hassan',
     specialization: 'Dentistry',
-    profileImageUrl:
-        'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600&auto=format&fit=crop&q=60',
+    profileImageUrl: null,
     consultationFee: 200,
     averageRating: 4.8,
     totalReviews: 120,
@@ -124,8 +123,7 @@ final _mockNearbyDoctors = <DoctorListItem>[
     id: 2,
     fullName: 'Dr. Sara Mohamed',
     specialization: 'Cardiology',
-    profileImageUrl:
-        'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=600&auto=format&fit=crop&q=60',
+    profileImageUrl: null,
     consultationFee: 300,
     averageRating: 4.6,
     totalReviews: 210,
@@ -140,8 +138,7 @@ final _mockNearbyDoctors = <DoctorListItem>[
     id: 3,
     fullName: 'Dr. Youssef Ali',
     specialization: 'Orthopedics',
-    profileImageUrl:
-        'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=600&auto=format&fit=crop&q=60',
+    profileImageUrl: null,
     consultationFee: 250,
     averageRating: 4.2,
     totalReviews: 150,

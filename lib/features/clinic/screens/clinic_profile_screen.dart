@@ -36,7 +36,7 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
       });
       final profile = await _service.getClinicProfile();
       setState(() {
-        _profileData = profile.toJson();
+        _profileData = profile.toFullJson();
         _isLoading = false;
       });
     } catch (e) {
@@ -257,16 +257,16 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
             decoration: BoxDecoration(
               color: AppColors.primary100,
               shape: BoxShape.circle,
-              image: logoUrl != null
+              image: logoUrl != null && logoUrl.isNotEmpty
                   ? DecorationImage(
                       image: NetworkImage(ApiEndpoints.resolveImageUrl(logoUrl)!),
                       fit: BoxFit.cover,
                     )
-                  : const DecorationImage(
-                      image: AssetImage(AssetPaths.clinicImage1),
-                      fit: BoxFit.cover,
-                    ),
+                  : null,
             ),
+            child: (logoUrl == null || logoUrl.isEmpty)
+                ? const Icon(Icons.local_hospital, color: AppColors.primary, size: 50)
+                : null,
           ),
           const SizedBox(height: 16),
           Text(name, style: AppTextStyles.heading2),

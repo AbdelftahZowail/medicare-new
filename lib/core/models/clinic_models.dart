@@ -64,6 +64,26 @@ class ClinicProfile {
 
   Map<String, dynamic> toJson() {
     return {
+      'name': name,
+      'facilityId': facilityId,
+      'description': description,
+      'government': government,
+      'area': area,
+      'address': address,
+      'phoneNumber': phoneNumber,
+      'email': email,
+      'logoUrl': logoUrl,
+      'linkMap': linkMap,
+      'latitude': latitude,
+      'longitude': longitude,
+      'openingTime': openingTime,
+      'closingTime': closingTime,
+    };
+  }
+
+  /// Full serialization including read-only fields (for display/caching).
+  Map<String, dynamic> toFullJson() {
+    return {
       'id': id,
       'name': name,
       'facilityId': facilityId,

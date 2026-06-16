@@ -220,6 +220,7 @@ class _PatientCard extends StatelessWidget {
     final id = patient['id']?.toString() ?? '--';
     final age = patient['age']?.toString();
     final gender = patient['gender'] == 0 ? 'Male' : patient['gender'] == 1 ? 'Female' : null;
+    final profileImageUrl = patient['profileImageUrl'] as String?;
 
     return InkWell(
       onTap: () {
@@ -242,9 +243,15 @@ class _PatientCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               radius: 24,
-              backgroundImage: AssetImage(AssetPaths.patientProfile1),
+              backgroundColor: AppColors.primary100,
+              backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
+                  ? NetworkImage(profileImageUrl)
+                  : null,
+              child: (profileImageUrl == null || profileImageUrl.isEmpty)
+                  ? const Icon(Icons.person, color: AppColors.primary, size: 24)
+                  : null,
             ),
             const SizedBox(width: 14),
             Expanded(

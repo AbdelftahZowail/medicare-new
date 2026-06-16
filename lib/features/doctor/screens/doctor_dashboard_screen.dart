@@ -143,7 +143,8 @@ class _TopBar extends StatelessWidget {
       children: [
         const CircleAvatar(
           radius: 20,
-          backgroundImage: AssetImage(AssetPaths.doctorJulian),
+          backgroundColor: AppColors.primary,
+          child: Icon(Icons.medical_services, color: AppColors.textOnPrimary, size: 20),
         ),
         const SizedBox(width: 10),
         Text('Medicare', style: AppTextStyles.heading3.copyWith(fontWeight: FontWeight.w700)),

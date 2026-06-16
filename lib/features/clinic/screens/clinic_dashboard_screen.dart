@@ -161,14 +161,14 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
   Widget _buildHeader() {
     return Row(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: Image.asset(
-            AssetPaths.clinicImage1,
-            width: 48,
-            height: 48,
-            fit: BoxFit.cover,
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(14),
           ),
+          child: const Icon(Icons.local_hospital, color: AppColors.textOnPrimary, size: 28),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -495,6 +495,7 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
                 time: appt.startTime,
                 status: appt.statusText,
                 isPaid: appt.isPaid,
+                patientProfileImageUrl: appt.patientProfileImageUrl,
               );
             },
           ),
@@ -614,6 +615,7 @@ class _AppointmentListItem extends StatelessWidget {
   final String time;
   final String status;
   final bool isPaid;
+  final String? patientProfileImageUrl;
 
   const _AppointmentListItem({
     required this.patientName,
@@ -621,6 +623,7 @@ class _AppointmentListItem extends StatelessWidget {
     required this.time,
     required this.status,
     required this.isPaid,
+    this.patientProfileImageUrl,
   });
 
   @override
@@ -649,9 +652,15 @@ class _AppointmentListItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 22,
-            backgroundImage: AssetImage(AssetPaths.patientProfile1),
+            backgroundColor: AppColors.primary100,
+            backgroundImage: patientProfileImageUrl?.isNotEmpty == true
+                ? NetworkImage(patientProfileImageUrl!)
+                : null,
+            child: patientProfileImageUrl?.isNotEmpty != true
+                ? const Icon(Icons.person, color: AppColors.primary, size: 22)
+                : null,
           ),
           const SizedBox(width: 12),
           Expanded(
