@@ -132,6 +132,9 @@ class ApiEndpoints {
   static String markNotificationRead(int id) => '$apiBase/notification/$id/read';
   static String deleteNotification(int id) => '$apiBase/notification/$id';
 
+  // Push Notification
+  static const String registerFcmToken = '$apiBase/notification/fcm-token';
+
   // Upload
   static const String uploadLicense = '$apiBase/upload/license';
   static const String uploadProfileImage = '$apiBase/upload/profile-image';

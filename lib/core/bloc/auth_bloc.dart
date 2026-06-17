@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../constants/app_constants.dart';
 import '../models/auth_models.dart';
 import '../services/auth_service.dart';
+import '../services/fcm_service.dart';
 import '../utils/error_utils.dart';
 
 // Events
@@ -133,6 +135,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           role: response.data!.role,
           auth: response.data!,
         ));
+        _registerFcmToken();
       } else {
         emit(AuthFailure(response.message.isNotEmpty ? response.message : 'Login failed'));
       }
@@ -153,6 +156,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           role: response.data!.role,
           auth: response.data!,
         ));
+        _registerFcmToken();
       } else {
         emit(AuthFailure(response.message.isNotEmpty ? response.message : 'Registration failed'));
       }
@@ -173,6 +177,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           role: response.data!.role,
           auth: response.data!,
         ));
+        _registerFcmToken();
       } else {
         emit(AuthFailure(response.message.isNotEmpty ? response.message : 'Registration failed'));
       }
@@ -193,6 +198,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           role: response.data!.role,
           auth: response.data!,
         ));
+        _registerFcmToken();
       } else {
         emit(AuthFailure(response.message.isNotEmpty ? response.message : 'Registration failed'));
       }
@@ -207,7 +213,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     if (state is AuthUnauthenticated) return; // Prevent logout loop
     emit(AuthLoading());
+    await FcmService().deleteToken();
     await _authService.logout();
     emit(const AuthUnauthenticated());
+  }
+
+  /// Register the FCM push notification token with the backend.
+  /// Non-blocking — a failure here should not break the auth flow.
+  Future<void> _registerFcmToken() async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        await FcmService().registerToken(token);
+      }
+    } catch (_) {
+      // Silently ignore — push notifications are non-critical
+    }
   }
 }
