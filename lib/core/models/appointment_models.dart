@@ -37,6 +37,10 @@ class Appointment {
   final String paymentMethodText;
   final DateTime createdAt;
 
+  /// Resolves the correct display name: family member's name if booking
+  /// for a family member, otherwise the primary patient's name.
+  String get displayName => familyMemberName ?? patientName;
+
   Appointment({
     required this.id,
     this.patientId,

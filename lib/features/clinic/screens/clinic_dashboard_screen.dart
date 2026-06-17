@@ -8,6 +8,7 @@ import '../../../core/models/doctor_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/fcm_token_debug_widget.dart';
 import '../../clinic/clinic_service.dart';
 
 class ClinicDashboardScreen extends StatefulWidget {
@@ -35,7 +36,7 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
     super.initState();
     _loadDoctors();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) _loadDashboard();
+      if (mounted) _pollDashboard();
     });
   }
 
@@ -91,6 +92,22 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
     _loadQueueForRecent();
   }
 
+  Future<void> _pollDashboard() async {
+    if (_selectedDoctorId == null) return;
+    try {
+      final data = await _service.getClinicDashboard(doctorId: _selectedDoctorId!);
+      if (!mounted) return;
+      setState(() {
+        _dashboardData = data;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = errorMessage(e));
+    }
+    _loadQueueForRecent();
+  }
+
   Future<void> _loadQueueForRecent() async {
     if (_selectedDoctorId == null) return;
     try {
@@ -126,7 +143,12 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4),
+                  child: FcmTokenDebugWidget(),
+                ),
+                const SizedBox(height: 8),
                 _buildDoctorSelector(),
                 const SizedBox(height: 16),
                 _buildDateSelector(),
@@ -490,7 +512,7 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
             itemBuilder: (context, index) {
               final appt = appointments[index];
               return _AppointmentListItem(
-                patientName: appt.patientName,
+                patientName: appt.displayName,
                 doctorName: appt.doctorName,
                 time: appt.startTime,
                 status: appt.statusText,

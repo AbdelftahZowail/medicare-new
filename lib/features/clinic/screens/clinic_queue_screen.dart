@@ -43,7 +43,7 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
     super.initState();
     _loadQueue();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) _loadQueue();
+      if (mounted) _pollQueue();
     });
   }
 
@@ -69,6 +69,20 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
         _error = errorMessage(e);
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _pollQueue() async {
+    try {
+      final data = await _service.getClinicQueue(doctorId: widget.doctorId);
+      if (!mounted) return;
+      setState(() {
+        _appointments = data;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = errorMessage(e));
     }
   }
 
@@ -185,8 +199,8 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
                     Text(
                       next != null
                           ? canStart
-                              ? 'Tap to start checkup for ${next.patientName}'
-                              : '${next.patientName} is waiting — finish current patient first'
+? 'Tap to start checkup for ${next!.displayName}'
+                               : '${next!.displayName} is waiting — finish current patient first'
                           : 'No patients waiting',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: canStart ? AppColors.textSecondary : AppColors.textTertiary,
@@ -314,7 +328,7 @@ class _PatientQueueCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final queueNumber = appointment.queueNumber?.toString() ?? '--';
-    final patientName = appointment.patientName;
+    final patientName = appointment.displayName;
     final status = appointment.statusText;
     final time = appointment.startTime.isNotEmpty ? appointment.startTime : '--:--';
     final isEmergency = appointment.isEmergency;

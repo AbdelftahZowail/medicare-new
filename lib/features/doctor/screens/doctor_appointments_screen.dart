@@ -266,7 +266,7 @@ class _AppointmentCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    appointment.patientName,
+                    appointment.displayName,
                     style: AppTextStyles.labelLarge,
                   ),
                   const SizedBox(height: 2),

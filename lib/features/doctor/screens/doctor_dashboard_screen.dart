@@ -8,6 +8,7 @@ import '../../../core/models/appointment_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
+import '../../../core/widgets/fcm_token_debug_widget.dart';
 import '../../doctor/services/doctor_service.dart';
 
 class DoctorDashboardScreen extends StatefulWidget {
@@ -72,6 +73,12 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                 onNotificationsTap: () =>
                     context.push(AppRoutes.doctorNotifications),
               ),
+              const SizedBox(height: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: FcmTokenDebugWidget(),
+              ),
+              const SizedBox(height: 4),
               if (_activeConsultation != null) ...[
                 const SizedBox(height: 20),
                 _CurrentPatientCard(
@@ -433,7 +440,7 @@ class _CurrentPatientCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      appointment.patientName,
+                      appointment.displayName,
                       style: AppTextStyles.heading3.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
