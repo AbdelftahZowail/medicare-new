@@ -39,6 +39,7 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
   final _longitudeController = TextEditingController();
   final _openingTimeController = TextEditingController();
   final _closingTimeController = TextEditingController();
+  final _linkMapController = TextEditingController();
   String? _government;
   String? _area;
   bool _obscure = true;
@@ -47,6 +48,35 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
   String? _licenseFilePath;
   String? _licenseFileUrl;
   bool _isUploading = false;
+  String? _logoUrl;
+  bool _isUploadingLogo = false;
+
+  // ── Debug auto-fill ──
+  int _debugPreset = 0;
+  static const _debugPresets = [
+    {'name': 'Medicare Clinic', 'linkMap': 'https://maps.app.goo.gl/example1', 'gov': 'Cairo', 'area': 'Area 1', 'addr': '15 Tahrir Street, Maadi', 'lat': '29.9608', 'lng': '31.2707', 'phone': '0223456789', 'email': 'medicare@test.com', 'open': '09:00:00', 'close': '21:00:00'},
+    {'name': 'Nile Health Center', 'linkMap': 'https://maps.app.goo.gl/example2', 'gov': 'Giza', 'area': 'Area 2', 'addr': '22 Nile Corniche, Dokki', 'lat': '30.0395', 'lng': '31.2025', 'phone': '0238765432', 'email': 'nile.health@test.com', 'open': '08:00:00', 'close': '22:00:00'},
+    {'name': 'Prime Medical Complex', 'linkMap': 'https://maps.app.goo.gl/example3', 'gov': 'Alexandria', 'area': 'Area 3', 'addr': '8 Gamal Nasser Rd, Smouha', 'lat': '31.2100', 'lng': '29.9187', 'phone': '0311223344', 'email': 'prime@test.com', 'open': '10:00:00', 'close': '20:00:00'},
+    {'name': 'Al Salam Hospital', 'linkMap': 'https://maps.app.goo.gl/example4', 'gov': 'Sharqia', 'area': 'Area 1', 'addr': '55 Geish Street, Zagazig', 'lat': '30.5877', 'lng': '31.5020', 'phone': '0559988776', 'email': 'salam@test.com', 'open': '00:00:00', 'close': '23:59:00'},
+  ];
+
+  void _fillDebugFields() {
+    final p = _debugPresets[_debugPreset % _debugPresets.length];
+    _debugPreset++;
+    setState(() {
+      _clinicNameController.text = p['name'] as String;
+      _linkMapController.text = p['linkMap'] as String;
+      _government = p['gov'] as String;
+      _area = p['area'] as String;
+      _addressController.text = p['addr'] as String;
+      _latitudeController.text = p['lat'] as String;
+      _longitudeController.text = p['lng'] as String;
+      _phoneController.text = p['phone'] as String;
+      _emailController.text = p['email'] as String;
+      _openingTimeController.text = p['open'] as String;
+      _closingTimeController.text = p['close'] as String;
+    });
+  }
 
   final _governments = const [
     'Cairo',
@@ -74,6 +104,7 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
     _longitudeController.dispose();
     _openingTimeController.dispose();
     _closingTimeController.dispose();
+    _linkMapController.dispose();
     super.dispose();
   }
 
@@ -171,6 +202,10 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
                   ? _closingTimeController.text.trim()
                   : null,
               licenseFileUrl: _licenseFileUrl!,
+              linkMap: _linkMapController.text.trim().isNotEmpty
+                  ? _linkMapController.text.trim()
+                  : null,
+              logoUrl: _logoUrl,
             ),
           ),
         );
@@ -224,9 +259,61 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
     }
   }
 
+  Future<void> _pickAndUploadLogo() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+      if (pickedFile == null) return;
+
+      setState(() => _isUploadingLogo = true);
+
+      final response = await ApiService().uploadFile(
+        ApiEndpoints.uploadProfileImage,
+        filePath: pickedFile.path,
+        fieldName: 'file',
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final url = response.data!['url'] as String?;
+        if (url != null && url.isNotEmpty) {
+          setState(() {
+            _logoUrl = url;
+            _isUploadingLogo = false;
+          });
+          return;
+        }
+      }
+
+      setState(() => _isUploadingLogo = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response.message.isNotEmpty ? response.message : 'Failed to upload logo')),
+        );
+      }
+    } catch (e) {
+      setState(() => _isUploadingLogo = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(kEnableDebugTools
+                ? 'Upload error: ${errorMessage(e)}'
+                : 'Failed to upload logo. Please try again.'),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AuthLayout(
+      floatingActionButton: kEnableDebugTools
+          ? FloatingActionButton.small(
+              heroTag: 'fill_clinic',
+              onPressed: _fillDebugFields,
+              child: const Icon(Icons.auto_fix_high),
+            )
+          : null,
       child: BlocListener<AuthBloc, AuthState>(
         listenWhen: (p, c) => c is AuthFailure,
         listener: (context, state) {
@@ -262,6 +349,8 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
                   key: _formKey,
                   child: Column(
                     children: [
+                      _buildLogoUpload(),
+                      const SizedBox(height: 24),
                       AppTextField(
                         label: 'Name',
                         hint: 'Enter Clinic Name',
@@ -274,6 +363,8 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
                           return null;
                         },
                       ),
+                      const SizedBox(height: 20),
+                      Text('Location', style: AppTextStyles.heading4.copyWith(color: AppColors.primaryDark)),
                       const SizedBox(height: 14),
                       Row(
                         children: [
@@ -308,6 +399,13 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 14),
+                      AppTextField(
+                        label: 'Google Maps Link',
+                        hint: 'Paste Google Maps link',
+                        controller: _linkMapController,
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 14),
                       Row(
                         children: [
                           Expanded(
@@ -338,6 +436,8 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
                           label: const Text('Pick on Map'),
                         ),
                       ),
+                      const SizedBox(height: 20),
+                      Text('Contact', style: AppTextStyles.heading4.copyWith(color: AppColors.primaryDark)),
                       const SizedBox(height: 14),
                       AppTextField(
                         label: 'Phone',
@@ -360,48 +460,8 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
                       ),
-                      const SizedBox(height: 14),
-                      AppTextField(
-                        label: 'Password',
-                        hint: 'Enter Your Password',
-                        controller: _passwordController,
-                        obscureText: _obscure,
-                        textInputAction: TextInputAction.next,
-                        validator: (v) {
-                          final value = (v ?? '');
-                          if (value.isEmpty) return 'Password is required';
-                          if (value.length < 6) return 'Password must be at least 6 characters';
-                          return null;
-                        },
-                        suffixIcon: IconButton(
-                          onPressed: () => setState(() => _obscure = !_obscure),
-                          icon: Icon(
-                            _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      AppTextField(
-                        label: 'Confirm Password',
-                        hint: 'Confirm Your Password',
-                        controller: _confirmController,
-                        obscureText: _obscure2,
-                        textInputAction: TextInputAction.next,
-                        validator: (v) {
-                          final value = (v ?? '');
-                          if (value.isEmpty) return 'Confirm password is required';
-                          if (value != _passwordController.text) return 'Passwords do not match';
-                          return null;
-                        },
-                        suffixIcon: IconButton(
-                          onPressed: () => setState(() => _obscure2 = !_obscure2),
-                          icon: Icon(
-                            _obscure2 ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      ),
+                      const SizedBox(height: 20),
+                      Text('Operating Hours', style: AppTextStyles.heading4.copyWith(color: AppColors.primaryDark)),
                       const SizedBox(height: 14),
                       Row(
                         children: [
@@ -484,6 +544,50 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
                         isLoading: _isUploading,
                         onTap: _pickAndUploadLicense,
                       ),
+                      const SizedBox(height: 20),
+                      Text('Account Security', style: AppTextStyles.heading4.copyWith(color: AppColors.primaryDark)),
+                      const SizedBox(height: 14),
+                      AppTextField(
+                        label: 'Password',
+                        hint: 'Enter Your Password',
+                        controller: _passwordController,
+                        obscureText: _obscure,
+                        textInputAction: TextInputAction.next,
+                        validator: (v) {
+                          final value = (v ?? '');
+                          if (value.isEmpty) return 'Password is required';
+                          if (value.length < 6) return 'Password must be at least 6 characters';
+                          return null;
+                        },
+                        suffixIcon: IconButton(
+                          onPressed: () => setState(() => _obscure = !_obscure),
+                          icon: Icon(
+                            _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      AppTextField(
+                        label: 'Confirm Password',
+                        hint: 'Confirm Your Password',
+                        controller: _confirmController,
+                        obscureText: _obscure2,
+                        textInputAction: TextInputAction.next,
+                        validator: (v) {
+                          final value = (v ?? '');
+                          if (value.isEmpty) return 'Confirm password is required';
+                          if (value != _passwordController.text) return 'Passwords do not match';
+                          return null;
+                        },
+                        suffixIcon: IconButton(
+                          onPressed: () => setState(() => _obscure2 = !_obscure2),
+                          icon: Icon(
+                            _obscure2 ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 18),
                       BlocBuilder<AuthBloc, AuthState>(
                         builder: (context, state) {
@@ -513,6 +617,42 @@ class _RegisterClinicScreenState extends State<RegisterClinicScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLogoUpload() {
+    return Center(
+      child: Column(
+        children: [
+          Container(
+            height: 120,
+            width: 120,
+            decoration: BoxDecoration(
+              color: AppColors.primary100,
+              shape: BoxShape.circle,
+              image: _logoUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(ApiEndpoints.resolveImageUrl(_logoUrl)!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+            child: _logoUrl == null
+                ? const Icon(Icons.local_hospital, color: AppColors.primary, size: 50)
+                : _isUploadingLogo
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                    : null,
+          ),
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: _isUploadingLogo ? null : _pickAndUploadLogo,
+            icon: _isUploadingLogo
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.camera_alt, size: 18),
+            label: const Text('Upload Logo'),
+          ),
+        ],
       ),
     );
   }

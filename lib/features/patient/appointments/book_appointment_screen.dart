@@ -139,7 +139,23 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       );
       if (!mounted) return;
       setState(() {
-        _availableSlots = slots.where((s) => s.isAvailable).toList();
+        _availableSlots = slots.where((s) {
+          if (!s.isAvailable) return false;
+          // If today, filter out slots whose time has already passed
+          final now = DateTime.now();
+          if (_selectedDate!.year == now.year &&
+              _selectedDate!.month == now.month &&
+              _selectedDate!.day == now.day) {
+            final parts = s.time.split(':');
+            if (parts.length >= 2) {
+              final hour = int.tryParse(parts[0]) ?? 0;
+              final minute = int.tryParse(parts[1]) ?? 0;
+              final slotDt = DateTime(now.year, now.month, now.day, hour, minute);
+              if (slotDt.isBefore(now)) return false;
+            }
+          }
+          return true;
+        }).toList();
         _slotsLoading = false;
       });
     } catch (e) {

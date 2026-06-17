@@ -153,8 +153,6 @@ final _mockProfile = PatientProfile(
   bloodType: 'B+',
   allergies: 'None',
   chronicDiseases: 'None',
-  emergencyContactName: 'Omar Ali',
-  emergencyContactPhone: '+20 100 987 6543',
 );
 
 final _mockFamilyMembers = <FamilyMember>[

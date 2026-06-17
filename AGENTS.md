@@ -3,7 +3,7 @@ when starting subagents or explorers, do NOT do their job for them, wait when it
 ---
 
 for debugging use the following tools:
-the backend is running on a vps (the ROOT/medicare-backend/ locally is just a git clone for you to view or edit for it to be synced with the version on the vps) in ~/medicare-backend with a systemd service and you can view the logs, to login use `ssh -i C:\Users\Zowail\.ssh\openclaw_proxy ubuntu@140.238.97.203` 
+the backend is running on a vps (the C:\Users\Zowail\StudioProjects\medicare\medicare-backend/ locally is just a git clone for you to view or edit for it to be synced with the version on the vps) in ~/medicare-backend with a systemd service and you can view the logs, to login use `ssh -i C:\Users\Zowail\.ssh\openclaw_proxy ubuntu@140.238.97.203` 
 
 **do NOT deplot until the user verbally tells you to, then you will push changes to git, pull it on the other side, and deploy changes**
 

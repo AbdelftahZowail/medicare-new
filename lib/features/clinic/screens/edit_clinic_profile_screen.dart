@@ -25,8 +25,6 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
   final _service = ClinicService();
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _facilityIdController = TextEditingController();
-  final _descriptionController = TextEditingController();
   final _governmentController = TextEditingController();
   final _areaController = TextEditingController();
   final _addressController = TextEditingController();
@@ -54,8 +52,6 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
     try {
       final profile = await _service.getClinicProfile();
       _nameController.text = profile.name;
-      _facilityIdController.text = profile.facilityId ?? '';
-      _descriptionController.text = profile.description ?? '';
       _governmentController.text = profile.government ?? '';
       _areaController.text = profile.area ?? '';
       _addressController.text = profile.address ?? '';
@@ -118,8 +114,6 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
     try {
       final data = {
         'name': _nameController.text.trim(),
-        'facilityId': _facilityIdController.text.trim().isEmpty ? null : _facilityIdController.text.trim(),
-        'description': _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
         'government': _governmentController.text.trim().isEmpty ? null : _governmentController.text.trim(),
         'area': _areaController.text.trim().isEmpty ? null : _areaController.text.trim(),
         'address': _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
@@ -226,8 +220,6 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _facilityIdController.dispose();
-    _descriptionController.dispose();
     _governmentController.dispose();
     _areaController.dispose();
     _addressController.dispose();
@@ -274,19 +266,6 @@ class _EditClinicProfileScreenState extends State<EditClinicProfileScreen> {
                           if (value == null || value.isEmpty) return 'Name is required';
                           return null;
                         },
-                      ),
-                      const SizedBox(height: 16),
-                      AppTextField(
-                        label: 'Facility ID',
-                        hint: 'Enter facility ID',
-                        controller: _facilityIdController,
-                      ),
-                      const SizedBox(height: 16),
-                      AppTextField(
-                        label: 'Description',
-                        hint: 'Enter clinic description',
-                        controller: _descriptionController,
-                        maxLines: 3,
                       ),
                       const SizedBox(height: 16),
                       AppTextField(

@@ -41,8 +41,6 @@ class PatientProfile {
   final String? bloodType;
   final String? allergies;
   final String? chronicDiseases;
-  final String? emergencyContactName;
-  final String? emergencyContactPhone;
 
   PatientProfile({
     required this.id,
@@ -58,8 +56,6 @@ class PatientProfile {
     this.bloodType,
     this.allergies,
     this.chronicDiseases,
-    this.emergencyContactName,
-    this.emergencyContactPhone,
   });
 
   factory PatientProfile.fromJson(Map<String, dynamic> json) {
@@ -94,8 +90,6 @@ class PatientProfile {
       bloodType: json['bloodType'],
       allergies: json['allergies'],
       chronicDiseases: json['chronicDiseases'],
-      emergencyContactName: json['emergencyContactName'],
-      emergencyContactPhone: json['emergencyContactPhone'],
     );
   }
 
@@ -112,8 +106,6 @@ class PatientProfile {
       'bloodType': bloodType,
       'allergies': allergies,
       'chronicDiseases': chronicDiseases,
-      'emergencyContactName': emergencyContactName,
-      'emergencyContactPhone': emergencyContactPhone,
     };
   }
 }

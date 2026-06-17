@@ -27,6 +27,17 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
 
   Timer? _pollTimer;
 
+  bool get _hasInProgressPatient =>
+      _appointments.any((a) => a.queueStatus == AppEnums.inConsultation);
+
+  Appointment? get _firstWaitingPatient {
+    try {
+      return _appointments.firstWhere((a) => a.queueStatus == AppEnums.waiting);
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -85,14 +96,15 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
                         ? _buildEmptyState()
                         : ListView.separated(
                             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                            itemCount: _appointments.length,
+                            itemCount: _appointments.length + 1,
                             separatorBuilder: (_, __) => const SizedBox(height: 12),
                             itemBuilder: (context, index) {
-                              final appointment = _appointments[index];
+                              if (index == 0) {
+                                return _buildNextPatientHeader();
+                              }
+                              final appointment = _appointments[index - 1];
                               return _PatientQueueCard(
                                 appointment: appointment,
-                                isStarting: _startingAppointmentId == appointment.id,
-                                onStartCheckup: () => _startCheckup(appointment),
                               );
                             },
                           ),
@@ -131,6 +143,107 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
     );
   }
 
+  Widget _buildNextPatientHeader() {
+    final next = _firstWaitingPatient;
+    final canStart = next != null && !_hasInProgressPatient;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                height: 48,
+                width: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.primary100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Next Patient',
+                      style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      next != null
+                          ? canStart
+                              ? 'Tap to start checkup for ${next.patientName}'
+                              : '${next.patientName} is waiting — finish current patient first'
+                          : 'No patients waiting',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: canStart ? AppColors.textSecondary : AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_hasInProgressPatient)
+                Container(
+                  padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'In Progress',
+                    style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 44,
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: canStart ? _handleNextPatient : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.textOnPrimary,
+                disabledBackgroundColor: AppColors.borderLight,
+                disabledForegroundColor: AppColors.textTertiary,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: _startingAppointmentId != null
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.textOnPrimary,
+                      ),
+                    )
+                  : Text(canStart ? 'Start Checkup' : 'No Patient Available'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptyState() {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -155,6 +268,13 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
         ),
       ],
     );
+  }
+
+  void _handleNextPatient() {
+    final next = _firstWaitingPatient;
+    if (next != null) {
+      _startCheckup(next);
+    }
   }
 
   Future<void> _startCheckup(Appointment appointment) async {
@@ -186,13 +306,9 @@ class _ClinicQueueScreenState extends State<ClinicQueueScreen> {
 
 class _PatientQueueCard extends StatelessWidget {
   final Appointment appointment;
-  final bool isStarting;
-  final VoidCallback onStartCheckup;
 
   const _PatientQueueCard({
     required this.appointment,
-    this.isStarting = false,
-    required this.onStartCheckup,
   });
 
   @override
@@ -294,33 +410,28 @@ class _PatientQueueCard extends StatelessWidget {
               ),
             ],
           ),
-          if (appointment.queueStatus == AppEnums.waiting) ...[
+          if (appointment.queueStatus == AppEnums.inConsultation) ...[
             const SizedBox(height: 12),
             const Divider(height: 1),
             const SizedBox(height: 12),
-            SizedBox(
-              height: 40,
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isStarting ? null : onStartCheckup,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.textOnPrimary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(right: 8),
+                    child: Icon(Icons.person_pin, size: 16, color: AppColors.primary),
                   ),
-                ),
-                child: isStarting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.textOnPrimary,
-                        ),
-                      )
-                    : const Text('Start Checkup'),
+                  Text(
+                    'In Consultation',
+                    style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary),
+                  ),
+                ],
               ),
             ),
           ],

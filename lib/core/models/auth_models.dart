@@ -69,6 +69,14 @@ class RegisterPatientRequest {
   final String password;
   final String confirmPassword;
   final int? age;
+  final String? email;
+  final int? gender;
+  final DateTime? dateOfBirth;
+  final String? profileImageUrl;
+  final String? address;
+  final String? bloodType;
+  final String? allergies;
+  final String? chronicDiseases;
 
   RegisterPatientRequest({
     required this.name,
@@ -76,6 +84,14 @@ class RegisterPatientRequest {
     required this.password,
     required this.confirmPassword,
     this.age,
+    this.email,
+    this.gender,
+    this.dateOfBirth,
+    this.profileImageUrl,
+    this.address,
+    this.bloodType,
+    this.allergies,
+    this.chronicDiseases,
   });
 
   Map<String, dynamic> toJson() => {
@@ -84,6 +100,14 @@ class RegisterPatientRequest {
         'password': password,
         'confirmPassword': confirmPassword,
         if (age != null) 'age': age,
+        if (email != null) 'email': email,
+        if (gender != null) 'gender': gender,
+        if (dateOfBirth != null) 'dateOfBirth': dateOfBirth!.toIso8601String(),
+        if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
+        if (address != null) 'address': address,
+        if (bloodType != null) 'bloodType': bloodType,
+        if (allergies != null) 'allergies': allergies,
+        if (chronicDiseases != null) 'chronicDiseases': chronicDiseases,
       };
 }
 
@@ -95,6 +119,17 @@ class RegisterDoctorRequest {
   final String confirmPassword;
   final String specialization;
   final String licenseFileUrl;
+  final int? gender;
+  final DateTime? dateOfBirth;
+  final String? profileImageUrl;
+  final String? subSpecialty;
+  final int? yearsOfExperience;
+  final String? bio;
+  final String? degree;
+  final String? university;
+  final int? graduationYear;
+  final String? boardCertification;
+  final String? languages;
 
   RegisterDoctorRequest({
     required this.name,
@@ -104,6 +139,17 @@ class RegisterDoctorRequest {
     required this.confirmPassword,
     required this.specialization,
     required this.licenseFileUrl,
+    this.gender,
+    this.dateOfBirth,
+    this.profileImageUrl,
+    this.subSpecialty,
+    this.yearsOfExperience,
+    this.bio,
+    this.degree,
+    this.university,
+    this.graduationYear,
+    this.boardCertification,
+    this.languages,
   });
 
   Map<String, dynamic> toJson() => {
@@ -114,6 +160,17 @@ class RegisterDoctorRequest {
         'confirmPassword': confirmPassword,
         'specialization': specialization,
         'licenseFileUrl': licenseFileUrl,
+        if (gender != null) 'gender': gender,
+        if (dateOfBirth != null) 'dateOfBirth': dateOfBirth!.toIso8601String(),
+        if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
+        if (subSpecialty != null) 'subSpecialty': subSpecialty,
+        if (yearsOfExperience != null) 'yearsOfExperience': yearsOfExperience,
+        if (bio != null) 'bio': bio,
+        if (degree != null) 'degree': degree,
+        if (university != null) 'university': university,
+        if (graduationYear != null) 'graduationYear': graduationYear,
+        if (boardCertification != null) 'boardCertification': boardCertification,
+        if (languages != null) 'languages': languages,
       };
 }
 
@@ -131,6 +188,8 @@ class RegisterClinicRequest {
   final String? openingTime;
   final String? closingTime;
   final String licenseFileUrl;
+  final String? linkMap;
+  final String? logoUrl;
 
   RegisterClinicRequest({
     required this.clinicName,
@@ -146,6 +205,8 @@ class RegisterClinicRequest {
     this.openingTime,
     this.closingTime,
     required this.licenseFileUrl,
+    this.linkMap,
+    this.logoUrl,
   });
 
   Map<String, dynamic> toJson() => {
@@ -162,6 +223,8 @@ class RegisterClinicRequest {
         if (openingTime != null) 'openingTime': openingTime,
         if (closingTime != null) 'closingTime': closingTime,
         'licenseFileUrl': licenseFileUrl,
+        if (linkMap != null) 'linkMap': linkMap,
+        if (logoUrl != null) 'logoUrl': logoUrl,
       };
 }
 

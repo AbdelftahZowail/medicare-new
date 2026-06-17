@@ -31,8 +31,6 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
   final _bloodTypeController = TextEditingController();
   final _allergiesController = TextEditingController();
   final _chronicDiseasesController = TextEditingController();
-  final _emergencyNameController = TextEditingController();
-  final _emergencyPhoneController = TextEditingController();
 
   bool _loading = true;
   bool _saving = false;
@@ -58,8 +56,6 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
     _bloodTypeController.dispose();
     _allergiesController.dispose();
     _chronicDiseasesController.dispose();
-    _emergencyNameController.dispose();
-    _emergencyPhoneController.dispose();
     super.dispose();
   }
 
@@ -93,8 +89,6 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
     _bloodTypeController.text = profile.bloodType ?? '';
     _allergiesController.text = profile.allergies ?? '';
     _chronicDiseasesController.text = profile.chronicDiseases ?? '';
-    _emergencyNameController.text = profile.emergencyContactName ?? '';
-    _emergencyPhoneController.text = profile.emergencyContactPhone ?? '';
     _selectedGender = profile.gender;
     _dateOfBirth = profile.dateOfBirth;
     _profileImageUrl = profile.profileImageUrl;
@@ -188,8 +182,6 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
       bloodType: _bloodTypeController.text.trim().isEmpty ? null : _bloodTypeController.text.trim(),
       allergies: _allergiesController.text.trim().isEmpty ? null : _allergiesController.text.trim(),
       chronicDiseases: _chronicDiseasesController.text.trim().isEmpty ? null : _chronicDiseasesController.text.trim(),
-      emergencyContactName: _emergencyNameController.text.trim().isEmpty ? null : _emergencyNameController.text.trim(),
-      emergencyContactPhone: _emergencyPhoneController.text.trim().isEmpty ? null : _emergencyPhoneController.text.trim(),
       profileImageUrl: _profileImageUrl,
     );
 
@@ -398,17 +390,6 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
                         controller: _chronicDiseasesController,
                         maxLines: 2,
                         hint: 'e.g. Diabetes, Hypertension',
-                      ),
-                      const SizedBox(height: 16),
-                      AppTextField(
-                        label: 'Emergency Contact Name',
-                        controller: _emergencyNameController,
-                      ),
-                      const SizedBox(height: 16),
-                      AppTextField(
-                        label: 'Emergency Contact Phone',
-                        controller: _emergencyPhoneController,
-                        keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 24),
 

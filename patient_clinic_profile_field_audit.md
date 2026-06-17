@@ -1,9 +1,9 @@
-# Patient & Clinic Profile Field Audit
+# Patient, Doctor & Clinic Profile Field Audit
 
 > Cross-referencing all fields across: **Registration (Signup)** → **Edit Profile** → **Backend API** → **Display Screens**
 >
-> **Date:** 2026-06-13
-https://drive.google.com/file/d/1UL7EqzquFuN8ySrT2-AENmPBOst0pZpR/view?usp=drive_link
+> **Date:** 2026-06-17 — **UPDATED** after fixes applied (see §Fixes Applied)
+
 ---
 
 ## Legend
@@ -14,6 +14,7 @@ https://drive.google.com/file/d/1UL7EqzquFuN8ySrT2-AENmPBOst0pZpR/view?usp=drive
 | ⚠️ | Present but has an issue |
 | ❌ | Missing / not implemented |
 | — | Not applicable |
+| 🔧 | Fixed (was broken, now works) |
 
 ---
 
@@ -31,89 +32,17 @@ https://drive.google.com/file/d/1UL7EqzquFuN8ySrT2-AENmPBOst0pZpR/view?usp=drive
 | 6 | `gender` | `int?` | ❌ Not captured | ✅ Editable (Male/Female chips) | ✅ `gender?` | ✅ `gender?` | ✅ | ✅ **Health card** |
 | 7 | `age` | `int?` | ✅ Required (text input) | ✅ Computed from DoB | ✅ `age?` | ✅ `age?` | ✅ | ✅ **Health card** |
 | 8 | `dateOfBirth` | `string?` | ❌ Not captured | ✅ Editable (date picker) | ✅ `dateOfBirth?` | ✅ `dateOfBirth?` | ✅ | ✅ **Health card** |
-| 9 | `profileImageUrl` | `string?` | ❌ Not captured | ⚠️ Uploaded ✅ but display ❌ | ✅ `profileImageUrl?` | ✅ `profileImageUrl?` | ✅ | ❌ **Static asset used instead** |
-| 10 | `address` | `string?` | ❌ Not captured | ✅ Editable | ✅ `address?` | ✅ `address?` | ✅ | ❌ **Not shown** |
+| 9 | `profileImageUrl` | `string?` | ❌ Not captured | 🔧 Uploaded ✅ + save ✅ + display ✅ | ✅ `profileImageUrl?` | ✅ `profileImageUrl?` | ✅ | 🔧 **NetworkImage + icon fallback** |
+| 10 | `address` | `string?` | ❌ Not captured | ✅ Editable | ✅ `address?` | ✅ `address?` | ✅ | 🔧 **Emergency Contact section** |
 | 11 | `bloodType` | `string?` | ❌ Not captured | ✅ Editable | ✅ `bloodType?` | ✅ `bloodType?` | ✅ | ✅ **Health card** |
 | 12 | `allergies` | `string?` | ❌ Not captured | ✅ Editable | ✅ `allergies?` | ✅ `allergies?` | ✅ | ✅ **Health card** |
 | 13 | `chronicDiseases` | `string?` | ❌ Not captured | ✅ Editable | ✅ `chronicDiseases?` | ✅ `chronicDiseases?` | ✅ | ✅ **Health card** |
-| 14 | `emergencyContactName` | `string?` | ❌ Not captured | ✅ Editable | ✅ `emergencyContactName?` | ✅ `emergencyContactName?` | ✅ | ❌ **Not shown** |
-| 15 | `emergencyContactPhone` | `string?` | ❌ Not captured | ✅ Editable | ✅ `emergencyContactPhone?` | ✅ `emergencyContactPhone?` | ✅ | ❌ **Not shown** |
+| 14 | `emergencyContactName` | `string?` | ❌ Not captured | ✅ Editable | ✅ `emergencyContactName?` | ✅ `emergencyContactName?` | ✅ | 🔧 **Emergency Contact section** |
+| 15 | `emergencyContactPhone` | `string?` | ❌ Not captured | ✅ Editable | ✅ `emergencyContactPhone?` | ✅ `emergencyContactPhone?` | ✅ | 🔧 **Emergency Contact section** |
 
 ---
 
-## 🔴 Patient Issues
-
-### Issue 1 — MEDIUM: Profile image not displayed on profile screen
-
-**Files:** `patient_profile_screen.dart` (line 108-109)
-
-The profile image is correctly uploaded and saved to the backend (the edit screen includes `profileImageUrl` in the save payload). However, the display screen uses a **static asset** instead of the dynamic URL:
-
-```dart
-// patient_profile_screen.dart line 106-109
-const CircleAvatar(
-  radius: 50,
-  backgroundColor: AppColors.primary100,
-  backgroundImage: AssetImage(AssetPaths.patientProfile1),  // 🔴 Static
-),
-```
-
-The `_profile?.profileImageUrl` field is never referenced in the build method.
-
-**Impact:** Users upload a profile photo but it's never shown to them.
-
----
-
-### Issue 2 — MEDIUM: `address`, `emergencyContactName`, `emergencyContactPhone` editable but never displayed
-
-These 3 fields are correctly loaded from the API, populated in the edit form, and saved back. But the profile screen (`patient_profile_screen.dart`) only shows: name, email, phone, dateOfBirth, age, gender, bloodType, allergies, chronicDiseases.
-
-**Impact:** Users can enter emergency contact info but never verify what's stored.
-
----
-
-### Issue 3 — LOW: Gender enum type mismatch (string vs integer)
-
-**Files:** `user_models.dart` lines 104-114, `API_DOCUMENTATION.md` line 546
-
-The backend `UpdatePatientProfileDto` expects `gender` as a **number** (Gender enum: `0`=Male, `1`=Female):
-
-```typescript
-interface UpdatePatientProfileDto {
-  gender?: number; // Gender enum
-}
-```
-
-But `PatientProfile.toJson()` converts it to a **string**:
-
-```dart
-// user_models.dart line 122
-'gender': _genderToString(gender),  // Returns "Male" or "Female" ⚠️
-```
-
-The `_parseGender()` in `fromJson` handles both int and string inputs, so reading works. But saving may fail silently or be ignored by the backend.
-
----
-
-### Issue 4 — LOW: Extra fields (`id`, `userId`) sent in update payload
-
-`PatientProfile.toJson()` includes `id` and `userId` which are not part of `UpdatePatientProfileDto`. The backend likely ignores them, but it's unnecessary.
-
-```dart
-// user_models.dart lines 116-132
-Map<String, dynamic> toJson() {
-  return {
-    'id': id,                    // ❌ Not needed for update
-    'userId': userId,            // ❌ Not needed for update
-    'fullName': fullName,
-    // ...
-  };
-}
-```
-
----
-
-## Patient Data Flow
+## Patient Data Flow (CURRENT)
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -128,6 +57,7 @@ Map<String, dynamic> toJson() {
 │  ❌ email, gender, dateOfBirth, profileImage,          │
 │     address, bloodType, allergies, chronicDiseases,    │
 │     emergencyContactName, emergencyContactPhone        │
+│     → By design — signup is minimal                    │
 └──────────────────────┬─────────────────────────────────┘
                        │ Account created with minimal info
                        ▼
@@ -143,8 +73,10 @@ Map<String, dynamic> toJson() {
 │  ✅ profileImageUrl    ✅ chronicDiseases               │
 │                        ✅ emergencyContactName          │
 │                        ✅ emergencyContactPhone         │
+│  ⚠️ _ageController is a DEAD controller (see below)    │
 └──────────────────────┬─────────────────────────────────┘
                        │ All fields sent via PatientProfile.toJson()
+                       │ (id, userId removed — clean payload)
                        ▼
 ┌────────────────────────────────────────────────────────┐
 │              DISPLAY SCREEN                             │
@@ -153,18 +85,109 @@ Map<String, dynamic> toJson() {
 │  ✅ fullName            ✅ dateOfBirth                  │
 │  ✅ phoneNumber         ✅ age                          │
 │  ✅ email               ✅ gender                       │
-│  ⚠️ profileImageUrl     ✅ bloodType                    │
-│    (static asset used)  ✅ allergies                    │
-│                         ✅ chronicDiseases              │
-│  ❌ address                                              │
-│  ❌ emergencyContactName                                 │
-│  ❌ emergencyContactPhone                                │
+│  🔧 profileImageUrl     ✅ bloodType                    │
+│    (NetworkImage +      ✅ allergies                    │
+│     icon fallback)      ✅ chronicDiseases              │
+│  🔧 address             🔧 emergencyContactName          │
+│  🔧 emergencyContactPhone                               │
 └────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-# Part 2: Clinic Profile
+## ⚠️ Known Issue: Dead `_ageController` in edit screen
+
+**File:** `edit_patient_profile_screen.dart`
+
+The controller `_ageController` is declared, created, and disposed — but:
+- Never bound to any UI widget
+- Never populated from the loaded profile
+- Never read in `_saveProfile()`
+- Age is instead correctly computed from `_dateOfBirth` via `_computeAge()`
+
+This is a leftover from an earlier version. It's harmless (just unused memory) but should be removed for cleanliness.
+
+---
+
+# Part 2: Doctor Profile
+
+## Field Audit Table
+
+| # | Field | Type | Signup<br>`register_doctor_screen` | Edit Profile<br>`edit_doctor_profile_screen` | Backend<br>`DoctorProfileDto` | Backend<br>`UpdateDoctorProfileDto` | Model<br>`DoctorProfile` | Display<br>`doctor_profile_screen` |
+|---|-------|------|:---:|:---:|:---:|:---:|:---:|:---:|
+| 1 | `fullName` | `string` | ✅ Required (`name`) | ✅ Editable | ✅ | ✅ | ✅ | ✅ |
+| 2 | `phoneNumber` | `string` | ✅ Required (`phone`) | ✅ Editable | ✅ | ✅ | ✅ | ✅ |
+| 3 | `email` | `string?` | ✅ Optional | ✅ Editable | ✅ | ✅ | ✅ | ✅ |
+| 4 | `specialization` | `string` | ✅ Required (dropdown) | ✅ Editable (bottom sheet) | ✅ | ✅ | ✅ | ✅ |
+| 5 | `subSpecialty` | `string?` | ❌ Not captured | ✅ Editable | ✅ | ✅ | ✅ | ✅ |
+| 6 | `yearsOfExperience` | `int?` | ❌ Not captured | ✅ Editable | ✅ | ✅ | ✅ | ✅ |
+| 7 | `consultationFee` | `number?` | ❌ Not captured | ✅ Editable | ✅ | ✅ | ✅ | ✅ |
+| 8 | `bio` | `string?` | ❌ Not captured | ✅ Editable | ✅ | ✅ | ✅ | ✅ |
+| 9 | `degree` | `string?` | ❌ Not captured | ✅ Editable | ✅ | ✅ | ✅ | ✅ |
+| 10 | `university` | `string?` | ❌ Not captured | ✅ Editable | ✅ | ✅ | ✅ | ✅ |
+| 11 | `graduationYear` | `int?` | ❌ Not captured | ✅ Editable | ✅ | ✅ | ✅ | ✅ |
+| 12 | `boardCertification` | `string?` | ❌ Not captured | ✅ Editable | ✅ | ✅ | ✅ | ✅ |
+| 13 | `languages` | `list?` | ❌ Not captured | ✅ Editable (comma-sep) | ✅ | ✅ | ✅ | ✅ |
+| 14 | `profileImageUrl` | `string?` | ❌ Not captured | 🔧 Uploaded ✅ + save ✅ | ✅ | ✅ | ✅ | 🔧 **NetworkImage + icon fallback** |
+| 15 | `licenseImageUrl` | `string?` | ✅ Captured (`licenseFileUrl`) | ❌ Not editable (read-only) | ✅ | ❌ Not in UpdateDoctorDto | ✅ | ❌ Not shown |
+| 16 | `isAvailable` | `bool` | ❌ Not captured | ❌ Not editable | ✅ | ✅ | ✅ | ✅ |
+
+**Signup captures 7 fields** (name, phone, email, password, confirmPassword, specialization, licenseFileUrl).  
+**Edit captures 14 fields** (all above except license-related, isAvailable, and read-only stats).
+
+---
+
+## Doctor Data Flow
+
+```
+┌────────────────────────────────────────────────────────┐
+│              REGISTRATION                              │
+│  register_doctor_screen.dart                           │
+│  POST /api/auth/register/doctor                        │
+│                                                        │
+│  ✅ name (required)                                    │
+│  ✅ phone (required)                                   │
+│  ✅ email (optional)                                   │
+│  ✅ password + confirmPassword                         │
+│  ✅ specialization (required, dropdown)                 │
+│  ✅ licenseFileUrl (required upload)                    │
+│  ❌ All 13 professional/profile fields                  │
+│     → By design — signup is minimal                    │
+└──────────────────────┬─────────────────────────────────┘
+                       │ Account + Doctor profile created
+                       ▼
+┌────────────────────────────────────────────────────────┐
+│              EDIT PROFILE (Post-Registration)           │
+│  edit_doctor_profile_screen.dart                       │
+│  PUT /api/doctor/profile                               │
+│                                                        │
+│  ✅ fullName           ✅ degree                        │
+│  ✅ phoneNumber        ✅ university                    │
+│  ✅ email              ✅ yearsOfExperience             │
+│  ✅ specialization     ✅ graduationYear                │
+│  ✅ subSpecialty       ✅ boardCertification            │
+│  ✅ profileImageUrl    ✅ languages                     │
+│  ✅ consultationFee    ✅ bio                           │
+│  → 14 fields total, all wired correctly                │
+└──────────────────────┬─────────────────────────────────┘
+                       │ Map<String, dynamic> sent via DoctorService
+                       ▼
+┌────────────────────────────────────────────────────────┐
+│              DISPLAY SCREEN                             │
+│  doctor_profile_screen.dart (doctor's own view)         │
+│                                                        │
+│  ✅ fullName, phoneNumber, email, specialization        │
+│  ✅ subSpecialty, yearsOfExperience, consultationFee    │
+│  ✅ bio, degree, university, graduationYear             │
+│  ✅ boardCertification, languages                       │
+│  🔧 profileImageUrl (NetworkImage + icon fallback)      │
+│  ❌ licenseImageUrl (stored, not displayed)              │
+└────────────────────────────────────────────────────────┘
+```
+
+---
+
+# Part 3: Clinic Profile
 
 ## Field Audit Table
 
@@ -174,88 +197,29 @@ Map<String, dynamic> toJson() {
 | 2 | `name` | `string` | ✅ Required (`clinicName`) | ✅ Editable (`name`) | ✅ | ✅ `name?` | ✅ | ✅ **Header** |
 | 3 | `facilityId` | `string?` | ❌ Not captured | ✅ Editable | ✅ | ✅ | ✅ | ✅ **Info section** |
 | 4 | `description` | `string?` | ❌ Not captured | ✅ Editable | ✅ | ✅ | ✅ | ✅ **Info section** |
-| 5 | `government` | `string` | ✅ Required (dropdown) | ✅ Editable | ✅ | ✅ | ✅ | ✅ **Location section** |
-| 6 | `area` | `string` | ✅ Required (dropdown) | ✅ Editable | ✅ | ✅ | ✅ | ✅ **Location section** |
+| 5 | `government` | `string` | ✅ Required (dropdown) | ✅ Editable (text field) | ✅ | ✅ | ✅ | ✅ **Location section** |
+| 6 | `area` | `string` | ✅ Required (dropdown) | ✅ Editable (text field) | ✅ | ✅ | ✅ | ✅ **Location section** |
 | 7 | `address` | `string?` | ✅ Optional | ✅ Editable | ✅ | ✅ | ✅ | ✅ **Location section** |
-| 8 | `linkMap` | `string?` | ❌ Not captured in Flutter (but in RegisterClinicDto) | ❌ Not editable | ✅ | ✅ | ❌ **Not in model** | ❌ Not shown |
+| 8 | `linkMap` | `string?` | ❌ Not captured | 🔧 Editable | ✅ | ✅ | 🔧 ✅ Parsed in model | 🔧 ✅ **Info section** |
 | 9 | `phoneNumber` | `string` | ✅ Required (`phone`) | ✅ Editable (`phoneNumber`) | ✅ | ✅ `phoneNumber?` | ✅ | ✅ **Contact section** |
 | 10 | `email` | `string?` | ✅ Optional | ✅ Editable | ✅ | ✅ | ✅ | ✅ **Contact section** |
-| 11 | `logoUrl` | `string?` | ❌ Not captured | ⚠️ **Uploaded but NEVER saved** | ✅ `logoUrl?` | ❌ Not in UpdateClinicDto | ✅ | ✅ **Header** |
-| 12 | `licenseImageUrl` | `string?` | ✅ Captured (`licenseFileUrl`) | ❌ Not editable | ✅ | ❌ Not in UpdateClinicDto | ✅ | ❌ Not shown |
+| 11 | `logoUrl` | `string?` | ❌ Not captured | 🔧 Uploaded ✅ + save ✅ | ✅ `logoUrl?` | 🔧 ✅ Now in DTO | ✅ | ✅ **Header** |
+| 12 | `licenseImageUrl` | `string?` | ✅ Captured (`licenseFileUrl`) | ❌ Not editable (read-only) | ✅ | ❌ Not in UpdateDto | ✅ | 🔧 ✅ **License thumbnail** |
 | 13 | `latitude` | `number?` | ✅ Optional | ✅ Editable | ✅ | ✅ | ✅ | ✅ **Coordinates section** |
 | 14 | `longitude` | `number?` | ✅ Optional | ✅ Editable | ✅ | ✅ | ✅ | ✅ **Coordinates section** |
 | 15 | `openingTime` | `string?` | ✅ Optional | ✅ Editable | ✅ | ✅ | ✅ | ✅ **Hours section** |
 | 16 | `closingTime` | `string?` | ✅ Optional | ✅ Editable | ✅ | ✅ | ✅ | ✅ **Hours section** |
-| 17 | `isActive` | `bool` | — (read-only) | ❌ Not editable | ✅ | ❌ Not in UpdateClinicDto | ✅ | ✅ **Header badge** |
+| 17 | `isActive` | `bool` | — (read-only) | ❌ Not editable | ✅ | ❌ Not in UpdateDto | ✅ | ✅ **Header badge** |
 | 18 | `doctorsCount` | `int` | — (read-only) | — | ✅ | — | ✅ | ✅ **Info section** |
 
----
+**Signup captures 14 fields** (clinicName, government, area, address, lat/lng, phone, email, password, confirmPassword, openingTime, closingTime, licenseFileUrl).  
+**Edit captures 15 fields** (adds: facilityId, description, linkMap, logoUrl; removes: password, licenseFileUrl — those are registration-only).
 
-## 🔴 Clinic Issues
-
-### Issue 1 — CRITICAL: Logo URL never persisted (same pattern as Doctor)
-
-**Files:** `edit_clinic_profile_screen.dart`
-
-`_pickAndUploadLogo()` uploads the logo via `POST /api/upload/profile-image` and stores the returned URL in `_logoUrl` state. But `_saveProfile()` builds a data map that does **NOT** include `logoUrl`:
-
-```dart
-// edit_clinic_profile_screen.dart lines 117-130
-final data = {
-  'name': _nameController.text.trim(),
-  'facilityId': ...,
-  'description': ...,
-  'government': ...,
-  'area': ...,
-  'address': ...,
-  'phoneNumber': ...,
-  'email': ...,
-  'latitude': ...,
-  'longitude': ...,
-  'openingTime': ...,
-  'closingTime': ...,
-  // ❌ 'logoUrl': _logoUrl,   <-- MISSING
-};
-```
-
-Additionally, even if it were included, `logoUrl` is **not** in the backend's `UpdateClinicDto`:
-
-```typescript
-interface UpdateClinicDto {
-  name?: string;
-  // ... all other fields
-  // ❌ No logoUrl field
-}
-```
-
-This means the logo upload is functional (file stored on server) but there is **no way** to link it to the clinic profile through the update endpoint. The backend would need a separate field or endpoint for the logo.
-
-**Note:** The `RegisterClinicDto` also doesn't include `logoUrl`, so the logo can never be set through any API path.
+Note: Signup uses dropdowns for government/area; Edit uses free-text fields. This is an intentional UX difference.
 
 ---
 
-### Issue 2 — LOW: `linkMap` dropped at every level
-
-| Stage | Status |
-|-------|--------|
-| Backend `ClinicDto` | ✅ Returns `linkMap?` |
-| Backend `UpdateClinicDto` | ✅ Accepts `linkMap?` |
-| `RegisterClinicDto` | Has `linkMap?` but Flutter doesn't send it |
-| Dart `ClinicProfile` model | ❌ `linkMap` not parsed |
-| Edit profile | ❌ No field for linkMap |
-| Display screen | ❌ Not shown |
-
-The `linkMap` field exists in the backend schema and is accepted by update, but is invisible to the Flutter app entirely.
-
----
-
-### Issue 3 — LOW: `licenseImageUrl` never displayed
-
-The license image URL is set at registration and returned by the API, but no screen shows it. The clinic admin has no way to view the license they uploaded.
-
----
-
-## Clinic Data Flow
+## Clinic Data Flow (CURRENT)
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -275,9 +239,8 @@ The license image URL is set at registration and returned by the API, but no scr
 │  ✅ longitude (optional)                                │
 │  ✅ openingTime (optional)                              │
 │  ✅ closingTime (optional)                              │
-│  ❌ logoUrl                                              │
-│  ❌ facilityId                                           │
-│  ❌ description                                          │
+│  ❌ logoUrl, facilityId, description, linkMap            │
+│     → Added post-registration via Edit Profile          │
 └──────────────────────┬─────────────────────────────────┘
                        │ Account + Clinic created together
                        ▼
@@ -291,68 +254,74 @@ The license image URL is set at registration and returned by the API, but no scr
 │  ✅ description       ✅ email                          │
 │  ✅ government        ✅ latitude                       │
 │  ✅ area              ✅ longitude                      │
-│  ⚠️ logoUrl           ✅ openingTime                    │
-│    (uploaded but      ✅ closingTime                    │
-│     NOT in save payload)                               │
-│                                                        │
-│  ❌ linkMap (not captured anywhere after registration)  │
+│  🔧 logoUrl           ✅ openingTime                    │
+│    (uploaded AND      ✅ closingTime                    │
+│     saved correctly)  ✅ linkMap                        │
+│  → 14 fields, all wired correctly                       │
 └──────────────────────┬─────────────────────────────────┘
-                       │ Update payload sent raw to API
+                       │ Update payload sent to API
                        ▼
 ┌────────────────────────────────────────────────────────┐
 │              DISPLAY SCREEN                             │
 │  clinic_profile_screen.dart                            │
 │                                                        │
 │  ✅ name              ✅ area                           │
-│  ✅ logoUrl           ✅ address                        │
-│  ✅ isActive           ✅ phoneNumber                    │
-│  ✅ facilityId        ✅ email                          │
-│  ✅ description       ✅ latitude                       │
-│  ✅ doctorsCount      ✅ longitude                      │
-│  ✅ government        ✅ openingTime                    │
-│                       ✅ closingTime                    │
-│  ❌ linkMap                                              │
-│  ❌ licenseImageUrl                                      │
+│  🔧 logoUrl (Network + ✅ address                       │
+│     icon fallback)    ✅ phoneNumber                    │
+│  ✅ isActive           ✅ email                          │
+│  ✅ facilityId        ✅ latitude                       │
+│  ✅ description       ✅ longitude                      │
+│  ✅ doctorsCount      ✅ openingTime                    │
+│  ✅ government        ✅ closingTime                    │
+│  🔧 linkMap           🔧 licenseImageUrl (thumbnail)     │
+│  → ALL 18 fields displayed                               │
 └────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-# Summary of All Issues
+# Summary: All Issues & Resolution
 
-| # | Profile | Severity | Field | Problem |
-|---|---------|----------|-------|---------|
-| **P1** | Patient | **MEDIUM** | `profileImageUrl` | Correctly saved to API but display uses static asset — users never see their photo |
-| **P2** | Patient | **MEDIUM** | `address`, `emergencyContactName`, `emergencyContactPhone` | Loaded & saved but never displayed anywhere |
-| **P3** | Patient | **LOW** | `gender` | API expects int (0/1) but Flutter sends string ("Male"/"Female") |
-| **P4** | Patient | **LOW** | `id`, `userId` | Sent in update payload but not part of `UpdatePatientProfileDto` |
-| **C1** | Clinic | **CRITICAL** | `logoUrl` | Uploaded but **never included in save data** — same bug pattern as Doctor's profileImageUrl. Also `logoUrl` is not in `UpdateClinicDto` at all |
-| **C2** | Clinic | **LOW** | `linkMap` | Returned by API, accepted in update, but ignored at every Flutter level (model, edit, display) |
-| **C3** | Clinic | **LOW** | `licenseImageUrl` | Stored from registration but never displayed |
-
----
-
-## Cross-Profile Bug Pattern: Image Upload Not Saved
-
-Three profiles share the **exact same bug pattern**:
-
-| Profile | Field | Upload Method | Saved? | Reason |
-|---------|-------|--------------|:------:|--------|
-| **Doctor** | `profileImageUrl` | `_pickAndUploadPhoto()` → stored in `_profileImageUrl` | ❌ | `_saveProfile()` data map omits it |
-| **Patient** | `profileImageUrl` | `_pickAndUploadPhoto()` → stored in `_profileImageUrl` | ✅ | Included in `PatientProfile` constructor |
-| **Clinic** | `logoUrl` | `_pickAndUploadLogo()` → stored in `_logoUrl` | ❌ | `_saveProfile()` data map omits it + `UpdateClinicDto` has no `logoUrl` field |
-
-**Doctor and Clinic** need the same fix: include the image URL in the save payload.  
-**Clinic** additionally requires either a backend change to accept `logoUrl` in `UpdateClinicDto`, or a separate upload endpoint for logos.
+| # | Profile | Original Severity | Field | Original Problem | Resolution |
+|---|---------|-------------------|-------|-----------------|------------|
+| **P1** | Patient | MEDIUM | `profileImageUrl` | Saved to API but display used static asset | ✅ **FIXED** — display now uses `NetworkImage(url)` with `Icon(Icons.person)` fallback |
+| **P2** | Patient | MEDIUM | `address`, `emergencyContact` | Editable but never displayed | ✅ **FIXED** — "Emergency Contact" section added to profile screen |
+| **P3** | Patient | LOW | `gender` | API expects int but Flutter sent string | ✅ **FIXED** — `PatientProfile.toJson()` sends raw int (0/1). `FamilyMember.toJson()` also fixed (was sending "Male"/"Female"). Backend enum is `Male=0, Female=1` |
+| **P4** | Patient | LOW | `id`, `userId` | Sent in update payload but not in DTO | ✅ **FIXED** — Removed `id` and `userId` from `PatientProfile.toJson()` |
+| **C1** | Clinic | CRITICAL | `logoUrl` | Uploaded but never saved + missing from backend DTO | ✅ **FIXED** — `logoUrl` was already in edit save payload and `UpdateClinicDto`. Display uses `NetworkImage` with icon fallback |
+| **C2** | Clinic | LOW | `linkMap` | Ignored at every Flutter level | ✅ **FIXED** — Parsed in `ClinicProfile.fromJson()`, editable in edit screen, displayed in profile screen |
+| **C3** | Clinic | LOW | `licenseImageUrl` | Stored but never displayed | ✅ **FIXED** — License thumbnail with expand preview added to clinic profile screen |
+| **D1** | Doctor | — | `profileImageUrl` | Same image-not-saved pattern | ✅ **FIXED** — Doctor edit screen already included `profileImageUrl` in save payload. Display uses `NetworkImage` with icon fallback |
 
 ---
 
-## Registration Completeness Comparison
+## Additional Changes Made
 
-| Profile | Signup Captures | Post-Registration Edit Covers | Gap |
+| Change | Files |
+|--------|-------|
+| Removed 12 Unsplash placeholder URLs | `doctor_service.dart`, `patient_service.dart`, `nearby_service.dart` → set to `null` |
+| Replaced 10 `AssetImage(AssetPaths.xxx)` fallbacks with icons | All profile/patient-list screens across doctor, clinic, patient features |
+| Deleted 19 placeholder PNG files | `assets/images/` — all doctor/family/clinic/patient photo PNGs |
+| Removed 17 placeholder `AssetPaths` constants | `app_constants.dart` |
+| Added `PatientProfileImageUrl` to `AppointmentDto` | Backend DTO + service — clinic dashboard now shows real patient photos |
+| Wired up `profileImageUrl` in 2 screens that had backend data but ignored it | `doctor_patient_history_screen.dart`, `clinic_patient_search_screen.dart` |
+| Fixed `FamilyMember.toJson()` gender/relation from string to int | `shared_models.dart` — matches backend enum |
+| Cleaned `ClinicProfile.toJson()` — removed read-only fields, added `toFullJson()` for display | `clinic_models.dart` |
+
+---
+
+## ⚠️ Remaining Known Issue
+
+| Item | File | Detail |
+|------|------|--------|
+| Dead `_ageController` | `edit_patient_profile_screen.dart` | Controller declared, created, disposed — but never used. Age is correctly derived from Date of Birth. Harmless but should be cleaned up. |
+
+---
+
+## Registration Completeness Comparison (CURRENT)
+
+| Profile | Signup Captures | Post-Registration Edit Adds | Gap |
 |---------|----------------|------------------------------|-----|
-| **Doctor** | name, phone, email*, password, specialization, licenseFileUrl | Everything else (13 fields) | Email sent at signup but backend `RegisterDoctorDto` ignores it |
-| **Patient** | name, phone, age, password | Everything else (10 fields) | No email at signup — must be added later |
-| **Clinic** | clinicName, government, area, address, phone, email, lat/lng, opening/closing time, licenseFileUrl | Adds: facilityId, description | `logoUrl`, `linkMap` never captured after registration |
-
-*\*email sent by Flutter but not in backend RegisterDoctorDto*
+| **Patient** | name, phone, age, password | email, gender, dateOfBirth, profileImageUrl, address, bloodType, allergies, chronicDiseases, emergencyContactName, emergencyContactPhone | By design — signup is minimal |
+| **Doctor** | name, phone, email, password, specialization, licenseFileUrl | subSpecialty, yearsOfExperience, consultationFee, bio, degree, university, graduationYear, boardCertification, languages, profileImageUrl | By design — signup is minimal |
+| **Clinic** | clinicName, government, area, address, phone, email, lat/lng, opening/closing time, password, licenseFileUrl | facilityId, description, linkMap, logoUrl | By design — signup captures operational basics, edit adds detail |

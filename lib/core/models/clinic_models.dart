@@ -1,8 +1,6 @@
 class ClinicProfile {
   final int id;
   final String name;
-  final String? facilityId;
-  final String? description;
   final String? government;
   final String? area;
   final String? address;
@@ -21,8 +19,6 @@ class ClinicProfile {
   ClinicProfile({
     required this.id,
     required this.name,
-    this.facilityId,
-    this.description,
     this.government,
     this.area,
     this.address,
@@ -43,8 +39,6 @@ class ClinicProfile {
     return ClinicProfile(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
-      facilityId: json['facilityId'],
-      description: json['description'],
       government: json['government'],
       area: json['area'],
       address: json['address'],
@@ -65,8 +59,6 @@ class ClinicProfile {
   Map<String, dynamic> toJson() {
     return {
       'name': name,
-      'facilityId': facilityId,
-      'description': description,
       'government': government,
       'area': area,
       'address': address,
@@ -86,8 +78,6 @@ class ClinicProfile {
     return {
       'id': id,
       'name': name,
-      'facilityId': facilityId,
-      'description': description,
       'government': government,
       'area': area,
       'address': address,

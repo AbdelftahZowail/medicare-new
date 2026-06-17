@@ -167,6 +167,12 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                           title: 'Gender',
                           value: _profile!.gender == 0 ? 'Male' : 'Female',
                         ),
+                      if (_profile?.address != null)
+                        _HealthCard(
+                          icon: Icons.location_on,
+                          title: 'Address',
+                          value: _profile!.address!,
+                        ),
                       const SizedBox(height: 20),
                       // Health Info Section
                       if (_profile?.bloodType != null ||
@@ -194,34 +200,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                             icon: Icons.medical_services_outlined,
                             title: 'Chronic Diseases',
                             value: _profile!.chronicDiseases!,
-                          ),
-                        const SizedBox(height: 24),
-                      ],
-
-                      // Emergency Contact Section
-                      if (_profile?.emergencyContactName != null || _profile?.emergencyContactPhone != null || _profile?.address != null) ...[
-                        Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: Text('Emergency Contact', style: AppTextStyles.heading3),
-                        ),
-                        const SizedBox(height: 12),
-                        if (_profile?.address != null)
-                          _HealthCard(
-                            icon: Icons.location_on,
-                            title: 'Address',
-                            value: _profile!.address!,
-                          ),
-                        if (_profile?.emergencyContactName != null)
-                          _HealthCard(
-                            icon: Icons.person,
-                            title: 'Emergency Contact',
-                            value: _profile!.emergencyContactName!,
-                          ),
-                        if (_profile?.emergencyContactPhone != null)
-                          _HealthCard(
-                            icon: Icons.phone,
-                            title: 'Emergency Phone',
-                            value: _profile!.emergencyContactPhone!,
                           ),
                         const SizedBox(height: 24),
                       ],

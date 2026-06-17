@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/models/appointment_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/error_utils.dart';
@@ -20,6 +21,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   final _service = DoctorService();
   Timer? _pollTimer;
   Map<String, dynamic>? _dashboardData;
+  Appointment? _activeConsultation;
 
   @override
   void initState() {
@@ -33,6 +35,11 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   void _loadDashboard() {
     _service.getDashboard().then((data) {
       if (mounted) setState(() => _dashboardData = data);
+    });
+    _service.getActiveConsultations().then((list) {
+      if (mounted) {
+        setState(() => _activeConsultation = list.isNotEmpty ? list.first : null);
+      }
     });
   }
 
@@ -65,6 +72,14 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                 onNotificationsTap: () =>
                     context.push(AppRoutes.doctorNotifications),
               ),
+              if (_activeConsultation != null) ...[
+                const SizedBox(height: 20),
+                _CurrentPatientCard(
+                  appointment: _activeConsultation!,
+                  onStartConsultation: () =>
+                      context.push('${AppRoutes.doctorConsultation}/${_activeConsultation!.id}'),
+                ),
+              ],
               const SizedBox(height: 20),
               _TodayAppointmentsCard(
                 total: data['totalAppointments'] as int? ?? 0,
@@ -81,36 +96,36 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
               _ScheduleButton(
                 onTap: () => context.go(AppRoutes.doctorAppointments),
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 52,
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    try {
-                      final profile = await DoctorService().getProfile();
-                      if (mounted) {
-                        context.push(
-                          AppRoutes.doctorSchedule,
-                          extra: {'doctorId': profile.id},
-                        );
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(kEnableDebugTools
-                                ? 'Failed to load schedule: ${errorMessage(e)}'
-                                : 'Failed to load schedule. Please try again.'),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  icon: const Icon(Icons.edit_calendar, size: 18),
-                  label: const Text('Manage My Schedule'),
-                ),
-              ),
+              // const SizedBox(height: 12),
+              // SizedBox(
+              //   height: 52,
+              //   width: double.infinity,
+              //   child: OutlinedButton.icon(
+              //     onPressed: () async {
+              //       try {
+              //         final profile = await DoctorService().getProfile();
+              //         if (mounted) {
+              //           context.push(
+              //             AppRoutes.doctorSchedule,
+              //             extra: {'doctorId': profile.id},
+              //           );
+              //         }
+              //       } catch (e) {
+              //         if (mounted) {
+              //           ScaffoldMessenger.of(context).showSnackBar(
+              //             SnackBar(
+              //               content: Text(kEnableDebugTools
+              //                   ? 'Failed to load schedule: ${errorMessage(e)}'
+              //                   : 'Failed to load schedule. Please try again.'),
+              //             ),
+              //           );
+              //         }
+              //       }
+              //     },
+              //     icon: const Icon(Icons.edit_calendar, size: 18),
+              //     label: const Text('Manage My Schedule'),
+              //   ),
+              // ),
               const SizedBox(height: 20),
               Text(
                 'Queue Summary',
@@ -318,6 +333,141 @@ class _ScheduleButton extends StatelessWidget {
         onPressed: onTap,
         icon: const Icon(Icons.calendar_today, size: 18),
         label: const Text('View Today\'s Schedule'),
+      ),
+    );
+  }
+}
+
+class _CurrentPatientCard extends StatelessWidget {
+  final Appointment appointment;
+  final VoidCallback onStartConsultation;
+
+  const _CurrentPatientCard({
+    required this.appointment,
+    required this.onStartConsultation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final queueNumber = appointment.queueNumber?.toString() ?? '--';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.person_pin, size: 16, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Queue #$queueNumber',
+                      style: AppTextStyles.labelSmall.copyWith(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.fromLTRB(10, 4, 10, 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.circle, size: 8, color: Colors.greenAccent),
+                    const SizedBox(width: 6),
+                    Text(
+                      'In Consultation',
+                      style: AppTextStyles.labelSmall.copyWith(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: Colors.white.withOpacity(0.2),
+                child: Text(
+                  queueNumber,
+                  style: AppTextStyles.heading3.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appointment.patientName,
+                      style: AppTextStyles.heading3.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Started at ${appointment.startTime.isNotEmpty ? appointment.startTime : '--:--'}',
+                      style: AppTextStyles.bodySmall.copyWith(color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 48,
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onStartConsultation,
+              icon: const Icon(Icons.medical_services_outlined, size: 20),
+              label: const Text('Open Consultation'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppColors.primaryDark,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

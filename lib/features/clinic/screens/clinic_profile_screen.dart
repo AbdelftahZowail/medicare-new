@@ -73,10 +73,8 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final name = _profileData?['name'] ?? '';
-    final facilityId = _profileData?['facilityId'] as String?;
-    final description = _profileData?['description'] as String?;
-    final government = _profileData?['government'] as String?;
+  final name = _profileData?['name'] ?? '';
+  final government = _profileData?['government'] as String?;
     final area = _profileData?['area'] as String?;
     final address = _profileData?['address'] as String?;
     final phoneNumber = _profileData?['phoneNumber'] as String?;
@@ -119,12 +117,8 @@ class _ClinicProfileScreenState extends State<ClinicProfileScreen> {
                           _buildInfoSection(
                             title: 'Basic Information',
                             items: [
-                              if (facilityId != null)
-                                _InfoItem(icon: Icons.badge, label: 'Facility ID', value: facilityId),
-                              if (description != null)
-                                _InfoItem(icon: Icons.description, label: 'Description', value: description),
-                              if (linkMap != null)
-                                _InfoItem(icon: Icons.map, label: 'Google Maps', value: linkMap),
+  if (linkMap != null)
+    _InfoItem(icon: Icons.map, label: 'Google Maps', value: linkMap),
                               _InfoItem(
                                 icon: Icons.people,
                                 label: 'Doctors',
