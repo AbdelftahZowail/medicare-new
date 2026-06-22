@@ -30,6 +30,7 @@ class AppButton extends StatelessWidget {
     final textStyle = isSmall ? AppTextStyles.buttonSmall : AppTextStyles.button;
 
     if (isOutlined) {
+      final outlineColor = textColor ?? (backgroundColor ?? AppColors.primary);
       return SizedBox(
         height: height,
         width: double.infinity,
@@ -40,9 +41,9 @@ class AppButton extends StatelessWidget {
               color: backgroundColor ?? AppColors.primary,
               width: 1.5,
             ),
-            foregroundColor: textColor ?? (backgroundColor ?? AppColors.primary),
+            foregroundColor: outlineColor,
           ),
-          child: _buildChild(textStyle),
+          child: _buildChild(textStyle.copyWith(color: outlineColor)),
         ),
       );
     }

@@ -35,7 +35,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
     _tabController.addListener(_onTabChanged);
     _loadAppointments();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) _loadAppointments();
+      if (mounted) _pollAppointments();
     });
   }
 
@@ -92,6 +92,29 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
           ),
         );
       }
+    }
+  }
+
+  Future<void> _pollAppointments() async {
+    String? filter;
+    switch (_tabController.index) {
+      case 0:
+        filter = 'upcoming';
+        break;
+      case 1:
+        filter = 'completed';
+        break;
+      case 2:
+        filter = 'cancelled';
+        break;
+    }
+
+    try {
+      final appointments = await _service.getMyAppointments(filter: filter);
+      if (!mounted) return;
+      setState(() => _appointments = appointments);
+    } catch (_) {
+      // Silently ignore poll failures
     }
   }
 

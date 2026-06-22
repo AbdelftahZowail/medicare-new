@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'api_service.dart';
 import '../constants/app_constants.dart';
+import '../models/api_response.dart';
 
 class FcmService {
   static final FcmService _instance = FcmService._internal();
@@ -10,6 +12,17 @@ class FcmService {
   final ApiService _api = ApiService();
 
   Future<String?> getToken() => FirebaseMessaging.instance.getToken();
+
+  Future<String?> getStoredToken() async {
+    final response = await _api.get<Map<String, dynamic>>(
+      ApiEndpoints.fcmToken,
+      fromJson: (d) => d as Map<String, dynamic>,
+    );
+    if (response.isSuccess && response.data != null) {
+      return response.data!['token'] as String?;
+    }
+    return null;
+  }
 
   Future<void> registerToken(String token) async {
     await _api.post(
@@ -39,24 +52,18 @@ class FcmService {
   Future<void> init() async {
     final messaging = FirebaseMessaging.instance;
 
-    // Request notification permissions
     await requestPermission();
 
-    // Get and register initial token
-    final token = await getToken();
-    if (token != null) {
-      await registerToken(token);
-    }
-
-    // Listen for token refresh
+    // Listen for token refresh — registerToken silently
+    // fails if unauthenticated (safe for background refreshes)
     messaging.onTokenRefresh.listen((newToken) {
-      registerToken(newToken);
+      try {
+        registerToken(newToken);
+      } catch (_) {}
     });
 
-    // Handle foreground messages (optional — for now just log)
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      // This fires when the app is in the foreground.
-      // In the future, show a local notification or snackbar here.
+      // Foreground push handler
     });
   }
 }

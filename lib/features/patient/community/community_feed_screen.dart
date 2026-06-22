@@ -42,7 +42,7 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
     });
     _loadPosts();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) _loadPosts();
+      if (mounted) _pollPosts();
     });
   }
 
@@ -124,6 +124,17 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
               : 'Failed to load posts. Please try again.'),
         ),
       );
+    }
+  }
+
+  Future<void> _pollPosts() async {
+    try {
+      final spec = _selectedSpecialization == 'All' ? null : _selectedSpecialization;
+      final posts = await _service.getPosts(specialization: spec);
+      if (!mounted) return;
+      setState(() => _posts = posts);
+    } catch (_) {
+      // Silently ignore poll failures
     }
   }
 

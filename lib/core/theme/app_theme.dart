@@ -107,7 +107,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: AppTextStyles.buttonSmall,
+          textStyle: AppTextStyles.buttonSmall.copyWith(color: AppColors.primary),
           minimumSize: const Size(double.infinity, 52),
         ),
       ),

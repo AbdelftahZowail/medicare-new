@@ -9,6 +9,7 @@ import '../../../core/services/patient_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/doctor_card.dart';
+import '../../../core/widgets/fcm_token_debug_widget.dart';
 import '../data/doctor_service.dart';
 
 class PatientHomeScreen extends StatefulWidget {
@@ -73,7 +74,12 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
               _TopBar(
                 onNotificationsTap: () => context.push(AppRoutes.patientNotifications),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: FcmTokenDebugWidget(),
+              ),
+              const SizedBox(height: 4),
               _SearchBar(
                 controller: _searchController,
                 onSubmitted: (v) => _openBrowseDoctors(query: v),

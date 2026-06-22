@@ -28,7 +28,7 @@ class _ClinicDoctorsScreenState extends State<ClinicDoctorsScreen> {
     super.initState();
     _loadDoctors();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) _loadDoctors();
+      if (mounted) _pollDoctors();
     });
   }
 
@@ -54,6 +54,20 @@ class _ClinicDoctorsScreenState extends State<ClinicDoctorsScreen> {
         _error = errorMessage(e);
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _pollDoctors() async {
+    try {
+      final doctors = await _service.getClinicDoctors();
+      if (!mounted) return;
+      setState(() {
+        _doctors = doctors;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = errorMessage(e));
     }
   }
 

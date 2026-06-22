@@ -5,7 +5,7 @@ bool useMockDataFallback = false;
 
 /// Debug tools toggle. When `true`, shows debug utilities like account switching.
 /// Set to `false` before production builds.
-const bool kEnableDebugTools = true;
+const bool kEnableDebugTools = false;
 
 class ApiEndpoints {
   static const String baseUrl = 'https://medicare.shortformfunnels.com';
@@ -133,7 +133,8 @@ class ApiEndpoints {
   static String deleteNotification(int id) => '$apiBase/notification/$id';
 
   // Push Notification
-  static const String registerFcmToken = '$apiBase/notification/fcm-token';
+  static const String fcmToken = '$apiBase/notification/fcm-token';
+  static const String registerFcmToken = fcmToken;
 
   // Upload
   static const String uploadLicense = '$apiBase/upload/license';

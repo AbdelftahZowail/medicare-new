@@ -113,7 +113,7 @@ class Appointment {
       consultationFee: (json['consultationFee'] as num?)?.toDouble(),
       offlinePatientPhone: json['offlinePatientPhone'],
       offlinePatientAge: json['offlinePatientAge'],
-      offlinePatientGender: json['offlinePatientGender'],
+      offlinePatientGender: _parseGender(json['offlinePatientGender']),
       paymentMethodText: json['paymentMethodText'] ?? '',
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
     );
@@ -163,6 +163,19 @@ class Appointment {
         case 'in consultation': return 1;
         case 'completed': return 2;
         case 'refunded': return 3;
+        default: return null;
+      }
+    }
+    return null;
+  }
+
+  static int? _parseGender(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      switch (value.toLowerCase()) {
+        case 'male': return 0;
+        case 'female': return 1;
         default: return null;
       }
     }

@@ -118,6 +118,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (isLoggedIn && _authService.currentAuth != null) {
       final role = _authService.currentAuth!.role;
       emit(AuthAuthenticated(role: role, auth: _authService.currentAuth!));
+      _registerFcmToken();
     } else {
       emit(const AuthUnauthenticated());
     }

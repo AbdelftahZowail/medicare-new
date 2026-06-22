@@ -33,7 +33,7 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
     super.initState();
     _loadDoctors();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) _loadPayments();
+      if (mounted) _pollPayments();
     });
   }
 
@@ -87,6 +87,24 @@ class _ClinicPaymentsScreenState extends State<ClinicPaymentsScreen> {
         _error = errorMessage(e);
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _pollPayments() async {
+    if (_selectedDoctorId == null) return;
+    try {
+      final data = await _service.getClinicPayments(
+        doctorId: _selectedDoctorId!,
+        timeframe: _timeframe,
+      );
+      if (!mounted) return;
+      setState(() {
+        _paymentsData = data;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = errorMessage(e));
     }
   }
 

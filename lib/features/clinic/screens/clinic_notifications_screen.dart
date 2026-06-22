@@ -29,7 +29,7 @@ class _ClinicNotificationsScreenState extends State<ClinicNotificationsScreen> {
     super.initState();
     _loadNotifications();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) _loadNotifications();
+      if (mounted) _pollNotifications();
     });
   }
 
@@ -55,6 +55,20 @@ class _ClinicNotificationsScreenState extends State<ClinicNotificationsScreen> {
         _error = errorMessage(e);
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _pollNotifications() async {
+    try {
+      final notifications = await _service.getNotifications();
+      if (!mounted) return;
+      setState(() {
+        _notifications = notifications;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = errorMessage(e));
     }
   }
 

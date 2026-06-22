@@ -29,7 +29,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     super.initState();
     _loadFavorites();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) _loadFavorites();
+      if (mounted) _pollFavorites();
     });
   }
 
@@ -55,6 +55,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         _favorites = [];
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _pollFavorites() async {
+    try {
+      final favorites = await _service.getFavorites();
+      if (!mounted) return;
+      setState(() => _favorites = favorites);
+    } catch (_) {
+      // Silently ignore poll failures
     }
   }
 

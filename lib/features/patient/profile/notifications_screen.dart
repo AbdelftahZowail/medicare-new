@@ -29,7 +29,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     super.initState();
     _loadNotifications();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) _loadNotifications();
+      if (mounted) _pollNotifications();
     });
   }
 
@@ -55,6 +55,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _notifications = [];
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _pollNotifications() async {
+    try {
+      final notifications = await _service.getNotifications();
+      if (!mounted) return;
+      setState(() => _notifications = notifications);
+    } catch (_) {
+      // Silently ignore poll failures
     }
   }
 
